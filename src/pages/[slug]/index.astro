@@ -1,0 +1,104 @@
+---
+export const prerender = false
+import { createClient } from '@supabase/supabase-js'
+import { getTheme }     from '../../themes/index'
+import MinimalCard      from '../../themes/minimal/Card.astro'
+import ExecutiveCard    from '../../themes/executive/Card.astro'
+import BoldCard         from '../../themes/bold/Card.astro'
+import AppCardCard from '../../themes/app-card/Card.astro'
+
+const supabase = createClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+)
+
+const { slug } = Astro.params
+
+const { data: perfil, error } = await supabase
+  .from('perfiles')
+  .select('*')
+  .eq('slug', slug)
+  .neq('status', 'No disponible')
+  .single()
+
+console.log('[slug] perfil:', perfil?.slug, 'error:', error?.message)
+
+if (error || !perfil) {
+  return Astro.redirect('/404')
+}
+
+const [
+  { data: experiencia },
+  { data: estudios },
+  { data: capacitaciones },
+  { data: habilidades },
+  { data: servicios },
+  { data: proyectos },
+  { data: redes },
+  { data: logros },
+] = await Promise.all([
+  supabase.from('experiencia_laboral').select('*').eq('perfil_id', perfil.id).order('orden'),
+  supabase.from('estudios').select('*').eq('perfil_id', perfil.id).order('orden'),
+  supabase.from('capacitaciones').select('*').eq('perfil_id', perfil.id).order('orden'),
+  supabase.from('habilidades').select('*').eq('perfil_id', perfil.id).order('orden'),
+  supabase.from('servicios').select('*').eq('perfil_id', perfil.id).order('orden'),
+  supabase.from('proyectos').select('*').eq('perfil_id', perfil.id).order('orden'),
+  supabase.from('redes_sociales').select('*').eq('perfil_id', perfil.id).eq('activo', true).order('orden'),
+  supabase.from('logros').select('*').eq('perfil_id', perfil.id).order('orden'),
+])
+
+const theme = getTheme(perfil.template_id ?? 'minimal')
+
+const cardProps = {
+  perfil,
+  experiencia:    experiencia    ?? [],
+  estudios:       estudios       ?? [],
+  habilidades:    habilidades    ?? [],
+  servicios:      servicios      ?? [],
+  proyectos:      proyectos      ?? [],
+  redes:          redes          ?? [],
+  logros:         logros         ?? [],
+  capacitaciones: capacitaciones ?? [],
+}
+---
+
+{theme.id === 'executive' && <ExecutiveCard {...cardProps} />}
+{theme.id === 'bold'      && <BoldCard      {...cardProps} />}
+{theme.id === 'app-card'  && <AppCardCard   {...cardProps} />}
+{(theme.id === 'minimal' || !['executive','bold','app-card'].includes(theme.id)) && <MinimalCard {...cardProps} />}
+
+<div id="track-data" data-perfil-id={perfil.id} style="display:none"></div>
+
+<script>
+  const perfilId = document.getElementById('track-data')?.dataset.perfilId
+  if (perfilId) {
+    fetch('/api/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ perfil_id: perfilId })
+    })
+  }
+
+  function track(tipo: string, metadata: Record<string, string>) {
+    if (!perfilId) return
+    fetch('/api/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ perfil_id: perfilId, tipo, metadata })
+    })
+  }
+
+  document.querySelectorAll<HTMLElement>('.track-red').forEach(el => {
+    el.addEventListener('click', () =>
+      track('click_red', { plataforma: el.dataset.plataforma ?? '' })
+    )
+  })
+  document.querySelectorAll<HTMLElement>('.track-cv').forEach(el => {
+    el.addEventListener('click', () => track('descarga_cv', {}))
+  })
+  document.querySelectorAll<HTMLElement>('.track-proyecto').forEach(el => {
+    el.addEventListener('click', () =>
+      track('click_proyecto', { titulo: el.dataset.titulo ?? '' })
+    )
+  })
+</script>

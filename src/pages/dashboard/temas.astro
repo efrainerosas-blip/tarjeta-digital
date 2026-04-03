@@ -1,0 +1,454 @@
+---
+// src/pages/dashboard/temas.astro
+export const prerender = false
+import DashboardLayout from '../../layouts/DashboardLayout.astro'
+import { createServerClient } from '@supabase/ssr'
+import { THEMES } from '../../themes/index'
+
+const supabase = createServerClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+  {
+    cookies: {
+      getAll() {
+        return (Astro.request.headers.get('Cookie') ?? '')
+          .split(';')
+          .filter(Boolean)
+          .map(c => {
+            const [k, ...v] = c.trim().split('=')
+            return { name: k, value: v.join('=') }
+          })
+      },
+      setAll(cs) {
+        cs.forEach(({ name, value, options }) => Astro.cookies.set(name, value, options))
+      },
+    },
+  }
+)
+
+const { data: { user }, error: authError } = await supabase.auth.getUser()
+if (authError || !user) return Astro.redirect('/auth/login')
+
+const { data: perfil } = await supabase
+  .from('perfiles')
+  .select('id, slug, template_id, plan_tipo')
+  .eq('user_id', user.id)
+  .single()
+
+const temaActual = perfil?.template_id ?? 'minimal'
+const plan       = perfil?.plan_tipo   ?? 'free'
+const slug       = perfil?.slug        ?? ''
+---
+
+<DashboardLayout title="Plantillas" tabActivo="temas" user={{ email: user.email!, id: user.id }}>
+
+  <div class="page-header">
+    <h1 class="page-title">Plantillas de tarjeta</h1>
+    <p class="page-desc">Elige el diseño de tu tarjeta digital. El cambio se refleja en tiempo real.</p>
+  </div>
+
+  <div class="temas-layout">
+
+    <!-- Columna izquierda: selector de themes -->
+    <div class="temas-selector">
+
+      <div id="themes-grid">
+        {THEMES.map(theme => {
+          const activo    = temaActual === theme.id
+          const bloqueado = theme.premium && plan === 'free'
+
+          return (
+            <div
+              class={`theme-card ${activo ? 'theme-active' : ''} ${bloqueado ? 'theme-locked' : ''}`}
+              data-id={theme.id}
+              data-accent={theme.preview_accent}
+              style={`
+                background: ${theme.preview_bg};
+                border: 2px solid ${activo ? theme.preview_accent : 'var(--border)'};
+                border-radius: var(--radius-lg);
+                padding: 0;
+                cursor: ${bloqueado ? 'not-allowed' : 'pointer'};
+                transition: border-color .2s, box-shadow .2s, transform .15s;
+                overflow: hidden;
+                position: relative;
+              `}
+            >
+              <!-- Miniatura visual del theme -->
+              <div style={`height:110px;background:${theme.preview_bg};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:12px;position:relative`}>
+                <div style={`width:32px;height:32px;border-radius:50%;background:${theme.preview_accent};opacity:.9`}></div>
+                <div style={`width:72px;height:7px;border-radius:4px;background:${theme.preview_accent};opacity:.6`}></div>
+                <div style={`width:50px;height:5px;border-radius:4px;background:${theme.preview_accent};opacity:.3`}></div>
+                <div style="display:flex;gap:4px;margin-top:4px">
+                  {[36,24,32].map(w => (
+                    <div style={`width:${w}px;height:3px;border-radius:3px;background:${theme.preview_accent};opacity:.2`}></div>
+                  ))}
+                </div>
+
+                {/* Overlay de bloqueo PRO */}
+                {bloqueado && (
+                  <div style="position:absolute;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center">
+                    <div style="text-align:center">
+                      <div style="font-size:16px">🔒</div>
+                      <div style="font-size:9px;font-weight:700;color:#fff;margin-top:2px">PRO</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Checkmark del theme activo */}
+                {activo && (
+                  <div style={`position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;background:${theme.preview_accent};display:flex;align-items:center;justify-content:center`}>
+                    <svg width="9" height="9" fill="none" stroke="white" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                    </svg>
+                  </div>
+                )}
+              </div>
+
+              <!-- Metadata del theme -->
+              <div style={`padding:10px 12px;background:${theme.preview_bg === '#0f172a' ? '#1e293b' : 'var(--bg-2)'};border-top:1px solid var(--border)`}>
+                <div style={`font-size:12px;font-weight:700;color:${theme.preview_bg === '#0f172a' ? '#f1f5f9' : 'var(--text-1)'}`}>
+                  {theme.nombre}
+                  {theme.premium && (
+                    <span class="badge badge-pro" style="margin-left:5px;font-size:9px">PRO</span>
+                  )}
+                </div>
+                <div style="font-size:10px;color:var(--text-3);margin-top:2px;line-height:1.4">{theme.descripcion}</div>
+                <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:6px">
+                  {theme.etiquetas.map(tag => (
+                    <span style="font-size:9px;background:var(--bg-4);color:var(--text-3);padding:1px 6px;border-radius:99px">{tag}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <!-- Banner de info / upgrade -->
+      <div style="margin-top:16px;padding:14px 16px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-lg);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <svg width="14" height="14" fill="none" stroke="var(--text-3)" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
+        </svg>
+        <span style="font-size:12px;color:var(--text-3);flex:1">
+          El cambio se aplica al instante. Tu contenido no se modifica.
+        </span>
+        {plan === 'free' && (
+          <a href="/dashboard/plan" class="btn btn-ghost" style="font-size:11px">
+            ✦ Desbloquear todas
+          </a>
+        )}
+      </div>
+
+    </div><!-- /temas-selector -->
+
+    <div class="temas-preview">
+
+      <!-- Header del panel de preview -->
+      <div class="preview-header">
+        <div class="preview-dots">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="preview-url" id="preview-url-bar">
+          {slug ? `/${slug}` : '— sin slug —'}
+        </div>
+        <!-- Botón para abrir en nueva pestaña -->
+        <a
+          id="preview-open-link"
+          href={slug ? `/${slug}` : '#'}
+          target="_blank"
+          title="Abrir en nueva pestaña"
+          style={`display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-3);text-decoration:none;padding:3px 8px;border-radius:6px;transition:background .15s;${!slug ? 'pointer-events:none;opacity:.4' : ''}`}
+        >
+          <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+          </svg>
+          Abrir
+        </a>
+      </div>
+
+      <div class="preview-frame-wrap">
+        {slug ? (
+          <iframe
+            id="preview-iframe"
+            src={`/${slug}`}
+            title="Vista previa de tu tarjeta"
+            loading="lazy"
+            sandbox="allow-scripts allow-same-origin"
+          ></iframe>
+        ) : (
+          <!-- Placeholder cuando el usuario aún no tiene slug configurado -->
+          <div id="preview-no-slug" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;padding:24px;text-align:center">
+            <div style="font-size:32px">🪪</div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-1)">Sin slug configurado</div>
+            <div style="font-size:12px;color:var(--text-3);max-width:200px;line-height:1.5">
+              Ve al tab <strong>Perfil</strong> y asigna una URL a tu tarjeta para ver la preview aquí.
+            </div>
+            <a href="/dashboard" class="btn btn-ghost" style="font-size:12px;margin-top:4px">
+              Ir a Perfil →
+            </a>
+          </div>
+        )}
+
+        <!-- Spinner que aparece mientras el iframe recarga -->
+        <!-- Se muestra solo durante el cambio de theme (via JS) -->
+        <div id="preview-loading" style="display:none;position:absolute;inset:0;background:var(--bg-1);display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;z-index:10">
+          <div class="preview-spinner"></div>
+          <span style="font-size:12px;color:var(--text-3)" id="preview-loading-text">Aplicando tema…</span>
+        </div>
+      </div>
+
+    </div><!-- /temas-preview -->
+
+  </div><!-- /temas-layout -->
+
+</DashboardLayout>
+
+<!-- ── ESTILOS del layout de dos columnas y del iframe ── -->
+<style>
+  /* Layout principal: dos columnas en desktop, apiladas en mobile */
+  .temas-layout {
+    display: grid;
+    grid-template-columns: 1fr;      /* mobile: una columna */
+    gap: 20px;
+    align-items: start;
+  }
+
+  @media (min-width: 900px) {
+    .temas-layout {
+      grid-template-columns: 280px 1fr; /* desktop: selector fijo + preview flexible */
+    }
+  }
+
+  /* Grid del selector de themes */
+  #themes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+  }
+
+  /* Hover en cards no bloqueadas */
+  .theme-card:not(.theme-locked):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  }
+
+  /* Panel de preview */
+  .temas-preview {
+    position: sticky;        /* se queda visible al scrollear el selector */
+    top: 80px;               /* respeta la altura del header del dashboard */
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--bg-2);
+    min-height: 500px;
+  }
+
+  /* Barra superior falsa tipo browser */
+  .preview-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--bg-3);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .preview-dots {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .preview-dots span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border-2);
+  }
+
+  .preview-url {
+    flex: 1;
+    font-size: 11px;
+    color: var(--text-3);
+    font-family: var(--font-mono, monospace);
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Contenedor relativo para poder superponer el spinner */
+  .preview-frame-wrap {
+    position: relative;
+    height: calc(100svh - 220px);  /* altura dinámica que respeta el header */
+    min-height: 460px;
+    background: var(--bg-1);
+  }
+
+  /* El iframe ocupa todo el contenedor */
+  #preview-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+  }
+
+  /* Spinner de carga */
+  .preview-spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+</style>
+
+<div
+  id="page-data"
+  data-tema-actual={temaActual}
+  data-slug={slug}
+  style="display:none"
+></div>
+
+<script>
+  import { createBrowserClient } from '@supabase/ssr'
+
+  // ── Leer datos del servidor desde el elemento invisible ───────
+  const pageData    = document.getElementById('page-data')!
+  let   current     = pageData.dataset.temaActual ?? 'minimal'
+  const slug        = pageData.dataset.slug ?? ''
+
+  // ── Cliente Supabase (browser) ────────────────────────────────
+  const sb = createBrowserClient(
+    document.querySelector<HTMLMetaElement>('meta[name="supabase-url"]')!.content,
+    document.querySelector<HTMLMetaElement>('meta[name="supabase-anon"]')!.content,
+  )
+
+  // ── Referencias al iframe y sus controles ─────────────────────
+  const iframe        = document.getElementById('preview-iframe')        as HTMLIFrameElement | null
+  const loadingOverlay = document.getElementById('preview-loading')       as HTMLDivElement   | null
+  const loadingText   = document.getElementById('preview-loading-text')  as HTMLSpanElement  | null
+
+  /**
+   * Muestra el spinner encima del iframe mientras recarga.
+   * Se oculta automáticamente cuando el iframe dispara el evento "load".
+   */
+  function showLoading(themeName: string) {
+    if (!loadingOverlay) return
+    if (loadingText) loadingText.textContent = `Aplicando "${themeName}"…`
+    loadingOverlay.style.display = 'flex'
+  }
+
+  function hideLoading() {
+    if (loadingOverlay) loadingOverlay.style.display = 'none'
+  }
+
+  // Escuchar cuando el iframe termina de cargar para ocultar el spinner
+  iframe?.addEventListener('load', hideLoading)
+
+  /**
+   * Recarga el iframe apuntando al slug del usuario.
+   * Usamos un timestamp como query param para forzar el refetch
+   * y que Astro/Node no sirva una respuesta cacheada.
+   */
+  function reloadPreview() {
+    if (!iframe || !slug) return
+    iframe.src = `/${slug}?t=${Date.now()}`
+  }
+
+  // ── Listener principal: clic en una theme-card ────────────────
+  document.querySelectorAll<HTMLElement>('.theme-card').forEach(card => {
+    // Ignorar cards bloqueadas por plan
+    if (card.classList.contains('theme-locked')) return
+
+    card.addEventListener('click', async () => {
+      const id        = card.dataset.id!
+      const accent    = card.dataset.accent ?? 'var(--accent)'
+      const nombre    = card.querySelector<HTMLElement>('[style*="font-weight:700"]')?.textContent?.trim() ?? id
+
+      // No hacer nada si ya es el theme activo
+      if (id === current) return
+
+      // ── 1. Mostrar spinner inmediatamente (feedback visual rápido) ──
+      showLoading(nombre)
+
+      // ── 2. Actualizar Supabase ────────────────────────────────────
+      let authUser: { id: string } | null = null
+      try {
+        const { data: { user } } = await sb.auth.getUser()
+        authUser = user
+      } catch {
+        hideLoading()
+        ;(window as any).toast?.('Error de autenticación', 'error')
+        return
+      }
+
+      if (!authUser) {
+        hideLoading()
+        window.location.href = '/auth/login'
+        return
+      }
+
+      const { error } = await sb
+        .from('perfiles')
+        .update({ template_id: id })
+        .eq('user_id', authUser.id)
+
+      if (error) {
+        // Si falla el guardado, ocultamos el spinner y avisamos
+        hideLoading()
+        ;(window as any).toast?.(`Error al cambiar plantilla: ${error.message}`, 'error')
+        return
+      }
+
+      // ── 3. Actualizar estado local ────────────────────────────────
+      current = id
+
+      // ── 4. Actualizar UI del selector: quitar activo de todas,
+      //       activar la clicada ───────────────────────────────────
+      document.querySelectorAll<HTMLElement>('.theme-card').forEach(c => {
+        c.classList.remove('theme-active')
+        c.style.borderColor = 'var(--border)'
+
+        // Quitar checkmark anterior si existe
+        c.querySelector('.check-active')?.remove()
+      })
+
+      card.classList.add('theme-active')
+      card.style.borderColor = accent
+
+      // Inyectar checkmark en la card recién activada
+      const miniatura = card.querySelector<HTMLElement>('div:first-child')
+      if (miniatura) {
+        const check = document.createElement('div')
+        check.className = 'check-active'
+        check.style.cssText = `
+          position:absolute;top:8px;right:8px;
+          width:18px;height:18px;border-radius:50%;
+          background:${accent};
+          display:flex;align-items:center;justify-content:center;
+          z-index:2;
+        `
+        check.innerHTML = `<svg width="9" height="9" fill="none" stroke="white" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+        </svg>`
+        miniatura.appendChild(check)
+      }
+
+      // ── 5. Recargar el iframe con el nuevo theme ──────────────────
+      //       El spinner ya está visible; se oculta cuando el iframe carga
+      reloadPreview()
+
+      // ── 6. Toast de confirmación ──────────────────────────────────
+      ;(window as any).toast?.(`Tema "${nombre}" aplicado`, 'success')
+    })
+  })
+</script>

@@ -1,0 +1,282 @@
+---
+// src/pages/dashboard/servicios.astro — generado por scripts/gen-tabs.mjs
+export const prerender = false
+import DashboardLayout from '../../layouts/DashboardLayout.astro'
+import { createServerClient } from '@supabase/ssr'
+
+const supabase = createServerClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+  {
+    cookies: {
+      getAll() {
+        return (Astro.request.headers.get('Cookie') ?? '')
+          .split(';').filter(Boolean)
+          .map(c => { const [k, ...v] = c.trim().split('='); return { name: k, value: v.join('=') } })
+      },
+      setAll(cs) {
+        cs.forEach(({ name, value, options }) => Astro.cookies.set(name, value, options))
+      },
+    },
+  }
+)
+
+const { data: { user }, error: authError } = await supabase.auth.getUser()
+if (authError || !user) return Astro.redirect('/auth/login')
+
+const { data: perfil } = await supabase
+  .from('perfiles').select('id').eq('user_id', user.id).single()
+
+const perfilId = perfil?.id ?? null
+
+const { data: items } = perfilId
+  ? await supabase.from('servicios').select('*').eq('perfil_id', perfilId).order('orden')
+  : { data: [] }
+---
+
+<DashboardLayout title="Servicios" tabActivo="servicios" user={{ email: user.email, id: user.id }}>
+
+  <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1 class="page-title">Servicios</h1>
+      <p class="page-desc">Los servicios o productos que ofreces a tus clientes.</p>
+    </div>
+    <button
+      class="btn btn-primary"
+      id="btn-nuevo"
+      data-perfil-id={perfilId ?? ''}
+      data-tabla="servicios"
+      data-label="servicios"
+      disabled={!perfilId}
+      title={!perfilId ? 'Primero guarda tu perfil básico' : undefined}
+    >
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Agregar
+    </button>
+  </div>
+
+  {!perfilId && (
+    <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:12px;padding:14px 18px;margin-bottom:16px;font-size:13px;color:var(--warn)">
+      ⚠ Primero guarda tu <a href="/dashboard" style="color:var(--warn);text-decoration:underline">perfil básico</a> para poder agregar registros aquí.
+    </div>
+  )}
+
+  <div id="lista-items">
+    {items && items.length > 0 ? items.map(item => (
+      <div class="list-item" data-id={item.id}>
+        <div style="width:36px;height:36px;border-radius:8px;background:var(--bg-4);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">
+          ⚡
+        </div>
+        <div class="list-item-body">
+          <div class="list-item-title">{item.nombre}</div>
+          <div class="list-item-sub">{item.descripcion}</div>
+        </div>
+        <div class="list-item-actions">
+          <button class="icon-btn btn-editar" data-id={item.id} title="Editar">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/>
+            </svg>
+          </button>
+          <button class="icon-btn danger btn-eliminar" data-id={item.id} title="Eliminar">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    )) : (
+      <div style="text-align:center;padding:48px 20px;color:var(--text-3)">
+        <div style="font-size:36px;margin-bottom:12px">⚡</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-2);margin-bottom:4px">Sin registros aún</div>
+        <div style="font-size:13px">Los servicios o productos que ofreces a tus clientes.</div>
+        {perfilId && (
+          <button class="btn btn-primary" style="margin-top:16px" id="btn-empty-state">
+            Agregar el primero
+          </button>
+        )}
+      </div>
+    )}
+  </div>
+
+</DashboardLayout>
+
+<!-- MODAL — fuera del slot del layout -->
+<div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modal-title">Agregar servicios</h2>
+      <button class="modal-close" id="modal-close" aria-label="Cerrar modal">✕</button>
+    </div>
+    <div class="form-grid" style="gap:14px">
+      <input type="hidden" id="item-id" />
+
+        <div class="form-group">
+          <label for="f_nombre">Nombre del servicio *</label>
+          <input
+            type="text"
+            id="f_nombre"
+            data-field="nombre"
+            placeholder="Ej: Diseño de landing page"
+            maxlength="120"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="f_descripcion">Descripción</label>
+          <textarea
+            id="f_descripcion"
+            data-field="descripcion"
+            rows="3"
+            placeholder="¿Qué incluye? ¿Cuál es el resultado?"
+            maxlength="400"
+            style="resize:vertical"
+            
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="f_icono">Ícono (emoji)</label>
+          <input
+            type="text"
+            id="f_icono"
+            data-field="icono"
+            placeholder="🚀"
+            maxlength="5"
+            
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="f_precio_referencial">Precio referencial</label>
+          <input
+            type="text"
+            id="f_precio_referencial"
+            data-field="precio_referencial"
+            placeholder="Desde $300"
+            maxlength="60"
+            
+          />
+        </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--border);margin-top:4px">
+        <button class="btn btn-ghost" id="btn-cancelar">Cancelar</button>
+        <button class="btn btn-primary" id="btn-submit">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { createBrowserClient } from '@supabase/ssr'
+
+  const btnNuevo = document.getElementById('btn-nuevo') as HTMLButtonElement
+  const perfilId = btnNuevo?.dataset.perfilId || null
+  const tabla    = btnNuevo?.dataset.tabla    || ''
+  const labelStr = btnNuevo?.dataset.label    || ''
+
+  const sb = createBrowserClient(
+    document.querySelector<HTMLMetaElement>('meta[name="supabase-url"]')!.content,
+    document.querySelector<HTMLMetaElement>('meta[name="supabase-anon"]')!.content,
+  )
+
+  function getField(name: string) {
+    return document.querySelector<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
+      `[data-field="${name}"]`
+    )!
+  }
+
+  const backdrop   = document.getElementById('modal-backdrop')!
+  const modalTitle = document.getElementById('modal-title')!
+  const itemIdEl   = document.getElementById('item-id') as HTMLInputElement
+  const submitBtn  = document.getElementById('btn-submit') as HTMLButtonElement
+
+  function openModal(titulo: string, data: Record<string, any> | null = null) {
+    modalTitle.textContent = titulo
+    itemIdEl.value = ''
+    document.querySelectorAll<HTMLElement>('[data-field]').forEach(el => {
+      if (el instanceof HTMLInputElement && el.type === 'checkbox') el.checked = false
+      else if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement || el instanceof HTMLTextAreaElement)
+        el.value = ''
+    })
+    if (data) {
+      itemIdEl.value = data['id'] ?? ''
+    getField('nombre').value = (data && data['nombre'] != null) ? String(data['nombre']) : ''
+    getField('descripcion').value = (data && data['descripcion'] != null) ? String(data['descripcion']) : ''
+    getField('icono').value = (data && data['icono'] != null) ? String(data['icono']) : ''
+    getField('precio_referencial').value = (data && data['precio_referencial'] != null) ? String(data['precio_referencial']) : ''
+    }
+    backdrop.classList.add('open')
+    setTimeout(() => document.querySelector<HTMLElement>('[data-field]')?.focus(), 60)
+  }
+
+  function closeModal() { backdrop.classList.remove('open') }
+
+  btnNuevo?.addEventListener('click', () => openModal('Agregar ' + labelStr))
+  document.getElementById('btn-empty-state')?.addEventListener('click', () => openModal('Agregar ' + labelStr))
+  document.getElementById('modal-close')!.addEventListener('click', closeModal)
+  document.getElementById('btn-cancelar')!.addEventListener('click', closeModal)
+  backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal() })
+
+  document.querySelectorAll<HTMLButtonElement>('.btn-editar').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      btn.disabled = true
+      const { data, error } = await sb.from(tabla).select('*').eq('id', btn.dataset.id!).single()
+      btn.disabled = false
+      if (error || !data) { window.toast('No se pudo cargar el registro', 'error'); return }
+      openModal('Editar ' + labelStr, data)
+    })
+  })
+
+  document.querySelectorAll<HTMLButtonElement>('.btn-eliminar').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) return
+      btn.disabled = true
+      const { error } = await sb.from(tabla).delete().eq('id', btn.dataset.id!)
+      if (error) { window.toast('Error: ' + error.message, 'error'); btn.disabled = false; return }
+      document.querySelector(`.list-item[data-id="${btn.dataset.id}"]`)?.remove()
+      window.toast('Eliminado correctamente', 'success')
+    })
+  })
+
+  submitBtn.addEventListener('click', async () => {
+    submitBtn.disabled = true
+    submitBtn.innerHTML = '<span style="opacity:.6">Guardando…</span>'
+
+    const id = itemIdEl.value.trim()
+    const payload: Record<string, any> = {
+      perfil_id: perfilId,
+      nombre: getField('nombre').value.trim() || null,
+      descripcion: getField('descripcion').value.trim() || null,
+      icono: getField('icono').value.trim() || null,
+      precio_referencial: getField('precio_referencial').value.trim() || null,
+    }
+
+    let error: any
+    if (id) {
+      ;({ error } = await sb.from(tabla).update(payload).eq('id', id))
+    } else {
+      const { data: last } = await sb
+        .from(tabla).select('orden')
+        .eq('perfil_id', perfilId!)
+        .order('orden', { ascending: false })
+        .limit(1).single()
+      payload['orden'] = (last?.orden ?? 0) + 1
+      ;({ error } = await sb.from(tabla).insert(payload))
+    }
+
+    submitBtn.disabled = false
+    submitBtn.innerHTML = `<svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Guardar`
+
+    if (error) { window.toast('Error: ' + error.message, 'error'); return }
+    window.toast(id ? 'Actualizado correctamente' : 'Agregado correctamente', 'success')
+    closeModal()
+    setTimeout(() => window.location.reload(), 500)
+  })
+</script>

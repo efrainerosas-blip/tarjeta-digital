@@ -1,0 +1,319 @@
+---
+// src/pages/dashboard/index.astro — Tab: Perfil básico
+export const prerender = false
+import DashboardLayout from '../../layouts/DashboardLayout.astro'
+import { createServerClient } from '@supabase/ssr'
+
+const supabase = createServerClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+  {
+    cookies: {
+      getAll() { return (Astro.request.headers.get('Cookie') ?? '').split(';').filter(Boolean).map(c => { const [k,...v]=c.trim().split('='); return { name: k, value: v.join('=') } }) },
+      setAll(cs) { cs.forEach(({name,value,options}) => Astro.cookies.set(name,value,options)) },
+    },
+  }
+)
+
+const { data: { user }, error: authError } = await supabase.auth.getUser()
+if (authError || !user) return Astro.redirect('/auth/login')
+
+// Cargar perfil del usuario
+const { data: perfil } = await supabase
+  .from('perfiles')
+  .select('*')
+  .eq('user_id', user.id)
+  .single()
+---
+
+<DashboardLayout title="Perfil" tabActivo="perfil" user={{ email: user.email!, id: user.id }}>
+
+  <div class="page-header">
+    <h1 class="page-title">Tu perfil</h1>
+    <p class="page-desc">Esta información aparece en tu tarjeta digital pública.</p>
+  </div>
+
+  {!perfil && (
+    <div style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:20px">👋</span>
+      <div>
+        <div style="font-weight:600;font-size:14px;color:var(--text-1)">Bienvenido — crea tu perfil</div>
+        <div style="font-size:13px;color:var(--text-3);margin-top:2px">Completa los datos a continuación para generar tu tarjeta digital.</div>
+      </div>
+    </div>
+  )}
+
+  <form id="perfil-form" autocomplete="off">
+
+    <!-- Foto y datos principales -->
+    <div class="section-card">
+      <div class="section-card-title">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0"/></svg>
+        Datos personales
+      </div>
+
+      <div style="display:flex;gap:20px;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap">
+        <!-- Foto -->
+        <div style="flex-shrink:0;text-align:center">
+          <div id="foto-preview" style="width:80px;height:80px;border-radius:50%;background:var(--bg-4);border:2px dashed var(--border-2);display:flex;align-items:center;justify-content:center;color:var(--text-3);font-size:28px;margin-bottom:8px;cursor:pointer;overflow:hidden;transition:border-color .15s" onclick="document.getElementById('foto-input').click()">
+            {perfil?.foto_url
+              ? <img src={perfil.foto_url} style="width:100%;height:100%;object-fit:cover" />
+              : '📷'
+            }
+          </div>
+          <button type="button" class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="document.getElementById('foto-input').click()">
+            Subir foto
+          </button>
+          <input type="file" id="foto-input" accept="image/*" style="display:none" />
+          <input type="hidden" name="foto_url" id="foto_url" value={perfil?.foto_url ?? ''} />
+        </div>
+
+        <!-- Nombre y título -->
+        <div style="flex:1;min-width:200px">
+          <div class="form-grid form-grid-2" style="margin-bottom:12px">
+            <div class="form-group">
+              <label for="nombre">Nombre *</label>
+              <input type="text" id="nombre" name="nombre" value={perfil?.nombre ?? ''} placeholder="Ej: María" required maxlength="60" />
+            </div>
+            <div class="form-group">
+              <label for="apellidos">Apellidos</label>
+              <input type="text" id="apellidos" name="apellidos" value={perfil?.apellidos ?? ''} placeholder="Ej: López García" maxlength="80" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="titulo_profesional">Título profesional</label>
+            <input type="text" id="titulo_profesional" name="titulo_profesional" value={perfil?.titulo_profesional ?? ''} placeholder="Ej: Diseñadora UX · Freelance" maxlength="120" />
+            <span class="form-hint">Aparece debajo de tu nombre en la tarjeta.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label for="ubicacion">Ubicación</label>
+          <input type="text" id="ubicacion" name="ubicacion" value={perfil?.ubicacion ?? ''} placeholder="Ej: Lima, Perú" maxlength="100" />
+        </div>
+        <div class="form-group">
+          <label for="status">Estado actual</label>
+          <select id="status" name="status">
+            <option value="Disponible" selected={perfil?.status === 'Disponible' || !perfil}>Disponible</option>
+            <option value="Trabajando" selected={perfil?.status === 'Trabajando'}>Trabajando</option>
+            <option value="Abierto a ofertas" selected={perfil?.status === 'Abierto a ofertas'}>Abierto a ofertas</option>
+            <option value="Inactivo" selected={perfil?.status === 'Inactivo'}>Inactivo</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bio -->
+    <div class="section-card">
+      <div class="section-card-title">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/></svg>
+        Bio / Presentación
+      </div>
+      <div class="form-group">
+        <label for="bio">Presentación breve</label>
+        <textarea id="bio" name="bio" rows="4" placeholder="Cuéntale al mundo quién eres, qué haces y cuál es tu propuesta de valor..." maxlength="500" style="resize:vertical">{perfil?.bio ?? ''}</textarea>
+        <div class="char-counter" id="bio-counter">0 / 500</div>
+      </div>
+    </div>
+
+    <!-- Slug y CV -->
+    <div class="section-card">
+      <div class="section-card-title">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>
+        URL y CV
+      </div>
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label for="slug">URL de tu tarjeta *</label>
+          <input type="text" id="slug" name="slug" value={perfil?.slug ?? ''} placeholder="tu-nombre" maxlength="60" pattern="[a-z0-9\-]+" required />
+          <div class="slug-preview" id="slug-preview">
+            <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>
+            <span id="slug-preview-text">tudominio.com/{perfil?.slug ?? 'tu-nombre'}</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="cv_pdf_url">URL del CV (PDF)</label>
+          <input type="url" id="cv_pdf_url" name="cv_pdf_url" value={perfil?.cv_pdf_url ?? ''} placeholder="https://..." />
+          <span class="form-hint">Link directo a tu CV en Google Drive, Dropbox, etc.</span>
+        </div>
+        <div class="form-group">
+          <label for="foto_portada_url">URL de foto de portada</label>
+          <input type="url" id="foto_portada_url" name="foto_portada_url" value={perfil?.foto_portada_url ?? ''} placeholder="https://..." />
+          <span class="form-hint">Imagen de fondo para themes tipo app. Recomendado: 800×400px.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Color personalizado -->
+    <div class="section-card">
+      <div class="section-card-title">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.098 19.902a3.75 3.75 0 005.304 0l6.401-6.402M6.75 21A3.75 3.75 0 013 17.25V4.125C3 3.504 3.504 3 4.125 3h5.25c.621 0 1.125.504 1.125 1.125v4.072M6.75 21a3.75 3.75 0 003.75-3.75V8.197M6.75 21h13.125c.621 0 1.125-.504 1.125-1.125v-5.25c0-.621-.504-1.125-1.125-1.125h-4.072M10.5 8.197l2.88-2.88c.438-.439 1.15-.439 1.59 0l3.712 3.713c.44.44.44 1.152 0 1.59l-2.879 2.88M6.75 17.25h.008v.008H6.75v-.008z"/></svg>
+        Color de acento
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div>
+          <label for="color_primario">Color principal</label>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+            <input type="color" id="color_primario" name="color_primario" value={perfil?.color_primario ?? '#6366f1'} style="width:44px;height:36px;padding:2px;border-radius:8px;cursor:pointer" />
+            <input type="text" id="color_primario_hex" value={perfil?.color_primario ?? '#6366f1'} placeholder="#6366f1" style="width:100px;font-family:var(--font-mono);font-size:13px" maxlength="7" />
+          </div>
+        </div>
+        <div style="margin-top:20px">
+          <span class="form-hint">Presets:</span>
+          <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap" id="color-presets">
+            {['#6366f1','#0ea5e9','#10b981','#f59e0b','#ef4444','#ec4899','#8b5cf6','#111827'].map(c => (
+              <button type="button" class="color-preset" data-color={c} style={`width:24px;height:24px;border-radius:50%;background:${c};border:2px solid transparent;cursor:pointer;transition:.15s`} aria-label={c} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Guardar -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-top:8px;flex-wrap:wrap;gap:12px">
+      <span style="font-size:12px;color:var(--text-3)" id="save-status"></span>
+      <div style="display:flex;gap:8px">
+        <a href={`/${perfil?.slug ?? '#'}`} target="_blank" class="btn btn-ghost" id="btn-preview">
+          Ver tarjeta ↗
+        </a>
+        <button type="submit" class="btn btn-primary" id="btn-save">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Guardar cambios
+        </button>
+      </div>
+    </div>
+
+  </form>
+
+</DashboardLayout>
+
+<script>
+  import { createBrowserClient } from '@supabase/ssr'
+
+  const sb = createBrowserClient(
+    document.querySelector<HTMLMetaElement>('meta[name="supabase-url"]')!.content,
+    document.querySelector<HTMLMetaElement>('meta[name="supabase-anon"]')!.content,
+  )
+
+  // ── Char counter bio ──────────────────────────────────────────
+  const bioEl = document.getElementById('bio') as HTMLTextAreaElement
+  const bioCounter = document.getElementById('bio-counter')!
+  function updateBioCounter() {
+    const n = bioEl.value.length
+    bioCounter.textContent = `${n} / 500`
+    bioCounter.className = `char-counter${n > 450 ? (n >= 500 ? ' over' : ' warn') : ''}`
+  }
+  bioEl?.addEventListener('input', updateBioCounter)
+  updateBioCounter()
+
+  // ── Slug preview ─────────────────────────────────────────────
+  const slugEl = document.getElementById('slug') as HTMLInputElement
+  const slugPreviewText = document.getElementById('slug-preview-text')!
+  const host = window.location.host
+  slugEl?.addEventListener('input', () => {
+    const clean = slugEl.value.toLowerCase().replace(/[^a-z0-9-]/g,'')
+    slugEl.value = clean
+    slugPreviewText.textContent = `${host}/${clean || 'tu-nombre'}`
+    const previewLink = document.getElementById('btn-preview') as HTMLAnchorElement
+    if (previewLink) previewLink.href = `/${clean || '#'}`
+  })
+
+  // ── Color sync ───────────────────────────────────────────────
+  const colorPicker = document.getElementById('color_primario') as HTMLInputElement
+  const colorHex    = document.getElementById('color_primario_hex') as HTMLInputElement
+  colorPicker?.addEventListener('input', () => { colorHex.value = colorPicker.value })
+  colorHex?.addEventListener('input', () => {
+    if (/^#[0-9a-fA-F]{6}$/.test(colorHex.value)) colorPicker.value = colorHex.value
+  })
+  document.querySelectorAll<HTMLButtonElement>('.color-preset').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const c = btn.dataset.color!
+      colorPicker.value = c
+      colorHex.value = c
+    })
+  })
+
+  // ── Foto upload ──────────────────────────────────────────────
+  const fotoInput   = document.getElementById('foto-input') as HTMLInputElement
+  const fotoPreview = document.getElementById('foto-preview') as HTMLDivElement
+  const fotoUrlHidden = document.getElementById('foto_url') as HTMLInputElement
+
+  fotoInput?.addEventListener('change', async () => {
+    const file = fotoInput.files?.[0]
+    if (!file) return
+    if (file.size > 3 * 1024 * 1024) { (window as any).toast('La imagen no debe superar 3MB', 'warn'); return }
+
+    const { data: { user } } = await sb.auth.getUser()
+    if (!user) return
+
+    const ext  = file.name.split('.').pop()
+    const path = `${user.id}.${ext}`
+
+    const { error } = await sb.storage.from('avatars').upload(path, file, { upsert: true })
+    if (error) { (window as any).toast('Error subiendo imagen: ' + error.message, 'error'); return }
+
+    const { data: { publicUrl } } = sb.storage.from('avatars').getPublicUrl(path)
+    fotoUrlHidden.value = publicUrl
+    fotoPreview.innerHTML = `<img src="${publicUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`
+    ;(window as any).toast('Foto actualizada', 'success')
+  })
+
+  // ── Guardar perfil ───────────────────────────────────────────
+  const form       = document.getElementById('perfil-form') as HTMLFormElement
+  const btnSave    = document.getElementById('btn-save') as HTMLButtonElement
+  const saveStatus = document.getElementById('save-status')!
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    btnSave.disabled = true
+    btnSave.innerHTML = '<span style="opacity:.6">Guardando…</span>'
+
+    const fd = new FormData(form)
+    
+    const payload: Record<string, unknown> = {}
+    fd.forEach((v, k) => {
+      const val = (v as string).trim()
+      const urlFields = ['foto_url', 'cv_pdf_url', 'foto_portada_url']
+      if (urlFields.includes(k)) {
+        payload[k] = val || null
+      } else {
+        payload[k] = val
+      }
+    })
+
+    // Asegurar hex válido
+    if (!/^#[0-9a-fA-F]{6}$/.test(payload.color_primario as string)) {
+      payload.color_primario = '#6366f1'
+    }
+
+    const { data: { user } } = await sb.auth.getUser()
+    if (!user) { window.location.href = '/auth/login'; return }
+
+    payload.user_id = user.id
+
+    const { error } = await sb
+      .from('perfiles')
+      .upsert(payload, { onConflict: 'user_id' })
+
+    btnSave.disabled = false
+    btnSave.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Guardar cambios'
+
+    if (error) {
+      ;(window as any).toast('Error: ' + error.message, 'error')
+    } else {
+      saveStatus.textContent = `Guardado · ${new Date().toLocaleTimeString()}`
+      ;(window as any).toast('Perfil guardado correctamente', 'success')
+    }
+  })
+
+  // ── Autosave en blur (campos clave) ──────────────────────────
+  let autoSaveTimer: ReturnType<typeof setTimeout> | undefined
+  form?.querySelectorAll('input,textarea,select').forEach(el => {
+    el.addEventListener('input', () => {
+      clearTimeout(autoSaveTimer)
+      saveStatus!.textContent = 'Sin guardar…'
+    })
+  })
+</script>

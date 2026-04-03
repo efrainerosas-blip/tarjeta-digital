@@ -1,0 +1,396 @@
+---
+// src/pages/admin/planes.astro
+// Editor de planes del SuperAdmin.
+// Permite editar nombre, descripción, precio y features de cada plan.
+// Los cambios se reflejan inmediatamente en el dashboard del usuario.
+export const prerender = false
+
+import AdminLayout from '../../layouts/AdminLayout.astro'
+import { getSupabaseAdmin, isAdmin } from '../../lib/supabase-admin'
+import { createServerClient } from '@supabase/ssr'
+
+// ── 1. Verificar sesión + permisos ────────────────────────────
+const supabaseAuth = createServerClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+  {
+    cookies: {
+      getAll() {
+        return (Astro.request.headers.get('Cookie') ?? '')
+          .split(';').filter(Boolean)
+          .map(c => { const [k,...v]=c.trim().split('='); return { name:k, value:v.join('=') } })
+      },
+      setAll(cs) { cs.forEach(({name,value,options}) => Astro.cookies.set(name,value,options)) },
+    },
+  }
+)
+
+const { data: { user }, error: authError } = await supabaseAuth.auth.getUser()
+if (authError || !user || !isAdmin(user.email)) {
+  return Astro.redirect('/dashboard?error=forbidden')
+}
+
+// ── 2. Cargar planes con el cliente admin ─────────────────────
+const db = getSupabaseAdmin()
+
+const { data: planes, error: planesError } = await db
+  .from('planes')
+  .select('*')
+  .order('precio_mensual')
+
+// ── 3. Contar usuarios por plan (para mostrar impacto) ────────
+const { data: conteoPlanes } = await db
+  .from('perfiles')
+  .select('plan_id')
+
+const usuariosPorPlan: Record<string, number> = {}
+;(conteoPlanes ?? []).forEach(p => {
+  const pid = p.plan_id ?? 'free'
+  usuariosPorPlan[pid] = (usuariosPorPlan[pid] ?? 0) + 1
+})
+---
+
+<AdminLayout title="Planes" tabActivo="planes" user={{ email: user.email!, id: user.id }}>
+
+  <div class="page-header">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div>
+        <h1 class="page-title">Planes</h1>
+        <p class="page-desc">
+          Edita precios y features. Los cambios se reflejan de inmediato en el dashboard de los usuarios.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  {planesError && (
+    <div style="padding:16px 20px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius-lg);color:var(--danger);font-size:13px;margin-bottom:20px">
+      Error al cargar planes: {planesError.message}
+    </div>
+  )}
+
+  <!-- ── CARDS DE PLANES ────────────────────────────────────── -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px">
+
+    {(planes ?? []).map(plan => (
+      <div
+        class="plan-card section-card"
+        data-plan-id={plan.id}
+        style="margin-bottom:0;position:relative"
+      >
+        <!-- Header del plan -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class={`badge badge-${plan.id === 'premium' ? 'premium' : 'free'}`}>
+              {plan.id === 'premium' ? '⭐ Premium' : '🆓 Free'}
+            </span>
+            <span style="font-size:12px;color:var(--text-3)">
+              {usuariosPorPlan[plan.id] ?? 0} usuario{(usuariosPorPlan[plan.id] ?? 0) !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <!-- Indicador de estado activo/inactivo -->
+          <div style={`display:flex;align-items:center;gap:6px;font-size:12px;color:${plan.activo ? 'var(--success)' : 'var(--text-3)'}`}>
+            <div style={`width:7px;height:7px;border-radius:50%;background:${plan.activo ? 'var(--success)' : 'var(--border-2)'}`}></div>
+            {plan.activo ? 'Activo' : 'Inactivo'}
+          </div>
+        </div>
+
+        <!-- Formulario del plan -->
+        <form class="plan-form" data-plan-id={plan.id}>
+
+          <!-- Nombre -->
+          <div class="form-group" style="margin-bottom:14px">
+            <label>Nombre del plan</label>
+            <input
+              type="text"
+              name="nombre"
+              value={plan.nombre}
+              maxlength="60"
+              required
+              placeholder="Ej: Plan Gratuito"
+            />
+          </div>
+
+          <!-- Descripción -->
+          <div class="form-group" style="margin-bottom:14px">
+            <label>Descripción</label>
+            <textarea
+              name="descripcion"
+              rows="2"
+              maxlength="200"
+              placeholder="Breve descripción visible para el usuario…"
+              style="resize:none"
+            >{plan.descripcion ?? ''}</textarea>
+          </div>
+
+          <!-- Precio y moneda -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+            <div class="form-group">
+              <label>Precio mensual</label>
+              <div style="position:relative">
+                <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-3);font-size:13px;pointer-events:none">$</span>
+                <input
+                  type="number"
+                  name="precio_mensual"
+                  value={plan.precio_mensual}
+                  min="0"
+                  step="0.01"
+                  style="padding-left:24px"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Moneda</label>
+              <select name="moneda">
+                <option value="USD" selected={plan.moneda === 'USD'}>USD ($)</option>
+                <option value="PEN" selected={plan.moneda === 'PEN'}>PEN (S/)</option>
+                <option value="EUR" selected={plan.moneda === 'EUR'}>EUR (€)</option>
+                <option value="COP" selected={plan.moneda === 'COP'}>COP ($)</option>
+                <option value="MXN" selected={plan.moneda === 'MXN'}>MXN ($)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Días de prueba (solo relevante para free) -->
+          {plan.id === 'free' && (
+            <div class="form-group" style="margin-bottom:14px">
+              <label>Días de prueba gratuita</label>
+              <input
+                type="number"
+                name="duracion_prueba_dias"
+                value={plan.duracion_prueba_dias}
+                min="0"
+                max="365"
+                placeholder="5"
+              />
+              <span class="form-hint">Cuántos días tiene el usuario antes de que expire el acceso.</span>
+            </div>
+          )}
+
+          <!-- Features — lista editable -->
+          <div class="form-group" style="margin-bottom:20px">
+            <label>Features incluidas</label>
+            <div
+              class="features-list"
+              data-plan-id={plan.id}
+              style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"
+            >
+              {(plan.features as string[]).map((feat, i) => (
+                <div class="feature-row" style="display:flex;align-items:center;gap:6px">
+                  <svg width="13" height="13" fill="none" stroke="var(--success)" viewBox="0 0 24 24" style="flex-shrink:0">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                  </svg>
+                  <input
+                    type="text"
+                    name="feature"
+                    value={feat}
+                    maxlength="100"
+                    placeholder="Describe una feature…"
+                    style="flex:1;padding:6px 10px;font-size:13px"
+                  />
+                  <!-- Botón eliminar feature -->
+                  <button
+                    type="button"
+                    class="icon-btn danger remove-feature"
+                    title="Eliminar feature"
+                    style="flex-shrink:0"
+                  >
+                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <!-- Botón agregar feature -->
+            <button
+              type="button"
+              class="btn btn-ghost add-feature"
+              data-plan-id={plan.id}
+              style="font-size:12px;width:100%;justify-content:center"
+            >
+              <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15"/>
+              </svg>
+              Agregar feature
+            </button>
+          </div>
+
+          <!-- Botón guardar -->
+          <button
+            type="submit"
+            class="btn btn-primary save-plan-btn"
+            style="width:100%;justify-content:center"
+          >
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            Guardar cambios
+          </button>
+
+          <!-- Estado del guardado -->
+          <div
+            class="save-status"
+            style="text-align:center;font-size:12px;color:var(--text-3);margin-top:8px;min-height:18px"
+          ></div>
+
+        </form>
+      </div>
+    ))}
+
+  </div>
+
+  <!-- ── NOTA INFORMATIVA ───────────────────────────────────── -->
+  <div style="margin-top:24px;padding:14px 18px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-lg);display:flex;align-items:flex-start;gap:10px">
+    <svg width="15" height="15" fill="none" stroke="var(--warn)" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+    </svg>
+    <div>
+      <div style="font-size:13px;font-weight:600;color:var(--text-1);margin-bottom:2px">
+        Los cambios son inmediatos
+      </div>
+      <div style="font-size:12px;color:var(--text-3);line-height:1.5">
+        Al guardar, el nuevo precio y las features se muestran en el dashboard de todos los usuarios en su próxima carga de página. No es necesario notificarlos manualmente.
+      </div>
+    </div>
+  </div>
+
+</AdminLayout>
+
+<script>
+  import { createBrowserClient } from '@supabase/ssr'
+
+  const sb = createBrowserClient(
+    document.querySelector<HTMLMetaElement>('meta[name="supabase-url"]')!.content,
+    document.querySelector<HTMLMetaElement>('meta[name="supabase-anon"]')!.content,
+  )
+
+  // ── Agregar nueva feature a una lista ─────────────────────
+  // Crea una nueva fila de input con el mismo estilo que las existentes
+  function crearFilaFeature(valor = ''): HTMLElement {
+    const row = document.createElement('div')
+    row.className = 'feature-row'
+    row.style.cssText = 'display:flex;align-items:center;gap:6px'
+    row.innerHTML = `
+      <svg width="13" height="13" fill="none" stroke="var(--success)" viewBox="0 0 24 24" style="flex-shrink:0">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+      </svg>
+      <input
+        type="text"
+        name="feature"
+        value="${valor.replace(/"/g, '&quot;')}"
+        maxlength="100"
+        placeholder="Describe una feature…"
+        style="flex:1;padding:6px 10px;font-size:13px"
+      />
+      <button
+        type="button"
+        class="icon-btn danger remove-feature"
+        title="Eliminar feature"
+        style="flex-shrink:0"
+      >
+        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    `
+    // Enfocar el input recién creado
+    setTimeout(() => row.querySelector('input')?.focus(), 50)
+    return row
+  }
+
+  // ── Listeners de "Agregar feature" ───────────────────────
+  document.querySelectorAll<HTMLButtonElement>('.add-feature').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const planId = btn.dataset.planId!
+      const lista  = document.querySelector<HTMLElement>(`.features-list[data-plan-id="${planId}"]`)
+      if (!lista) return
+      lista.appendChild(crearFilaFeature())
+    })
+  })
+
+  // ── Listener delegado para "Eliminar feature" ─────────────
+  // Usa delegación porque los botones se crean dinámicamente
+  document.addEventListener('click', e => {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.remove-feature')
+    if (!btn) return
+    const row = btn.closest<HTMLElement>('.feature-row')
+    if (!row) return
+
+    // Confirmar si el input tiene contenido para evitar borrados accidentales
+    const input = row.querySelector<HTMLInputElement>('input')
+    if (input?.value.trim()) {
+      if (!confirm(`¿Eliminar la feature "${input.value}"?`)) return
+    }
+    row.remove()
+  })
+
+  // ── Guardar plan ──────────────────────────────────────────
+  document.querySelectorAll<HTMLFormElement>('.plan-form').forEach(form => {
+    form.addEventListener('submit', async e => {
+      e.preventDefault()
+
+      const planId     = form.dataset.planId!
+      const saveBtn    = form.querySelector<HTMLButtonElement>('.save-plan-btn')!
+      const saveStatus = form.querySelector<HTMLElement>('.save-status')!
+
+      // Feedback visual
+      saveBtn.disabled = true
+      saveBtn.innerHTML = '<span style="opacity:.6">Guardando…</span>'
+      saveStatus.textContent = ''
+
+      // ── Recoger datos del formulario ─────────────────────
+      const fd = new FormData(form)
+
+      // Features: todos los inputs con name="feature" no vacíos
+      const features = Array.from(
+        form.querySelectorAll<HTMLInputElement>('input[name="feature"]')
+      )
+        .map(i => i.value.trim())
+        .filter(Boolean)
+
+      const payload = {
+        nombre:               (fd.get('nombre')               as string).trim(),
+        descripcion:          (fd.get('descripcion')          as string).trim() || null,
+        precio_mensual:       parseFloat(fd.get('precio_mensual') as string) || 0,
+        moneda:               fd.get('moneda')                as string,
+        duracion_prueba_dias: parseInt(fd.get('duracion_prueba_dias') as string ?? '0') || 0,
+        features,
+        updated_at:           new Date().toISOString(),
+      }
+
+      // ── Llamar al endpoint protegido ─────────────────────
+      try {
+        const res = await fetch('/api/admin/update-plan', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ plan_id: planId, ...payload }),
+        })
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: 'Error desconocido' }))
+          throw new Error(err.error ?? `HTTP ${res.status}`)
+        }
+
+        saveStatus.textContent = `Guardado · ${new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}`
+        saveStatus.style.color = 'var(--success)'
+        ;(window as any).toast?.('Plan actualizado correctamente', 'success')
+
+      } catch (err: any) {
+        saveStatus.textContent = `Error: ${err.message}`
+        saveStatus.style.color = 'var(--danger)'
+        ;(window as any).toast?.(`Error al guardar: ${err.message}`, 'error')
+      } finally {
+        saveBtn.disabled = false
+        saveBtn.innerHTML = `
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          Guardar cambios
+        `
+      }
+    })
+  })
+</script>

@@ -1,0 +1,372 @@
+---
+// src/pages/admin/usuarios.astro
+// Gestión completa de usuarios del SuperAdmin.
+// Muestra todos los perfiles con búsqueda, filtro por plan,
+// y permite cambiar el plan de cualquier usuario inline.
+export const prerender = false
+
+import AdminLayout from '../../layouts/AdminLayout.astro'
+import { getSupabaseAdmin, isAdmin } from '../../lib/supabase-admin'
+import { createServerClient } from '@supabase/ssr'
+
+// ── 1. Verificar sesión + permisos ────────────────────────────
+const supabaseAuth = createServerClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+  {
+    cookies: {
+      getAll() {
+        return (Astro.request.headers.get('Cookie') ?? '')
+          .split(';').filter(Boolean)
+          .map(c => { const [k,...v]=c.trim().split('='); return { name:k, value:v.join('=') } })
+      },
+      setAll(cs) { cs.forEach(({name,value,options}) => Astro.cookies.set(name,value,options)) },
+    },
+  }
+)
+
+const { data: { user }, error: authError } = await supabaseAuth.auth.getUser()
+if (authError || !user || !isAdmin(user.email)) {
+  return Astro.redirect('/dashboard?error=forbidden')
+}
+
+// ── 2. Leer filtros de la URL ─────────────────────────────────
+const url     = new URL(Astro.request.url)
+const buscar  = url.searchParams.get('q')?.trim() ?? ''
+const filtPlan = url.searchParams.get('plan')?.trim() ?? ''   // 'free' | 'premium' | ''
+const pagina  = Math.max(1, parseInt(url.searchParams.get('p') ?? '1'))
+const POR_PAG = 20
+
+// ── 3. Cargar usuarios con el cliente admin ───────────────────
+const db = getSupabaseAdmin()
+
+// Construir query base
+let query = db
+  .from('perfiles')
+  .select('id, user_id, slug, nombre, apellidos, titulo_profesional, foto_url, plan_id, plan_expires_at, created_at, updated_at, status, template_id', { count: 'exact' })
+  .order('created_at', { ascending: false })
+
+// Aplicar filtro de plan si viene en la URL
+if (filtPlan) {
+  query = query.eq('plan_id', filtPlan)
+}
+
+// Aplicar búsqueda por nombre o slug
+// Supabase no tiene ILIKE multi-campo en el cliente,
+// así que buscamos por slug (más confiable) y filtramos por nombre en JS
+if (buscar) {
+  query = query.or(`slug.ilike.%${buscar}%,nombre.ilike.%${buscar}%,apellidos.ilike.%${buscar}%`)
+}
+
+// Paginación
+const desde = (pagina - 1) * POR_PAG
+query = query.range(desde, desde + POR_PAG - 1)
+
+const { data: perfiles, count: totalCount, error: queryError } = await query
+
+const totalPaginas = Math.ceil((totalCount ?? 0) / POR_PAG)
+
+// ── 4. Cargar planes disponibles para el selector inline ──────
+const { data: planes } = await db
+  .from('planes')
+  .select('id, nombre, precio_mensual')
+  .eq('activo', true)
+  .order('precio_mensual')
+
+// ── 5. Helpers ────────────────────────────────────────────────
+function formatFecha(iso: string | null): string {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString('es-PE', {
+    day: '2-digit', month: 'short', year: 'numeric'
+  })
+}
+
+function nombreCompleto(p: any): string {
+  return [p.nombre, p.apellidos].filter(Boolean).join(' ') || '—'
+}
+
+// Construir URL de paginación conservando filtros activos
+function pageUrl(p: number): string {
+  const params = new URLSearchParams()
+  if (buscar)   params.set('q',    buscar)
+  if (filtPlan) params.set('plan', filtPlan)
+  params.set('p', String(p))
+  return `/admin/usuarios?${params.toString()}`
+}
+---
+
+<AdminLayout title="Usuarios" tabActivo="usuarios" user={{ email: user.email!, id: user.id }}>
+
+  <div class="page-header">
+    <h1 class="page-title">Usuarios</h1>
+    <p class="page-desc">
+      {totalCount ?? 0} usuario{(totalCount ?? 0) !== 1 ? 's' : ''} registrado{(totalCount ?? 0) !== 1 ? 's' : ''}
+      {filtPlan && ` · filtrando por plan "${filtPlan}"`}
+      {buscar   && ` · buscando "${buscar}"`}
+    </p>
+  </div>
+
+  <!-- ── BARRA DE FILTROS ───────────────────────────────────── -->
+  <form
+    method="GET"
+    action="/admin/usuarios"
+    style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center"
+  >
+    <!-- Buscador -->
+    <div style="position:relative;flex:1;min-width:200px">
+      <svg
+        width="14" height="14"
+        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-3);pointer-events:none"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+      </svg>
+      <input
+        type="search"
+        name="q"
+        value={buscar}
+        placeholder="Buscar por nombre, apellido o slug…"
+        style="padding-left:32px"
+        autocomplete="off"
+      />
+    </div>
+
+    <!-- Filtro por plan -->
+    <select name="plan" style="width:160px">
+      <option value="" selected={!filtPlan}>Todos los planes</option>
+      {(planes ?? []).map(p => (
+        <option value={p.id} selected={filtPlan === p.id}>{p.nombre}</option>
+      ))}
+    </select>
+
+    <button type="submit" class="btn btn-primary" style="flex-shrink:0">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+      </svg>
+      Buscar
+    </button>
+
+    {(buscar || filtPlan) && (
+      <a href="/admin/usuarios" class="btn btn-ghost" style="flex-shrink:0">
+        ✕ Limpiar
+      </a>
+    )}
+  </form>
+
+  <!-- ── TABLA DE USUARIOS ──────────────────────────────────── -->
+  {queryError ? (
+    <div style="padding:20px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius-lg);color:var(--danger);font-size:13px">
+      Error al cargar usuarios: {queryError.message}
+    </div>
+  ) : (perfiles ?? []).length === 0 ? (
+    <div style="padding:40px;text-align:center;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-lg)">
+      <div style="font-size:32px;margin-bottom:12px">🔍</div>
+      <div style="font-size:14px;font-weight:600;color:var(--text-1)">Sin resultados</div>
+      <div style="font-size:13px;color:var(--text-3);margin-top:4px">
+        {buscar || filtPlan ? 'Prueba con otros filtros.' : 'Aún no hay usuarios registrados.'}
+      </div>
+    </div>
+  ) : (
+    <div style="background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">
+      <div style="overflow-x:auto">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Slug</th>
+              <th>Plan</th>
+              <th>Template</th>
+              <th>Registrado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(perfiles ?? []).map(p => (
+              <tr data-id={p.id}>
+                <!-- Usuario: avatar + nombre + título -->
+                <td>
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <div style={`width:32px;height:32px;border-radius:50%;background:var(--bg-4);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text-3)`}>
+                      {p.foto_url
+                        ? <img src={p.foto_url} style="width:100%;height:100%;object-fit:cover" alt="" loading="lazy" />
+                        : (p.nombre?.[0] ?? '?').toUpperCase()
+                      }
+                    </div>
+                    <div>
+                      <div style="font-size:13px;font-weight:600;color:var(--text-1)">
+                        {nombreCompleto(p)}
+                      </div>
+                      {p.titulo_profesional && (
+                        <div style="font-size:11px;color:var(--text-3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                          {p.titulo_profesional}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Slug con link -->
+                <td>
+                  <a
+                    href={`/${p.slug}`}
+                    target="_blank"
+                    style="font-family:var(--font-mono);font-size:12px;color:var(--accent-2);text-decoration:none;display:flex;align-items:center;gap:4px"
+                  >
+                    /{p.slug}
+                    <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                    </svg>
+                  </a>
+                </td>
+
+                <!-- Plan — selector inline para cambiar al vuelo -->
+                <td>
+                  <select
+                    class="plan-selector"
+                    data-perfil-id={p.id}
+                    data-plan-actual={p.plan_id ?? 'free'}
+                    style="width:130px;padding:5px 8px;font-size:12px;background:var(--bg-3)"
+                  >
+                    {(planes ?? []).map(pl => (
+                      <option
+                        value={pl.id}
+                        selected={p.plan_id === pl.id}
+                      >
+                        {pl.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+
+                <!-- Template activo -->
+                <td>
+                  <span style="font-size:12px;font-family:var(--font-mono);color:var(--text-3)">
+                    {p.template_id ?? 'minimal'}
+                  </span>
+                </td>
+
+                <!-- Fecha de registro -->
+                <td>
+                  <span style="font-size:12px;color:var(--text-3)">
+                    {formatFecha(p.created_at)}
+                  </span>
+                </td>
+
+                <!-- Acciones -->
+                <td>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <!-- Ver tarjeta -->
+                    <a
+                      href={`/${p.slug}`}
+                      target="_blank"
+                      class="icon-btn"
+                      title="Ver tarjeta pública"
+                    >
+                      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><circle cx="12" cy="12" r="3"/>
+                      </svg>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ── PAGINACIÓN ─────────────────────────────────────── -->
+      {totalPaginas > 1 && (
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--border)">
+          <span style="font-size:12px;color:var(--text-3)">
+            Página {pagina} de {totalPaginas} · {totalCount} usuarios
+          </span>
+          <div style="display:flex;gap:6px">
+            {pagina > 1 && (
+              <a href={pageUrl(pagina - 1)} class="btn btn-ghost" style="font-size:12px;padding:5px 12px">
+                ← Anterior
+              </a>
+            )}
+            {pagina < totalPaginas && (
+              <a href={pageUrl(pagina + 1)} class="btn btn-ghost" style="font-size:12px;padding:5px 12px">
+                Siguiente →
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )}
+
+</AdminLayout>
+
+<!-- Datos para el script -->
+<div id="page-data" data-admin-email={user.email} style="display:none"></div>
+
+<script>
+  import { createBrowserClient } from '@supabase/ssr'
+
+  const sb = createBrowserClient(
+    document.querySelector<HTMLMetaElement>('meta[name="supabase-url"]')!.content,
+    document.querySelector<HTMLMetaElement>('meta[name="supabase-anon"]')!.content,
+  )
+
+  // ── Cambio de plan inline ─────────────────────────────────
+  // Cuando el admin cambia el select de plan de un usuario,
+  // actualiza plan_id en la BD inmediatamente sin recargar.
+  document.querySelectorAll<HTMLSelectElement>('.plan-selector').forEach(sel => {
+    sel.addEventListener('change', async () => {
+      const perfilId   = sel.dataset.perfilId!
+      const planNuevo  = sel.value
+      const planActual = sel.dataset.planActual!
+
+      // Evitar llamada innecesaria si no cambió
+      if (planNuevo === planActual) return
+
+      // Feedback visual inmediato — deshabilitar mientras guarda
+      sel.disabled = true
+      const rowEl = sel.closest('tr')
+
+      try {
+        // Usar el cliente anon con sesión del admin
+        // La actualización se permite porque el admin tiene sesión válida
+        // y el service role no está disponible en el browser.
+        // Para cambios de plan usamos el endpoint de API protegido.
+        const res = await fetch('/api/admin/set-plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ perfil_id: perfilId, plan_id: planNuevo }),
+        })
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: 'Error desconocido' }))
+          throw new Error(err.error ?? `HTTP ${res.status}`)
+        }
+
+        // Actualizar el data-plan-actual para que futuros cambios
+        // puedan detectar si realmente hay diferencia
+        sel.dataset.planActual = planNuevo
+
+        ;(window as any).toast?.(`Plan actualizado a "${planNuevo}"`, 'success')
+
+      } catch (err: any) {
+        // Revertir el selector al valor anterior si falló
+        sel.value = planActual
+        ;(window as any).toast?.(`Error: ${err.message}`, 'error')
+      } finally {
+        sel.disabled = false
+      }
+    })
+  })
+
+  // ── Búsqueda con debounce al escribir ─────────────────────
+  // Envía el formulario automáticamente 600ms después de
+  // dejar de escribir — sin necesidad de presionar "Buscar"
+  const searchInput = document.querySelector<HTMLInputElement>('input[name="q"]')
+  const searchForm  = searchInput?.closest('form') as HTMLFormElement | null
+  let   searchTimer: ReturnType<typeof setTimeout> | undefined
+
+  searchInput?.addEventListener('input', () => {
+    clearTimeout(searchTimer)
+    searchTimer = setTimeout(() => searchForm?.submit(), 600)
+  })
+</script>

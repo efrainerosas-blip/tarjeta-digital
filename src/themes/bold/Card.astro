@@ -1,0 +1,637 @@
+---
+// src/themes/bold/Card.astro
+//
+// THEME: Bold
+// Estética: bloques de color grandes, tipografía con carácter,
+// layouts asimétricos. Ideal para diseñadores, creativos,
+// fotógrafos, marketers y cualquier profesión visual.
+
+import type { CardProps } from '../types'
+
+const {
+  perfil, experiencia, estudios, habilidades,
+  servicios, proyectos, redes, logros, capacitaciones,
+} = Astro.props as CardProps
+
+const accent   = perfil.color_primario ?? '#f97316'
+const nombre   = [perfil.nombre, perfil.apellidos].filter(Boolean).join(' ')
+const inicial  = perfil.nombre[0]?.toUpperCase() ?? '?'
+
+const redIconos: Record<string, string> = {
+  LinkedIn:    `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>`,
+  GitHub:      `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>`,
+  'Twitter/X': `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`,
+  Instagram:   `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>`,
+  Behance:     `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.938 4.503c.702 0 1.34.06 1.92.188.577.13 1.07.33 1.485.61.41.28.733.65.96 1.12.225.47.34 1.05.34 1.73 0 .74-.17 1.36-.507 1.86-.338.5-.837.9-1.502 1.22.906.26 1.576.72 2.022 1.37.448.66.665 1.45.665 2.36 0 .75-.13 1.39-.41 1.93-.28.55-.67 1-1.16 1.35-.49.36-1.065.62-1.72.78-.655.16-1.35.25-2.065.25H0V4.51h6.938v-.007zM16.94 16.665c.44.428 1.073.643 1.894.643.59 0 1.1-.148 1.53-.447.424-.29.68-.61.78-.94h2.588c-.403 1.28-1.048 2.2-1.92 2.75-.878.57-1.94.85-3.18.85-1.48 0-2.7-.48-3.654-1.43-.96-.95-1.43-2.28-1.43-3.97 0-1.64.49-2.95 1.46-3.93.97-.97 2.2-1.45 3.68-1.45 1.5 0 2.69.55 3.597 1.64.9 1.09 1.35 2.49 1.35 4.2H16.34c.04.86.26 1.508.7 1.936l-.1.097zm-9.975-6.34h-4.03v2.93h4.01c.547 0 1.006-.12 1.37-.38.36-.25.54-.66.54-1.23 0-.59-.18-1.01-.54-1.25-.36-.24-.81-.07-1.35-.07zm.536-4.55H2.934v2.58h4.01c.458 0 .82-.1 1.096-.3.27-.2.407-.54.407-1.02 0-.48-.143-.82-.43-1.02-.285-.19-.655-.24-1.11-.24h.01zm8.965 3.81c-.45.426-.7 1.056-.75 1.89h4.38c-.1-.85-.38-1.49-.86-1.9-.47-.42-1.05-.63-1.73-.63-.73 0-1.3.21-1.74.64h.7z"/></svg>`,
+  Dribbble:    `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 24C5.385 24 0 18.615 0 12S5.385 0 12 0s12 5.385 12 12-5.385 12-12 12zm10.12-10.358c-.35-.11-3.17-.953-6.384-.438 1.34 3.684 1.887 6.684 1.992 7.308 2.3-1.555 3.936-4.02 4.395-6.87zm-6.115 7.808c-.153-.9-.75-4.032-2.19-7.77l-.066.02c-5.79 2.015-7.86 6.025-8.048 6.39 1.73 1.35 3.92 2.166 6.298 2.166 1.42 0 2.77-.29 4-.814zm-11.62-2.logout c.232-.4 3.045-5.055 8.332-6.765.135-.045.27-.084.405-.12-.26-.585-.54-1.167-.832-1.74C7.17 11.775 2.206 11.71 1.756 11.7l-.004.312c0 2.633.998 5.037 2.634 6.855zm-2.42-8.955c.46.008 4.683.026 9.477-1.248-1.698-3.018-3.53-5.558-3.8-5.928-2.868 1.35-5.01 3.99-5.676 7.18zM9.6 2.052c.282.38 2.145 2.914 3.822 6 3.645-1.365 5.19-3.44 5.373-3.702-1.81-1.61-4.19-2.586-6.795-2.586-.825 0-1.63.1-2.4.285zm10.335 3.483c-.218.29-1.935 2.493-5.724 4.04.24.49.47.985.68 1.486.08.18.15.36.22.53 3.41-.43 6.8.26 7.14.33-.02-2.42-.88-4.64-2.31-6.386z"/></svg>`,
+}
+function getIcon(p: string) {
+  return redIconos[p] ?? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>`
+}
+---
+
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content={perfil.bio ?? `Tarjeta digital de ${nombre}`} />
+  <meta property="og:title" content={nombre} />
+  {perfil.foto_url && <meta property="og:image" content={perfil.foto_url} />}
+  <title>{nombre}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style define:vars={{ accent }}>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent:  var(--accent);
+      --bg:      #fafaf9;
+      --bg-2:    #ffffff;
+      --border:  #e7e5e4;
+      --text-1:  #1c1917;
+      --text-2:  #44403c;
+      --text-3:  #78716c;
+      --text-4:  #a8a29e;
+      --font:    'Plus Jakarta Sans', sans-serif;
+      --max-w:   700px;
+      --radius:  12px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text-2);
+      font-size: 14px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .card-shell {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      padding: 0 0 64px;
+    }
+
+    /* ── HERO — bloque de color a full width ── */
+    .hero {
+      background: var(--accent);
+      color: #fff;
+      padding: 40px 24px 32px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Forma decorativa de fondo */
+    .hero::before {
+      content: '';
+      position: absolute;
+      bottom: -60px; right: -60px;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.08);
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      top: -40px; left: 40%;
+      width: 160px; height: 160px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.06);
+    }
+
+    .hero-inner {
+      position: relative; z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 20px;
+    }
+
+    .hero-identity { display: flex; gap: 18px; align-items: center; }
+
+    .avatar {
+      width: 80px; height: 80px;
+      border-radius: 16px;
+      object-fit: cover;
+      border: 3px solid rgba(255,255,255,.4);
+      flex-shrink: 0;
+    }
+    .avatar-placeholder {
+      width: 80px; height: 80px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.2);
+      border: 3px solid rgba(255,255,255,.4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px; font-weight: 800;
+      color: #fff; flex-shrink: 0;
+    }
+
+    .hero-name {
+      font-size: clamp(22px, 6vw, 34px);
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.1;
+      letter-spacing: -.02em;
+    }
+    .hero-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255,255,255,.8);
+      margin-top: 4px;
+    }
+    .hero-location {
+      font-size: 12px;
+      color: rgba(255,255,255,.7);
+      display: flex; align-items: center; gap: 4px;
+      margin-top: 4px;
+    }
+
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 700;
+      padding: 5px 12px; border-radius: 99px;
+      background: rgba(255,255,255,.2);
+      color: #fff;
+      backdrop-filter: blur(4px);
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+    .status-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #fff;
+    }
+
+    .hero-bio {
+      font-size: 14px;
+      color: rgba(255,255,255,.85);
+      line-height: 1.7;
+      max-width: 500px;
+    }
+
+    /* ── Redes en hero ── */
+    .redes {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .red-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 7px 14px;
+      border-radius: 99px;
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.25);
+      color: #fff;
+      text-decoration: none;
+      font-size: 12px; font-weight: 600;
+      transition: background .15s;
+      backdrop-filter: blur(4px);
+    }
+    .red-btn:hover { background: rgba(255,255,255,.25); }
+    .red-btn svg { width: 14px; height: 14px; }
+
+    .cv-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 20px;
+      background: #fff;
+      color: var(--accent);
+      border-radius: var(--radius);
+      font-size: 13px; font-weight: 700;
+      text-decoration: none;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .cv-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,.15);
+    }
+    .cv-btn svg { width: 14px; height: 14px; }
+
+    /* ── Contenido ── */
+    .content { padding: 32px 24px; }
+
+    /* ── Secciones ── */
+    .section { margin-bottom: 40px; }
+
+    .section-header {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 18px;
+    }
+    .section-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+    .section-title {
+      font-size: 16px; font-weight: 800;
+      color: var(--text-1);
+      letter-spacing: -.02em;
+    }
+
+    /* ── Experiencia / Estudios ── */
+    .timeline { display: flex; flex-direction: column; gap: 0; }
+    .timeline-item {
+      padding: 16px 0 16px 20px;
+      border-left: 2px solid var(--border);
+      position: relative;
+    }
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -5px; top: 22px;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: 2px solid var(--accent);
+    }
+    .timeline-header {
+      display: flex; justify-content: space-between;
+      align-items: flex-start; gap: 8px; flex-wrap: wrap;
+    }
+    .timeline-title { font-size: 14px; font-weight: 700; color: var(--text-1); }
+    .timeline-sub   { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+    .timeline-period {
+      font-size: 11px; color: var(--text-4);
+      white-space: nowrap; flex-shrink: 0;
+      background: var(--border);
+      padding: 2px 8px; border-radius: 99px;
+    }
+    .timeline-desc { font-size: 13px; color: var(--text-3); margin-top: 6px; line-height: 1.6; }
+    .badge-actual {
+      font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: 99px;
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
+      color: var(--accent);
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+
+    /* ── Habilidades ── */
+    .skills { display: flex; flex-wrap: wrap; gap: 8px; }
+    .skill-tag {
+      font-size: 12px; font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 99px;
+      background: var(--bg-2);
+      color: var(--text-2);
+      border: 2px solid var(--border);
+      transition: border-color .15s, color .15s;
+    }
+    .skill-tag:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ── Servicios ── */
+    .services { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .service-card {
+      padding: 18px;
+      background: var(--bg-2);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      transition: border-color .15s, transform .15s;
+    }
+    .service-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+    .service-icon { font-size: 28px; margin-bottom: 10px; line-height: 1; }
+    .service-name { font-size: 15px; font-weight: 700; color: var(--text-1); }
+    .service-desc { font-size: 13px; color: var(--text-3); margin-top: 4px; line-height: 1.5; }
+    .service-price {
+      display: inline-flex; align-items: center;
+      font-size: 13px; font-weight: 700;
+      color: var(--accent); margin-top: 10px;
+      background: color-mix(in srgb, var(--accent) 10%, transparent);
+      padding: 3px 10px; border-radius: 99px;
+    }
+
+    /* ── Proyectos ── */
+    .projects { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    .project-card {
+      background: var(--bg-2);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color .15s, transform .15s;
+    }
+    .project-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-3px);
+    }
+    .project-img { width: 100%; height: 160px; object-fit: cover; display: block; }
+    .project-body { padding: 16px; }
+    .project-title { font-size: 14px; font-weight: 700; color: var(--text-1); }
+    .project-desc  { font-size: 13px; color: var(--text-3); margin-top: 4px; line-height: 1.5; }
+    .project-link {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 12px; font-weight: 700;
+      color: #fff; background: var(--accent);
+      text-decoration: none; margin-top: 12px;
+      padding: 6px 14px; border-radius: 99px;
+      transition: opacity .15s;
+    }
+    .project-link:hover { opacity: .85; }
+
+    /* ── Logros ── */
+    .logros { display: flex; flex-direction: column; gap: 12px; }
+    .logro-item {
+      display: flex; gap: 12px;
+      padding: 14px 16px;
+      background: var(--bg-2);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      transition: border-color .15s;
+    }
+    .logro-item:hover { border-color: var(--accent); }
+    .logro-num {
+      font-size: 24px; font-weight: 800;
+      color: color-mix(in srgb, var(--accent) 20%, transparent);
+      line-height: 1; flex-shrink: 0;
+      min-width: 32px; text-align: right;
+    }
+    .logro-title { font-size: 14px; font-weight: 700; color: var(--text-1); }
+    .logro-desc  { font-size: 13px; color: var(--text-3); margin-top: 2px; }
+    .logro-fecha { font-size: 11px; color: var(--text-4); margin-top: 4px; }
+
+    /* ── Capacitaciones ── */
+    .capacitaciones { display: flex; flex-direction: column; gap: 10px; }
+    .cap-item {
+      display: flex; gap: 10px;
+      padding: 12px 14px;
+      background: var(--bg-2);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      align-items: flex-start;
+      transition: border-color .15s;
+    }
+    .cap-item:hover { border-color: var(--accent); }
+    .cap-icon {
+      width: 32px; height: 32px;
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; font-size: 16px;
+    }
+    .cap-name  { font-size: 13px; font-weight: 700; color: var(--text-1); }
+    .cap-inst  { font-size: 12px; color: var(--text-3); }
+    .cap-fecha { font-size: 11px; color: var(--text-4); margin-top: 2px; }
+    .cap-cert  {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 600;
+      color: var(--accent); text-decoration: none;
+      margin-top: 4px;
+    }
+
+    /* ── Footer ── */
+    .card-footer {
+      text-align: center; padding: 24px 24px 8px;
+      font-size: 12px; color: var(--text-4);
+    }
+    .card-footer a { color: var(--accent); text-decoration: none; font-weight: 700; }
+
+    /* ── Responsive ── */
+    @media (min-width: 480px) {
+      .services { grid-template-columns: 1fr 1fr; }
+      .projects { grid-template-columns: 1fr 1fr; }
+      .hero { padding: 48px 32px 40px; }
+      .content { padding: 36px 32px; }
+    }
+
+    @media (min-width: 600px) {
+      .hero-inner { flex-direction: row; align-items: flex-start; }
+      .hero-identity { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card-shell">
+
+    <!-- HERO — bloque de color total -->
+    <header class="hero">
+      <div class="hero-inner">
+        <div class="hero-identity">
+          {perfil.foto_url
+            ? <img src={perfil.foto_url} alt={nombre} class="avatar" loading="eager" />
+            : <div class="avatar-placeholder">{inicial}</div>
+          }
+        </div>
+
+        <div style="flex:1;min-width:0">
+          <h1 class="hero-name">{nombre}</h1>
+          {perfil.titulo_profesional && (
+            <p class="hero-title">{perfil.titulo_profesional}</p>
+          )}
+          {perfil.ubicacion && (
+            <p class="hero-location">
+              <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+              </svg>
+              {perfil.ubicacion}
+            </p>
+          )}
+
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:14px">
+            <span class="status-badge">{perfil.status ?? 'Disponible'}</span>
+            {perfil.cv_pdf_url && (
+              <a href={perfil.cv_pdf_url} target="_blank" rel="noopener noreferrer"
+                 class="cv-btn track-cv">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Descargar CV
+              </a>
+            )}
+          </div>
+
+          {perfil.bio && <p class="hero-bio" style="margin-top:16px">{perfil.bio}</p>}
+
+          {redes.length > 0 && (
+            <div class="redes" style="margin-top:16px">
+              {redes.map(red => (
+                <a href={red.url} target="_blank" rel="noopener noreferrer"
+                   class="red-btn track-red" data-plataforma={red.plataforma}>
+                  <span set:html={getIcon(red.plataforma)} />
+                  {red.plataforma}
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTENIDO -->
+    <div class="content">
+
+      {servicios.length > 0 && (
+        <section class="section">
+          <div class="section-header">
+            <div class="section-dot"></div>
+            <h2 class="section-title">Servicios</h2>
+          </div>
+          <div class="services">
+            {servicios.map(s => (
+              <div class="service-card">
+                {s.icono && <div class="service-icon">{s.icono}</div>}
+                <div class="service-name">{s.nombre}</div>
+                {s.descripcion && <p class="service-desc">{s.descripcion}</p>}
+                {s.precio_referencial && (
+                  <div class="service-price">{s.precio_referencial}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {experiencia.length > 0 && (
+        <section class="section">
+          <div class="section-header">
+            <div class="section-dot"></div>
+            <h2 class="section-title">Experiencia</h2>
+          </div>
+          <div class="timeline">
+            {experiencia.map(exp => (
+              <div class="timeline-item">
+                <div class="timeline-header">
+                  <div>
+                    <div class="timeline-title">{exp.cargo}</div>
+                    <div class="timeline-sub">{exp.empresa}</div>
+                  </div>
+                  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+                    {exp.periodo && <span class="timeline-period">{exp.periodo}</span>}
+                    {exp.es_trabajo_actual && <span class="badge-actual">Actual</span>}
+                  </div>
+                </div>
+                {exp.descripcion && <p class="timeline-desc">{exp.descripcion}</p>}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {estudios.length > 0 && (
+        <section class="section">
+          <div class="section-header">
+            <div class="section-dot"></div>
+            <h2 class="section-title">Educación</h2>
+          </div>
+          <div class="timeline">
+            {estudios.map(e => (
+              <div class="timeline-item">
+                <div class="timeline-header">
+                  <div>
+                    <div class="timeline-title">{e.titulo_obtenido ?? e.nivel}</div>
+                    <div class="timeline-sub">{e.institucion}</div>
+                  </div>
+                  {(e.fecha_inicio || e.fecha_fin) && (
+                    <span class="timeline-period">
+                      {e.fecha_inicio ?? ''}{e.fecha_fin ? ` — ${e.fecha_fin}` : ''}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {habilidades.length > 0 && (
+        <section class="section">
+          <div class="section-header">
+            <div class="section-dot"></div>
+            <h2 class="section-title">Habilidades</h2>
+          </div>
+          <div class="skills">
+            {habilidades.map(h => <span class="skill-tag">{h.nombre}</span>)}
+          </div>
+        </section>
+      )}
+
+      {proyectos.length > 0 && (
+        <section class="section">
+          <div class="section-header">
+            <div class="section-dot"></div>
+            <h2 class="section-title">Proyectos</h2>
+          </div>
+          <div class="projects">
+            {proyectos.map(p => (
+              <div class="project-card">
+                {p.imagen_url && (
+                  <img src={p.imagen_url} alt={p.titulo} class="project-img" loading="lazy" />
+                )}
+                <div class="project-body">
+                  <div class="project-title">{p.titulo}</div>
+                  {p.descripcion && <p class="project-desc">{p.descripcion}</p>}
+                  {p.enlace_url && (
+                    <a href={p.enlace_url} target="_blank" rel="noopener noreferrer"
+                       class="project-link track-proyecto" data-titulo={p.titulo}>
+                      Ver proyecto →
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {logros.length > 0 && (
+        <section class="section">
+          <div class="section-header">
+            <div class="section-dot"></div>
+            <h2 class="section-title">Logros</h2>
+          </div>
+          <div class="logros">
+            {logros.map((l, i) => (
+              <div class="logro-item">
+                <div class="logro-num">0{i + 1}</div>
+                <div>
+                  <div class="logro-title">{l.titulo}</div>
+                  {l.descripcion && <p class="logro-desc">{l.descripcion}</p>}
+                  {l.fecha && <div class="logro-fecha">{l.fecha}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {capacitaciones.length > 0 && (
+        <section class="section">
+          <div class="section-header">
+            <div class="section-dot"></div>
+            <h2 class="section-title">Cursos</h2>
+          </div>
+          <div class="capacitaciones">
+            {capacitaciones.map(c => (
+              <div class="cap-item">
+                <div class="cap-icon">📚</div>
+                <div>
+                  <div class="cap-name">{c.nombre}</div>
+                  {c.institucion && <div class="cap-inst">{c.institucion}</div>}
+                  {c.fecha && <div class="cap-fecha">{c.fecha}</div>}
+                  {c.certificado_url && (
+                    <a href={c.certificado_url} target="_blank" rel="noopener noreferrer" class="cap-cert">
+                      Ver certificado →
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+    </div>
+
+    <footer class="card-footer">
+      Creado con <a href="/">TarjetaDigital</a>
+    </footer>
+  </div>
+</body>
+</html>

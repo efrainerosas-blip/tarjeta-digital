@@ -1,0 +1,226 @@
+---
+// src/pages/dashboard/experiencia.astro
+export const prerender = false
+import DashboardLayout from '../../layouts/DashboardLayout.astro'
+import { createServerClient } from '@supabase/ssr'
+
+const supabase = createServerClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+  {
+    cookies: {
+      getAll() { return (Astro.request.headers.get('Cookie') ?? '').split(';').filter(Boolean).map(c => { const [k,...v]=c.trim().split('='); return { name: k, value: v.join('=') } }) },
+      setAll(cs) { cs.forEach(({name,value,options}) => Astro.cookies.set(name,value,options)) },
+    },
+  }
+)
+
+const { data: { user }, error: authError } = await supabase.auth.getUser()
+if (authError || !user) return Astro.redirect('/auth/login')
+
+const { data: perfil } = await supabase.from('perfiles').select('id').eq('user_id', user.id).single()
+const perfilId = perfil?.id ?? null
+
+const { data: items } = perfilId
+  ? await supabase.from('experiencia_laboral').select('*').eq('perfil_id', perfilId).order('orden')
+  : { data: [] }
+---
+
+<DashboardLayout title="Experiencia" tabActivo="experiencia" user={{ email: user.email!, id: user.id }}>
+
+  <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1 class="page-title">Experiencia laboral</h1>
+      <p class="page-desc">Tus trabajos, proyectos o posiciones anteriores y actuales.</p>
+    </div>
+    <button 
+    class="btn btn-primary"
+    id="btn-nuevo"
+    data-perfil-id={perfilId ?? ''}
+    disabled={!perfilId}
+    title={!perfilId ? 'Primero guarda tu perfil básico' : ''}
+    >
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      Agregar
+    </button>
+  </div>
+
+  {!perfilId && (
+    <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:12px;padding:14px 18px;margin-bottom:16px;font-size:13px;color:var(--warn)">
+      ⚠ Primero guarda tu <a href="/dashboard" style="color:var(--warn);text-decoration:underline">perfil básico</a> para poder agregar experiencia.
+    </div>
+  )}
+
+  <!-- Lista de items -->
+  <div id="lista-items">
+    {items && items.length > 0 ? items.map(item => (
+      <div class="list-item" data-id={item.id}>
+        <div style="width:36px;height:36px;border-radius:8px;background:var(--bg-4);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">
+          💼
+        </div>
+        <div class="list-item-body">
+          <div class="list-item-title">{item.cargo}</div>
+          <div class="list-item-sub">{item.empresa}{item.periodo ? ` · ${item.periodo}` : ''}</div>
+          {item.es_trabajo_actual && <span style="font-size:11px;background:rgba(34,197,94,.12);color:#22c55e;padding:1px 7px;border-radius:99px;font-weight:600">Actual</span>}
+        </div>
+        <div class="list-item-actions">
+          <button class="icon-btn btn-editar" data-id={item.id} title="Editar">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/></svg>
+          </button>
+          <button class="icon-btn danger btn-eliminar" data-id={item.id} title="Eliminar">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/></svg>
+          </button>
+        </div>
+      </div>
+    )) : (
+      <div style="text-align:center;padding:48px 20px;color:var(--text-3)">
+        <div style="font-size:32px;margin-bottom:12px">💼</div>
+        <div style="font-size:14px;font-weight:500;color:var(--text-2)">Sin experiencia aún</div>
+        <div style="font-size:13px;margin-top:4px">Agrega tus trabajos anteriores o actuales.</div>
+      </div>
+    )}
+  </div>
+
+</DashboardLayout>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modal-title">Agregar experiencia</h2>
+      <button class="modal-close" id="modal-close" aria-label="Cerrar">✕</button>
+    </div>
+
+    <form id="item-form" class="form-grid" style="gap:14px">
+      <input type="hidden" id="item-id" name="id" value="" />
+
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label for="cargo">Cargo / Puesto *</label>
+          <input type="text" id="cargo" name="cargo" placeholder="Ej: Diseñador UX Senior" required maxlength="120" />
+        </div>
+        <div class="form-group">
+          <label for="empresa">Empresa / Organización *</label>
+          <input type="text" id="empresa" name="empresa" placeholder="Ej: Agencia Digital XYZ" required maxlength="120" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="periodo">Período</label>
+        <input type="text" id="periodo" name="periodo" placeholder="Ej: Ene 2022 – Presente" maxlength="80" />
+      </div>
+
+      <div class="form-group">
+        <label for="descripcion">Descripción</label>
+        <textarea id="descripcion" name="descripcion" rows="3" placeholder="Responsabilidades, logros, tecnologías usadas…" maxlength="500" style="resize:vertical"></textarea>
+      </div>
+
+      <label class="toggle">
+        <input type="checkbox" id="es_trabajo_actual" name="es_trabajo_actual" />
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        Trabajo actual
+      </label>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:8px">
+        <button type="button" class="btn btn-ghost" id="btn-cancelar">Cancelar</button>
+        <button type="submit" class="btn btn-primary" id="btn-submit">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script type="module">
+  import { createBrowserClient } from '@supabase/ssr'
+
+  const sb = createBrowserClient(
+    document.querySelector('meta[name="supabase-url"]').content,
+    document.querySelector('meta[name="supabase-anon"]').content,
+  )
+
+  const btnNuevo = document.getElementById('btn-nuevo')
+  const perfilId = btnNuevo?.dataset.perfilId || null
+  const backdrop  = document.getElementById('modal-backdrop')
+  const modalTitle = document.getElementById('modal-title')
+  const form      = document.getElementById('item-form')
+  const itemIdEl  = document.getElementById('item-id')
+
+  function openModal(titulo = 'Agregar experiencia', data = null) {
+    modalTitle.textContent = titulo
+    form.reset()
+    itemIdEl.value = ''
+    if (data) {
+      itemIdEl.value = data.id ?? ''
+      form.cargo.value = data.cargo ?? ''
+      form.empresa.value = data.empresa ?? ''
+      form.periodo.value = data.periodo ?? ''
+      form.descripcion.value = data.descripcion ?? ''
+      form.es_trabajo_actual.checked = !!data.es_trabajo_actual
+    }
+    backdrop.classList.add('open')
+    form.querySelector('input:not([type=hidden])').focus()
+  }
+
+  function closeModal() { backdrop.classList.remove('open') }
+
+  document.getElementById('btn-nuevo').addEventListener('click', () => openModal())
+  document.getElementById('modal-close').addEventListener('click', closeModal)
+  document.getElementById('btn-cancelar').addEventListener('click', closeModal)
+  backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal() })
+
+  // Editar
+  document.querySelectorAll('.btn-editar').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id
+      const { data } = await sb.from('experiencia_laboral').select('*').eq('id', id).single()
+      if (data) openModal('Editar experiencia', data)
+    })
+  })
+
+  // Eliminar
+  document.querySelectorAll('.btn-eliminar').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('¿Eliminar esta experiencia?')) return
+      const id = btn.dataset.id
+      const { error } = await sb.from('experiencia_laboral').delete().eq('id', id)
+      if (error) { window.toast('Error al eliminar', 'error'); return }
+      document.querySelector(`.list-item[data-id="${id}"]`)?.remove()
+      window.toast('Eliminado correctamente', 'success')
+    })
+  })
+
+  // Guardar
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const btn = document.getElementById('btn-submit')
+    btn.disabled = true
+    btn.textContent = 'Guardando…'
+
+    const id = itemIdEl.value
+    const payload = {
+      perfil_id: perfilId,
+      cargo: form.cargo.value.trim(),
+      empresa: form.empresa.value.trim(),
+      periodo: form.periodo.value.trim() || null,
+      descripcion: form.descripcion.value.trim() || null,
+      es_trabajo_actual: form.es_trabajo_actual.checked,
+    }
+
+    let error
+    if (id) {
+      ({ error } = await sb.from('experiencia_laboral').update(payload).eq('id', id))
+    } else {
+      const { data: maxOrden } = await sb.from('experiencia_laboral').select('orden').eq('perfil_id', perfilId).order('orden', { ascending: false }).limit(1).single()
+      payload.orden = (maxOrden?.orden ?? 0) + 1
+      ;({ error } = await sb.from('experiencia_laboral').insert(payload))
+    }
+
+    btn.disabled = false
+    btn.textContent = 'Guardar'
+
+    if (error) { window.toast('Error: ' + error.message, 'error'); return }
+
+    window.toast(id ? 'Actualizado' : 'Agregado correctamente', 'success')
+    closeModal()
+    setTimeout(() => window.location.reload(), 400)
+  })
+</script>
