@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 
 // ── Lista de SuperAdmins ──────────────────────────────────────
 const ADMIN_EMAILS: string[] = [
-  'efrainrosas@gmail.com',
+  'efrainerosas@gmail.com',
 ]
 
 // ── Cliente con SERVICE_ROLE — acceso total, sin RLS ─────────

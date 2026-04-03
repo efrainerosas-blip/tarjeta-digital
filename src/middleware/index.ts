@@ -12,7 +12,7 @@ const RUTAS_ADMIN = ['/admin']
 // ── Lista de SuperAdmins ──────────────────────────────────────
 // Para agregar un admin: añadir su email aquí.
 const ADMIN_EMAILS = [
-  'efrainrosas@gmail.com',
+  'efrainerosas@gmail.com',
 ]
 
 export const onRequest = defineMiddleware(async ({ url, redirect, request }, next) => {
