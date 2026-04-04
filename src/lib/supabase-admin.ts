@@ -1,10 +1,7 @@
 // src/lib/supabase-admin.ts
 import { createClient } from '@supabase/supabase-js'
 
-// ── Lista de SuperAdmins ──────────────────────────────────────
-const ADMIN_EMAILS: string[] = [
-  'efrainerosas@gmail.com',
-]
+// ── Lista de SuperAdmins en la BD Supabase ──────────────────────────────────────
 
 // ── Cliente con SERVICE_ROLE — acceso total, sin RLS ─────────
 export function getSupabaseAdmin() {
@@ -26,9 +23,20 @@ export function getSupabaseAdmin() {
 }
 
 // ── Verificar si un email tiene permisos de SuperAdmin ────────
-export function isAdmin(email: string | null | undefined): boolean {
+// Para cambiar el admin: UPDATE admins SET email = '...' en Supabase.
+export async function isAdmin(email: string | null | undefined): Promise<boolean> {
   if (!email) return false
-  return ADMIN_EMAILS.includes(email.toLowerCase().trim())
+  try {
+    const db = getSupabaseAdmin()
+    const { data } = await db
+      .from('admins')
+      .select('email')
+      .eq('email', email.toLowerCase().trim())
+      .single()
+    return !!data
+  } catch {
+    return false
+  }
 }
 
 // ── Tipo auxiliar para filas de `perfiles` en el admin ────────

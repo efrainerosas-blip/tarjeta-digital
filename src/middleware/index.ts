@@ -9,11 +9,7 @@ const RUTAS_PROTEGIDAS = ['/dashboard', '/admin']
 
 const RUTAS_ADMIN = ['/admin']
 
-// ── Lista de SuperAdmins ──────────────────────────────────────
-// Para agregar un admin: añadir su email aquí.
-const ADMIN_EMAILS = [
-  'efrainerosas@gmail.com',
-]
+// ── Lista de SuperAdmins directo en la BD Supabase ──────────────────────────────────────
 
 export const onRequest = defineMiddleware(async ({ url, redirect, request }, next) => {
   const pathname = url.pathname
@@ -56,11 +52,9 @@ export const onRequest = defineMiddleware(async ({ url, redirect, request }, nex
   const esRutaAdmin = RUTAS_ADMIN.some(r => pathname.startsWith(r))
 
   if (esRutaAdmin) {
-    const email = user.email ?? ''
-
-    if (!ADMIN_EMAILS.includes(email)) {
-      // Autenticado pero sin permisos de admin → volver al dashboard
-      // No al login, porque sí tiene sesión válida
+    const { isAdmin } = await import('../lib/supabase-admin')
+    const adminOk = await isAdmin(user.email)
+    if (!adminOk) {
       return redirect('/dashboard?error=forbidden')
     }
   }
