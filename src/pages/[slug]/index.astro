@@ -47,7 +47,7 @@ const [
   supabase.from('habilidades').select('*').eq('perfil_id', perfil.id).order('orden'),
   supabase.from('servicios').select('*').eq('perfil_id', perfil.id).order('orden'),
   supabase.from('proyectos').select('*').eq('perfil_id', perfil.id).order('orden'),
-  supabase.from('redes_sociales').select('*').eq('perfil_id', perfil.id).eq('activo', true).order('orden'),
+  supabase.from('redes_sociales').select('*').eq('perfil_id', perfil.id).order('orden').limit(3),
   supabase.from('logros').select('*').eq('perfil_id', perfil.id).order('orden'),
 ])
 

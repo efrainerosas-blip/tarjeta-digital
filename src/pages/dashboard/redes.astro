@@ -210,11 +210,7 @@ const LIMITE_TARJETA = 3
         <span class="form-hint" id="url-hint">Para WhatsApp: https://wa.me/51XXXXXXXXX</span>
       </div>
 
-      <label class="toggle">
-        <input type="checkbox" id="f_activo" data-field="activo" checked />
-        <span class="toggle-track"><span class="toggle-thumb"></span></span>
-        Visible en tarjeta
-      </label>
+      <input type="hidden" id="f_activo" data-field="activo" value="true" />
 
       <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--border);margin-top:4px">
         <button class="btn btn-ghost" id="btn-cancelar">Cancelar</button>
@@ -471,7 +467,7 @@ const LIMITE_TARJETA = 3
       perfil_id:  perfilId,
       plataforma,
       url,
-      activo: (getField('activo') as HTMLInputElement).checked,
+      activo: true,
     }
 
     let error: any
