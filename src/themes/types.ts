@@ -13,6 +13,7 @@ export interface Perfil {
     status?: string | null
     cv_pdf_url?: string | null
     foto_portada_url?: string | null
+    telefono?: string | null
     color_primario?: string | null
     template_id?: string | null
     slug: string

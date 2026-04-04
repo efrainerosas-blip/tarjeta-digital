@@ -94,6 +94,14 @@ const { data: perfil } = await supabase
           <input type="text" id="ubicacion" name="ubicacion" value={perfil?.ubicacion ?? ''} placeholder="Ej: Lima, Perú" maxlength="100" />
         </div>
         <div class="form-group">
+          <label for="telefono">Teléfono</label>
+          <input type="tel" id="telefono" name="telefono" 
+            value={perfil?.telefono ?? ''} 
+            placeholder="+51 987 654 321" 
+            maxlength="20" />
+          <span class="form-hint">Al clicar en la tarjeta abre el marcador en móvil.</span>
+        </div>
+        <div class="form-group">
           <label for="status">Estado actual</label>
           <select id="status" name="status">
             <option value="Disponible" selected={perfil?.status === 'Disponible' || !perfil}>Disponible</option>
