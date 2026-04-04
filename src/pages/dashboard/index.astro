@@ -3,6 +3,7 @@
 export const prerender = false
 import DashboardLayout from '../../layouts/DashboardLayout.astro'
 import { createServerClient } from '@supabase/ssr'
+import FotoEditorModal from '../../components/perfil/FotoEditorModal.astro'
 
 const supabase = createServerClient(
   import.meta.env.PUBLIC_SUPABASE_URL,
@@ -60,18 +61,16 @@ const { data: perfil } = await supabase
           <div
             id="foto-preview"
             style="width:80px;height:80px;border-radius:50%;background:var(--bg-4);border:2px dashed var(--border-2);display:flex;align-items:center;justify-content:center;color:var(--text-3);font-size:28px;margin-bottom:8px;cursor:pointer;overflow:hidden;transition:border-color .15s"
-            onclick="document.getElementById('foto-input').click()"
+            onclick="window.abrirEditorFoto()"
           >
             {perfil?.foto_url
               ? <img src={perfil.foto_url} style="width:100%;height:100%;object-fit:cover" alt="Foto de perfil" />
               : '📷'
             }
           </div>
-          <button type="button" class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="document.getElementById('foto-input').click()">
-            Subir foto
+          <button type="button" class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="window.abrirEditorFoto()">
+            Editar foto
           </button>
-          <div style="font-size:10px;color:var(--text-3);margin-top:4px">Máx. 3 MB</div>
-          <input type="file" id="foto-input" accept="image/jpeg,image/png,image/webp" style="display:none" />
           <input type="hidden" name="foto_url" id="foto_url" value={perfil?.foto_url ?? ''} />
         </div>
 
@@ -317,6 +316,8 @@ const { data: perfil } = await supabase
 
   </form>
 
+  <FotoEditorModal fotoActual={perfil?.foto_url} />
+
 </DashboardLayout>
 
 <script>
@@ -375,59 +376,33 @@ const { data: perfil } = await supabase
     return `${(bytes/(1024*1024)).toFixed(1)} MB`
   }
 
-  // ── FOTO DE PERFIL ────────────────────────────────────────────
-  // La foto se sube al seleccionar (comportamiento anterior mantenido
-  // porque el preview circular da feedback inmediato y es UX esperada)
-  const fotoInput    = document.getElementById('foto-input') as HTMLInputElement
-  const fotoPreview  = document.getElementById('foto-preview') as HTMLDivElement
-  const fotoUrlHidden = document.getElementById('foto_url') as HTMLInputElement
+  // ── FOTO DE PERFIL — recibe el blob del FotoEditorModal ──────
+  const fotoPreview   = document.getElementById('foto-preview')   as HTMLDivElement
+  const fotoUrlHidden = document.getElementById('foto_url')        as HTMLInputElement
 
-  fotoInput?.addEventListener('change', async () => {
-    const file = fotoInput.files?.[0]
-    if (!file) return
+  window.addEventListener('foto-confirmada', async (e: any) => {
+    const { blob, previewUrl } = e.detail
 
-    // Validar tamaño
-    if (file.size > MAX_BYTES) {
-      ;(window as any).toast?.(`La foto supera el límite de 3 MB (${formatBytes(file.size)})`, 'warn')
-      fotoInput.value = ''
-      return
-    }
-
-    // Validar tipo
-    if (!file.type.startsWith('image/')) {
-      ;(window as any).toast?.('Solo se aceptan imágenes (JPG, PNG, WEBP)', 'warn')
-      fotoInput.value = ''
-      return
-    }
+    // Mostrar preview inmediato
+    fotoPreview.innerHTML = `<img src="${previewUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;opacity:.7" />`
 
     const { data: { user } } = await sb.auth.getUser()
     if (!user) return
 
-    // Preview local inmediato mientras sube
-    const reader = new FileReader()
-    reader.onload = e => {
-      fotoPreview.innerHTML = `<img src="${e.target!.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;opacity:.6" />`
-    }
-    reader.readAsDataURL(file)
-
-    // Upload a carpeta del usuario: {user_id}/foto.{ext}
-    const ext  = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
-    const path = `${user.id}/foto.${ext}`
-
-    const { error } = await sb.storage.from(BUCKET).upload(path, file, {
-      upsert:      true,
-      contentType: file.type,
+    // Subir WebP al bucket en carpeta del usuario
+    const path = `${user.id}/foto.webp`
+    const { error } = await sb.storage.from('avatars').upload(path, blob, {
+      upsert: true,
+      contentType: 'image/webp',
     })
 
     if (error) {
       ;(window as any).toast?.('Error subiendo foto: ' + error.message, 'error')
       fotoPreview.innerHTML = '📷'
-      fotoInput.value = ''
       return
     }
 
-    const { data: { publicUrl } } = sb.storage.from(BUCKET).getPublicUrl(path)
-    // Agregar cache-buster para forzar recarga de la imagen
+    const { data: { publicUrl } } = sb.storage.from('avatars').getPublicUrl(path)
     const urlConCache = `${publicUrl}?t=${Date.now()}`
     fotoUrlHidden.value = publicUrl
     fotoPreview.innerHTML = `<img src="${urlConCache}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" alt="Foto de perfil" />`
