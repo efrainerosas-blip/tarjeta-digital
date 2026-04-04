@@ -997,59 +997,50 @@ const { fotoActual } = Astro.props
   }
 
   // ── Confirmar foto ────────────────────────────────────────
-  btnConfirmar.addEventListener('click', async () => {
+  btnConfirmar.addEventListener('click', () => {
     btnConfirmar.disabled = true
     btnConfirmar.innerHTML = '<span style="opacity:.6">Procesando…</span>'
 
-    // Timeout de seguridad — si toBlob no responde en 8s, desbloquear
-    const timeoutId = setTimeout(() => {
-      btnConfirmar.disabled = false
-      btnConfirmar.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Usar esta foto`
-      ;(window as any).toast?.('Error al procesar. Intenta de nuevo.', 'error')
-    }, 8000)
+    setTimeout(() => {
+      try {
+        const outputCanvas  = document.createElement('canvas')
+        outputCanvas.width  = 800
+        outputCanvas.height = 800
+        const oCtx          = outputCanvas.getContext('2d')!
 
-    // Canvas de salida 800×800
-    const outputCanvas   = document.createElement('canvas')
-    outputCanvas.width   = 800
-    outputCanvas.height  = 800
-    const oCtx           = outputCanvas.getContext('2d')!
+        const editorSize = editorCanvas.width
+        const radio      = editorSize * 0.45
+        const cx         = editorSize / 2
+        const cy         = editorSize / 2
 
-    const filtro = FILTROS.find(f => f.id === filtroActual)
-    oCtx.filter  = filtro?.css === 'none' ? 'none' : (filtro?.css ?? 'none')
+        oCtx.drawImage(
+          editorCanvas,
+          cx - radio, cy - radio, radio * 2, radio * 2,
+          0, 0, 800, 800
+        )
 
-    const editorSize = editorCanvas.width
-    const radio      = editorSize * 0.45
-    const cx         = editorSize / 2
-    const cy         = editorSize / 2
+        outputCanvas.toBlob(blob => {
+          if (!blob) {
+            ;(window as any).toast?.('No se pudo procesar la imagen. Intenta de nuevo.', 'error')
+            btnConfirmar.disabled = false
+            btnConfirmar.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Usar esta foto`
+            return
+          }
 
-    oCtx.drawImage(
-      editorCanvas,
-      cx - radio, cy - radio, radio * 2, radio * 2,
-      0, 0, 800, 800
-    )
-    oCtx.filter = 'none'
+          const previewUrl = URL.createObjectURL(blob)
+          window.dispatchEvent(new CustomEvent('foto-confirmada', {
+            detail: { blob, previewUrl }
+          }))
+          cerrarModal()
 
-    // Convertir a WebP 85%
-    outputCanvas.toBlob(blob => {
-      if (!blob) {
-        alert('No se pudo procesar la imagen. Intenta de nuevo.')
+        }, 'image/webp', 0.85)
+
+      } catch (err) {
+        console.error('Error procesando imagen:', err)
+        ;(window as any).toast?.('Error inesperado. Intenta de nuevo.', 'error')
         btnConfirmar.disabled = false
-        btnConfirmar.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Usar esta foto'
-        return
+        btnConfirmar.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Usar esta foto`
       }
-
-      // Preview URL para mostrar en el dashboard inmediatamente
-      const previewUrl = URL.createObjectURL(blob)
-
-      // Disparar evento al padre — el padre (index.astro) sube el blob al bucket
-      window.dispatchEvent(new CustomEvent('foto-confirmada', {
-        detail: { blob, previewUrl }
-      }))
-
-      clearTimeout(timeoutId)
-      cerrarModal()
-
-      cerrarModal()
-    }, 'image/webp', 0.85)
+    }, 50)
   })
 </script>
