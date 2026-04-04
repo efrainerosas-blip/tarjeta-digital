@@ -1,18 +1,5 @@
 ---
 // src/components/perfil/FotoEditorModal.astro
-// Modal completo para editar la foto de perfil.
-// Funcionalidades:
-//   - Paso 1: Selección (dropzone + drag&drop)
-//   - Paso 2: Editor (recorte cuadrado + zoom + 8 filtros)
-//   - Paso 3: Preview final antes de confirmar
-//   - Optimización: Canvas → WebP 85% → máx 800×800px
-//   - Anti-huérfanos: solo sube al confirmar
-//   - Detección de soporte del browser
-//
-// Comunicación con el padre (index.astro):
-//   - window.abrirEditorFoto()  → abre el modal
-//   - evento 'foto-confirmada'  → { detail: { blob, previewUrl } }
-//     el padre recibe el Blob optimizado y lo sube al bucket
 
 interface Props {
   fotoActual?: string | null
@@ -755,10 +742,12 @@ const { fotoActual } = Astro.props
         zoomSlider.value = '100'
         filtroActual = 'normal'
 
-        inicializarEditor()
         generarFiltrosThumbs()
         irAPaso(2)
-        dibujarEditor()
+        requestAnimationFrame(() => {
+            inicializarEditor()
+            dibujarEditor()
+        })
       }
       img.onerror = () => alert('No se pudo cargar la imagen. Intenta con otro archivo.')
       img.src = e.target!.result as string
