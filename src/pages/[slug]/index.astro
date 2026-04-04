@@ -18,12 +18,16 @@ const { data: perfil, error } = await supabase
   .from('perfiles')
   .select('*')
   .eq('slug', slug)
-  .neq('status', 'No disponible')
-  .single()
+  .maybeSingle()
 
 console.log('[slug] perfil:', perfil?.slug, 'error:', error?.message)
 
-if (error || !perfil) {
+if (error) {
+  console.error('[slug] error BD:', error.message)
+  return Astro.redirect('/404')
+}
+if (!perfil) {
+  console.log('[slug] no encontrado:', slug)
   return Astro.redirect('/404')
 }
 
