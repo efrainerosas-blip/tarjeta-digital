@@ -1001,6 +1001,13 @@ const { fotoActual } = Astro.props
     btnConfirmar.disabled = true
     btnConfirmar.innerHTML = '<span style="opacity:.6">Procesando…</span>'
 
+    // Timeout de seguridad — si toBlob no responde en 8s, desbloquear
+    const timeoutId = setTimeout(() => {
+      btnConfirmar.disabled = false
+      btnConfirmar.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Usar esta foto`
+      ;(window as any).toast?.('Error al procesar. Intenta de nuevo.', 'error')
+    }, 8000)
+
     // Canvas de salida 800×800
     const outputCanvas   = document.createElement('canvas')
     outputCanvas.width   = 800
@@ -1038,6 +1045,9 @@ const { fotoActual } = Astro.props
       window.dispatchEvent(new CustomEvent('foto-confirmada', {
         detail: { blob, previewUrl }
       }))
+
+      clearTimeout(timeoutId)
+      cerrarModal()
 
       cerrarModal()
     }, 'image/webp', 0.85)
