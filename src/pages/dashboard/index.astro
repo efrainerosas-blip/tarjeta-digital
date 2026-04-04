@@ -389,6 +389,15 @@ const { data: perfil } = await supabase
     const { data: { user } } = await sb.auth.getUser()
     if (!user) return
 
+    // Limpiar fotos anteriores con otras extensiones
+    await sb.storage.from('avatars').remove([
+      `${user.id}/foto.png`,
+      `${user.id}/foto.jpg`,
+      `${user.id}/foto.jpeg`,
+      `${user.id}/foto.gif`,
+      `${user.id}/foto.webp`,
+    ])
+
     // Subir WebP al bucket en carpeta del usuario
     const path = `${user.id}/foto.webp`
     const { error } = await sb.storage.from('avatars').upload(path, blob, {
