@@ -475,8 +475,8 @@ const fotoHero = perfil.foto_portada_url || perfil.foto_url || null
           <div class="hero-redes">
             {redes.map(red => (
               <a href={red.url} target="_blank" rel="noopener noreferrer"
-                 class="red-icon track-red" data-plataforma={red.plataforma} title={red.plataforma}>
-                <span set:html={icon(red.plataforma)} />
+                class="red-icon track-red" data-plataforma={red.plataforma} title={red.plataforma}>
+                <Fragment set:html={icon(red.plataforma)} />
               </a>
             ))}
           </div>
