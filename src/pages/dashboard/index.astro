@@ -18,7 +18,6 @@ const supabase = createServerClient(
 const { data: { user }, error: authError } = await supabase.auth.getUser()
 if (authError || !user) return Astro.redirect('/auth/login')
 
-// Cargar perfil del usuario
 const { data: perfil } = await supabase
   .from('perfiles')
   .select('*')
@@ -45,26 +44,34 @@ const { data: perfil } = await supabase
 
   <form id="perfil-form" autocomplete="off">
 
-    <!-- Foto y datos principales -->
+    <!-- ── Foto y datos principales ────────────────────────── -->
     <div class="section-card">
       <div class="section-card-title">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0"/></svg>
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0"/>
+        </svg>
         Datos personales
       </div>
 
       <div style="display:flex;gap:20px;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap">
-        <!-- Foto -->
+
+        <!-- Foto de perfil -->
         <div style="flex-shrink:0;text-align:center">
-          <div id="foto-preview" style="width:80px;height:80px;border-radius:50%;background:var(--bg-4);border:2px dashed var(--border-2);display:flex;align-items:center;justify-content:center;color:var(--text-3);font-size:28px;margin-bottom:8px;cursor:pointer;overflow:hidden;transition:border-color .15s" onclick="document.getElementById('foto-input').click()">
+          <div
+            id="foto-preview"
+            style="width:80px;height:80px;border-radius:50%;background:var(--bg-4);border:2px dashed var(--border-2);display:flex;align-items:center;justify-content:center;color:var(--text-3);font-size:28px;margin-bottom:8px;cursor:pointer;overflow:hidden;transition:border-color .15s"
+            onclick="document.getElementById('foto-input').click()"
+          >
             {perfil?.foto_url
-              ? <img src={perfil.foto_url} style="width:100%;height:100%;object-fit:cover" />
+              ? <img src={perfil.foto_url} style="width:100%;height:100%;object-fit:cover" alt="Foto de perfil" />
               : '📷'
             }
           </div>
           <button type="button" class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="document.getElementById('foto-input').click()">
             Subir foto
           </button>
-          <input type="file" id="foto-input" accept="image/*" style="display:none" />
+          <div style="font-size:10px;color:var(--text-3);margin-top:4px">Máx. 3 MB</div>
+          <input type="file" id="foto-input" accept="image/jpeg,image/png,image/webp" style="display:none" />
           <input type="hidden" name="foto_url" id="foto_url" value={perfil?.foto_url ?? ''} />
         </div>
 
@@ -95,28 +102,27 @@ const { data: perfil } = await supabase
         </div>
         <div class="form-group">
           <label for="telefono">Teléfono</label>
-          <input type="tel" id="telefono" name="telefono" 
-            value={perfil?.telefono ?? ''} 
-            placeholder="+51 987 654 321" 
-            maxlength="20" />
+          <input type="tel" id="telefono" name="telefono" value={perfil?.telefono ?? ''} placeholder="+51 987 654 321" maxlength="20" />
           <span class="form-hint">Al clicar en la tarjeta abre el marcador en móvil.</span>
         </div>
         <div class="form-group">
           <label for="status">Estado actual</label>
           <select id="status" name="status">
-            <option value="Disponible" selected={perfil?.status === 'Disponible' || !perfil}>Disponible</option>
-            <option value="Trabajando" selected={perfil?.status === 'Trabajando'}>Trabajando</option>
+            <option value="Disponible"       selected={perfil?.status === 'Disponible' || !perfil}>Disponible</option>
+            <option value="Trabajando"        selected={perfil?.status === 'Trabajando'}>Trabajando</option>
             <option value="Abierto a ofertas" selected={perfil?.status === 'Abierto a ofertas'}>Abierto a ofertas</option>
-            <option value="Inactivo" selected={perfil?.status === 'Inactivo'}>Inactivo</option>
+            <option value="Inactivo"          selected={perfil?.status === 'Inactivo'}>Inactivo</option>
           </select>
         </div>
       </div>
     </div>
 
-    <!-- Bio -->
+    <!-- ── Bio ────────────────────────────────────────────── -->
     <div class="section-card">
       <div class="section-card-title">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/></svg>
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/>
+        </svg>
         Bio / Presentación
       </div>
       <div class="form-group">
@@ -126,38 +132,152 @@ const { data: perfil } = await supabase
       </div>
     </div>
 
-    <!-- Slug y CV -->
+    <!-- ── URL, CV y Portada ───────────────────────────────── -->
     <div class="section-card">
       <div class="section-card-title">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>
-        URL y CV
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/>
+        </svg>
+        URL y archivos
       </div>
+
       <div class="form-grid form-grid-2">
+
+        <!-- Slug -->
         <div class="form-group">
           <label for="slug">URL de tu tarjeta *</label>
           <input type="text" id="slug" name="slug" value={perfil?.slug ?? ''} placeholder="tu-nombre" maxlength="60" pattern="[a-z0-9\-]+" required />
           <div class="slug-preview" id="slug-preview">
-            <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>
+            <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/>
+            </svg>
             <span id="slug-preview-text">{Astro.url.host}/{perfil?.slug ?? 'tu-nombre'}</span>
           </div>
         </div>
-        <div class="form-group">
-          <label for="cv_pdf_url">URL del CV (PDF)</label>
-          <input type="url" id="cv_pdf_url" name="cv_pdf_url" value={perfil?.cv_pdf_url ?? ''} placeholder="https://..." />
-          <span class="form-hint">Link directo a tu CV en Google Drive, Dropbox, etc.</span>
-        </div>
+
+        <!-- URL de portada -->
         <div class="form-group">
           <label for="foto_portada_url">URL de foto de portada</label>
           <input type="url" id="foto_portada_url" name="foto_portada_url" value={perfil?.foto_portada_url ?? ''} placeholder="https://..." />
-          <span class="form-hint">Imagen de fondo para themes tipo app. Recomendado: 800×400px.</span>
+          <span class="form-hint">Imagen de fondo para el theme cinematográfico.</span>
         </div>
+
       </div>
+
+      <!-- ── Uploader de CV ─────────────────────────────────── -->
+      <!-- El archivo se guarda en memoria hasta que el usuario
+           clica "Guardar cambios" — así nunca quedan huérfanos  -->
+      <div style="margin-top:16px">
+        <label style="display:block;margin-bottom:8px">
+          Currículum Vitae (PDF, Word)
+        </label>
+
+        <!-- Estado: sin CV -->
+        <div id="cv-empty" style={perfil?.cv_pdf_url ? 'display:none' : ''}>
+          <div
+            id="cv-dropzone"
+            style="border:2px dashed var(--border-2);border-radius:var(--radius-lg);padding:24px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s"
+            onclick="document.getElementById('cv-input').click()"
+          >
+            <svg width="28" height="28" fill="none" stroke="var(--text-3)" viewBox="0 0 24 24" style="margin:0 auto 8px">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+            </svg>
+            <div style="font-size:13px;font-weight:600;color:var(--text-2)">Arrastra tu CV aquí o clica para examinar</div>
+            <div style="font-size:11px;color:var(--text-3);margin-top:4px">PDF, DOC o DOCX · Máximo 3 MB</div>
+          </div>
+          <input type="file" id="cv-input" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none" />
+        </div>
+
+        <!-- Estado: archivo seleccionado (pendiente de guardar) -->
+        <div id="cv-pending" style="display:none">
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:var(--radius-lg)">
+            <svg width="20" height="20" fill="none" stroke="var(--accent-2)" viewBox="0 0 24 24" style="flex-shrink:0">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+            </svg>
+            <div style="flex:1;min-width:0">
+              <div id="cv-pending-name" style="font-size:13px;font-weight:600;color:var(--text-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+              <div id="cv-pending-size" style="font-size:11px;color:var(--text-3);margin-top:1px"></div>
+            </div>
+            <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(245,158,11,.12);color:var(--warn);letter-spacing:.04em;flex-shrink:0">
+              PENDIENTE
+            </span>
+            <button type="button" id="cv-pending-cancel" style="background:none;border:none;cursor:pointer;color:var(--text-3);padding:4px;display:flex" title="Cancelar">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:6px;padding-left:2px">
+            ⚠ El archivo se subirá cuando cliques "Guardar cambios"
+          </div>
+        </div>
+
+        <!-- Barra de progreso (visible durante el upload) -->
+        <div id="cv-progress" style="display:none;margin-top:8px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span style="font-size:12px;color:var(--text-3)" id="cv-progress-label">Subiendo CV…</span>
+            <span style="font-size:12px;color:var(--text-3)" id="cv-progress-pct">0%</span>
+          </div>
+          <div style="height:4px;background:var(--bg-4);border-radius:99px;overflow:hidden">
+            <div id="cv-progress-bar" style="height:100%;width:0%;background:var(--accent);border-radius:99px;transition:width .2s"></div>
+          </div>
+        </div>
+
+        <!-- Estado: CV ya guardado -->
+        <div id="cv-saved" style={perfil?.cv_pdf_url ? '' : 'display:none'}>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-lg)">
+            <svg width="20" height="20" fill="none" stroke="var(--success)" viewBox="0 0 24 24" style="flex-shrink:0">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+            </svg>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:600;color:var(--text-1)">CV guardado</div>
+              <div id="cv-saved-name" style="font-size:11px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                {perfil?.cv_pdf_url ? new URL(perfil.cv_pdf_url).pathname.split('/').pop() : ''}
+              </div>
+            </div>
+            <a
+              id="cv-saved-link"
+              href={perfil?.cv_pdf_url ?? '#'}
+              target="_blank"
+              rel="noopener"
+              class="btn btn-ghost"
+              style="font-size:11px;padding:4px 10px;flex-shrink:0"
+            >
+              Ver ↗
+            </a>
+            <button
+              type="button"
+              id="cv-delete"
+              class="btn btn-danger"
+              style="font-size:11px;padding:4px 10px;flex-shrink:0"
+              title="Eliminar CV"
+            >
+              Eliminar
+            </button>
+          </div>
+          <button
+            type="button"
+            class="btn btn-ghost"
+            style="font-size:11px;margin-top:8px"
+            onclick="document.getElementById('cv-input').click()"
+          >
+            Reemplazar CV
+          </button>
+          <input type="file" id="cv-input" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none" />
+        </div>
+
+        <!-- Campo hidden que lleva la URL al formulario -->
+        <input type="hidden" name="cv_pdf_url" id="cv_pdf_url" value={perfil?.cv_pdf_url ?? ''} />
+      </div>
+
     </div>
 
-    <!-- Color personalizado -->
+    <!-- ── Color de acento ────────────────────────────────── -->
     <div class="section-card">
       <div class="section-card-title">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.098 19.902a3.75 3.75 0 005.304 0l6.401-6.402M6.75 21A3.75 3.75 0 013 17.25V4.125C3 3.504 3.504 3 4.125 3h5.25c.621 0 1.125.504 1.125 1.125v4.072M6.75 21a3.75 3.75 0 003.75-3.75V8.197M6.75 21h13.125c.621 0 1.125-.504 1.125-1.125v-5.25c0-.621-.504-1.125-1.125-1.125h-4.072M10.5 8.197l2.88-2.88c.438-.439 1.15-.439 1.59 0l3.712 3.713c.44.44.44 1.152 0 1.59l-2.879 2.88M6.75 17.25h.008v.008H6.75v-.008z"/></svg>
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.098 19.902a3.75 3.75 0 005.304 0l6.401-6.402M6.75 21A3.75 3.75 0 013 17.25V4.125C3 3.504 3.504 3 4.125 3h5.25c.621 0 1.125.504 1.125 1.125v4.072M6.75 21a3.75 3.75 0 003.75-3.75V8.197M6.75 21h13.125c.621 0 1.125-.504 1.125-1.125v-5.25c0-.621-.504-1.125-1.125-1.125h-4.072M10.5 8.197l2.88-2.88c.438-.439 1.15-.439 1.59 0l3.712 3.713c.44.44.44 1.152 0 1.59l-2.879 2.88M6.75 17.25h.008v.008H6.75v-.008z"/>
+        </svg>
         Color de acento
       </div>
       <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
@@ -179,7 +299,7 @@ const { data: perfil } = await supabase
       </div>
     </div>
 
-    <!-- Guardar -->
+    <!-- ── Guardar ─────────────────────────────────────────── -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding-top:8px;flex-wrap:wrap;gap:12px">
       <span style="font-size:12px;color:var(--text-3)" id="save-status"></span>
       <div style="display:flex;gap:8px">
@@ -187,7 +307,9 @@ const { data: perfil } = await supabase
           Ver tarjeta ↗
         </a>
         <button type="submit" class="btn btn-primary" id="btn-save">
-          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
           Guardar cambios
         </button>
       </div>
@@ -205,30 +327,34 @@ const { data: perfil } = await supabase
     document.querySelector<HTMLMetaElement>('meta[name="supabase-anon"]')!.content,
   )
 
+  // ── Constantes ────────────────────────────────────────────────
+  const MAX_BYTES    = 3 * 1024 * 1024   // 3 MB
+  const BUCKET       = 'avatars'
+
   // ── Char counter bio ──────────────────────────────────────────
-  const bioEl = document.getElementById('bio') as HTMLTextAreaElement
+  const bioEl      = document.getElementById('bio') as HTMLTextAreaElement
   const bioCounter = document.getElementById('bio-counter')!
   function updateBioCounter() {
     const n = bioEl.value.length
     bioCounter.textContent = `${n} / 500`
-    bioCounter.className = `char-counter${n > 450 ? (n >= 500 ? ' over' : ' warn') : ''}`
+    bioCounter.className   = `char-counter${n > 450 ? (n >= 500 ? ' over' : ' warn') : ''}`
   }
   bioEl?.addEventListener('input', updateBioCounter)
   updateBioCounter()
 
-  // ── Slug preview ─────────────────────────────────────────────
-  const slugEl = document.getElementById('slug') as HTMLInputElement
+  // ── Slug preview ──────────────────────────────────────────────
+  const slugEl          = document.getElementById('slug') as HTMLInputElement
   const slugPreviewText = document.getElementById('slug-preview-text')!
-  const host = window.location.host
+  const host            = window.location.host
   slugEl?.addEventListener('input', () => {
-    const clean = slugEl.value.toLowerCase().replace(/[^a-z0-9-]/g,'')
+    const clean = slugEl.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
     slugEl.value = clean
     slugPreviewText.textContent = `${host}/${clean || 'tu-nombre'}`
     const previewLink = document.getElementById('btn-preview') as HTMLAnchorElement
     if (previewLink) previewLink.href = `/${clean || '#'}`
   })
 
-  // ── Color sync ───────────────────────────────────────────────
+  // ── Color sync ────────────────────────────────────────────────
   const colorPicker = document.getElementById('color_primario') as HTMLInputElement
   const colorHex    = document.getElementById('color_primario_hex') as HTMLInputElement
   colorPicker?.addEventListener('input', () => { colorHex.value = colorPicker.value })
@@ -237,70 +363,290 @@ const { data: perfil } = await supabase
   })
   document.querySelectorAll<HTMLButtonElement>('.color-preset').forEach(btn => {
     btn.addEventListener('click', () => {
-      const c = btn.dataset.color!
-      colorPicker.value = c
-      colorHex.value = c
+      colorPicker.value = btn.dataset.color!
+      colorHex.value    = btn.dataset.color!
     })
   })
 
-  // ── Foto upload ──────────────────────────────────────────────
-  const fotoInput   = document.getElementById('foto-input') as HTMLInputElement
-  const fotoPreview = document.getElementById('foto-preview') as HTMLDivElement
+  // ── Helpers de formato ────────────────────────────────────────
+  function formatBytes(bytes: number): string {
+    if (bytes < 1024)       return `${bytes} B`
+    if (bytes < 1024*1024)  return `${(bytes/1024).toFixed(1)} KB`
+    return `${(bytes/(1024*1024)).toFixed(1)} MB`
+  }
+
+  // ── FOTO DE PERFIL ────────────────────────────────────────────
+  // La foto se sube al seleccionar (comportamiento anterior mantenido
+  // porque el preview circular da feedback inmediato y es UX esperada)
+  const fotoInput    = document.getElementById('foto-input') as HTMLInputElement
+  const fotoPreview  = document.getElementById('foto-preview') as HTMLDivElement
   const fotoUrlHidden = document.getElementById('foto_url') as HTMLInputElement
 
   fotoInput?.addEventListener('change', async () => {
     const file = fotoInput.files?.[0]
     if (!file) return
-    if (file.size > 3 * 1024 * 1024) { (window as any).toast('La imagen no debe superar 3MB', 'warn'); return }
+
+    // Validar tamaño
+    if (file.size > MAX_BYTES) {
+      ;(window as any).toast?.(`La foto supera el límite de 3 MB (${formatBytes(file.size)})`, 'warn')
+      fotoInput.value = ''
+      return
+    }
+
+    // Validar tipo
+    if (!file.type.startsWith('image/')) {
+      ;(window as any).toast?.('Solo se aceptan imágenes (JPG, PNG, WEBP)', 'warn')
+      fotoInput.value = ''
+      return
+    }
 
     const { data: { user } } = await sb.auth.getUser()
     if (!user) return
 
-    const ext  = file.name.split('.').pop()
-    const path = `${user.id}.${ext}`
+    // Preview local inmediato mientras sube
+    const reader = new FileReader()
+    reader.onload = e => {
+      fotoPreview.innerHTML = `<img src="${e.target!.result}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;opacity:.6" />`
+    }
+    reader.readAsDataURL(file)
 
-    const { error } = await sb.storage.from('avatars').upload(path, file, { upsert: true })
-    if (error) { (window as any).toast('Error subiendo imagen: ' + error.message, 'error'); return }
+    // Upload a carpeta del usuario: {user_id}/foto.{ext}
+    const ext  = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+    const path = `${user.id}/foto.${ext}`
 
-    const { data: { publicUrl } } = sb.storage.from('avatars').getPublicUrl(path)
+    const { error } = await sb.storage.from(BUCKET).upload(path, file, {
+      upsert:      true,
+      contentType: file.type,
+    })
+
+    if (error) {
+      ;(window as any).toast?.('Error subiendo foto: ' + error.message, 'error')
+      fotoPreview.innerHTML = '📷'
+      fotoInput.value = ''
+      return
+    }
+
+    const { data: { publicUrl } } = sb.storage.from(BUCKET).getPublicUrl(path)
+    // Agregar cache-buster para forzar recarga de la imagen
+    const urlConCache = `${publicUrl}?t=${Date.now()}`
     fotoUrlHidden.value = publicUrl
-    fotoPreview.innerHTML = `<img src="${publicUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`
-    ;(window as any).toast('Foto actualizada', 'success')
+    fotoPreview.innerHTML = `<img src="${urlConCache}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" alt="Foto de perfil" />`
+    ;(window as any).toast?.('Foto actualizada — guarda los cambios', 'success')
   })
 
-  // ── Guardar perfil ───────────────────────────────────────────
+  // ── CV UPLOADER ───────────────────────────────────────────────
+  // El archivo NO se sube hasta clicar "Guardar cambios"
+  // Así evitamos archivos huérfanos en el bucket
+  let cvFilePendiente: File | null = null   // archivo en memoria, pendiente de subir
+
+  const cvInput          = document.getElementById('cv-input')          as HTMLInputElement
+  const cvEmpty          = document.getElementById('cv-empty')           as HTMLDivElement
+  const cvPending        = document.getElementById('cv-pending')         as HTMLDivElement
+  const cvPendingName    = document.getElementById('cv-pending-name')    as HTMLDivElement
+  const cvPendingSize    = document.getElementById('cv-pending-size')    as HTMLDivElement
+  const cvPendingCancel  = document.getElementById('cv-pending-cancel')  as HTMLButtonElement
+  const cvProgress       = document.getElementById('cv-progress')        as HTMLDivElement
+  const cvProgressBar    = document.getElementById('cv-progress-bar')    as HTMLDivElement
+  const cvProgressLabel  = document.getElementById('cv-progress-label')  as HTMLSpanElement
+  const cvProgressPct    = document.getElementById('cv-progress-pct')    as HTMLSpanElement
+  const cvSaved          = document.getElementById('cv-saved')           as HTMLDivElement
+  const cvSavedName      = document.getElementById('cv-saved-name')      as HTMLDivElement
+  const cvSavedLink      = document.getElementById('cv-saved-link')      as HTMLAnchorElement
+  const cvDelete         = document.getElementById('cv-delete')          as HTMLButtonElement
+  const cvUrlHidden      = document.getElementById('cv_pdf_url')         as HTMLInputElement
+  const cvDropzone       = document.getElementById('cv-dropzone')        as HTMLDivElement
+
+  // Estado de la UI del CV
+  function mostrarEstadoCV(estado: 'empty' | 'pending' | 'saved') {
+    cvEmpty.style.display   = estado === 'empty'   ? '' : 'none'
+    cvPending.style.display = estado === 'pending' ? '' : 'none'
+    cvSaved.style.display   = estado === 'saved'   ? '' : 'none'
+    cvProgress.style.display = 'none'
+  }
+
+  // Al seleccionar archivo
+  cvInput?.addEventListener('change', () => {
+    const file = cvInput.files?.[0]
+    if (!file) return
+
+    // Validar tamaño
+    if (file.size > MAX_BYTES) {
+      ;(window as any).toast?.(`El archivo supera el límite de 3 MB (${formatBytes(file.size)}). Comprime el PDF e inténtalo de nuevo.`, 'warn')
+      cvInput.value = ''
+      return
+    }
+
+    // Validar tipo
+    const tiposPermitidos = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+    if (!tiposPermitidos.includes(file.type) && !file.name.match(/\.(pdf|doc|docx)$/i)) {
+      ;(window as any).toast?.('Solo se aceptan archivos PDF, DOC o DOCX', 'warn')
+      cvInput.value = ''
+      return
+    }
+
+    // Guardar en memoria — NO subir todavía
+    cvFilePendiente = file
+    cvPendingName.textContent = file.name
+    cvPendingSize.textContent = formatBytes(file.size)
+    mostrarEstadoCV('pending')
+    cvInput.value = ''   // resetear input para permitir reseleccionar el mismo archivo
+  })
+
+  // Cancelar selección pendiente
+  cvPendingCancel?.addEventListener('click', () => {
+    cvFilePendiente = null
+    // Si había CV guardado antes, volver a mostrarlo
+    if (cvUrlHidden.value) {
+      mostrarEstadoCV('saved')
+    } else {
+      mostrarEstadoCV('empty')
+    }
+  })
+
+  // Eliminar CV guardado
+  cvDelete?.addEventListener('click', async () => {
+    if (!confirm('¿Eliminar el CV? Esta acción no se puede deshacer.')) return
+
+    const { data: { user } } = await sb.auth.getUser()
+    if (!user) return
+
+    cvDelete.disabled = true
+    cvDelete.textContent = 'Eliminando…'
+
+    // Eliminar del bucket — intentar con extensiones comunes
+    const exts = ['pdf', 'doc', 'docx']
+    for (const ext of exts) {
+      await sb.storage.from(BUCKET).remove([`${user.id}/cv.${ext}`])
+    }
+
+    // Limpiar la URL en el formulario
+    cvUrlHidden.value = ''
+    cvFilePendiente   = null
+
+    cvDelete.disabled = false
+    cvDelete.textContent = 'Eliminar'
+    mostrarEstadoCV('empty')
+    ;(window as any).toast?.('CV eliminado — guarda los cambios para confirmar', 'success')
+  })
+
+  // Drag & drop en la zona de drop del CV
+  cvDropzone?.addEventListener('dragover', e => {
+    e.preventDefault()
+    cvDropzone.style.borderColor  = 'var(--accent)'
+    cvDropzone.style.background   = 'var(--accent-bg)'
+  })
+  cvDropzone?.addEventListener('dragleave', () => {
+    cvDropzone.style.borderColor = 'var(--border-2)'
+    cvDropzone.style.background  = ''
+  })
+  cvDropzone?.addEventListener('drop', e => {
+    e.preventDefault()
+    cvDropzone.style.borderColor = 'var(--border-2)'
+    cvDropzone.style.background  = ''
+    const file = e.dataTransfer?.files[0]
+    if (!file) return
+    // Reutilizar la misma validación pasando por el input
+    const dt = new DataTransfer()
+    dt.items.add(file)
+    cvInput.files = dt.files
+    cvInput.dispatchEvent(new Event('change'))
+  })
+
+  // ── Función para subir CV al bucket durante el guardado ───────
+  async function subirCVSiPendiente(userId: string): Promise<string | null> {
+    if (!cvFilePendiente) return cvUrlHidden.value || null
+
+    // Mostrar barra de progreso
+    cvProgress.style.display = 'block'
+    cvProgressBar.style.width = '0%'
+    cvProgressLabel.textContent = 'Subiendo CV…'
+    cvProgressPct.textContent = '0%'
+
+    // Simular progreso mientras sube (Supabase no tiene progreso real en JS)
+    let pct = 0
+    const intervalo = setInterval(() => {
+      pct = Math.min(pct + 10, 85)
+      cvProgressBar.style.width = `${pct}%`
+      cvProgressPct.textContent = `${pct}%`
+    }, 150)
+
+    const ext  = cvFilePendiente.name.split('.').pop()?.toLowerCase() ?? 'pdf'
+    const path = `${userId}/cv.${ext}`
+
+    const { error } = await sb.storage.from(BUCKET).upload(path, cvFilePendiente, {
+      upsert:      true,
+      contentType: cvFilePendiente.type,
+    })
+
+    clearInterval(intervalo)
+
+    if (error) {
+      cvProgress.style.display = 'none'
+      ;(window as any).toast?.('Error subiendo CV: ' + error.message, 'error')
+      return null
+    }
+
+    // Progreso al 100%
+    cvProgressBar.style.width = '100%'
+    cvProgressPct.textContent = '100%'
+    cvProgressLabel.textContent = '✓ CV subido'
+    setTimeout(() => { cvProgress.style.display = 'none' }, 1000)
+
+    const { data: { publicUrl } } = sb.storage.from(BUCKET).getPublicUrl(path)
+
+    // Actualizar estado a "guardado"
+    cvFilePendiente = null
+    cvSavedName.textContent = `cv.${ext}`
+    cvSavedLink.href = publicUrl
+    mostrarEstadoCV('saved')
+
+    return publicUrl
+  }
+
+  // ── GUARDAR PERFIL ────────────────────────────────────────────
   const form       = document.getElementById('perfil-form') as HTMLFormElement
-  const btnSave    = document.getElementById('btn-save') as HTMLButtonElement
+  const btnSave    = document.getElementById('btn-save')    as HTMLButtonElement
   const saveStatus = document.getElementById('save-status')!
 
   form?.addEventListener('submit', async (e) => {
     e.preventDefault()
     btnSave.disabled = true
     btnSave.innerHTML = '<span style="opacity:.6">Guardando…</span>'
-
-    const fd = new FormData(form)
-    
-    const payload: Record<string, unknown> = {}
-    fd.forEach((v, k) => {
-      const val = (v as string).trim()
-      const urlFields = ['foto_url', 'cv_pdf_url', 'foto_portada_url']
-      if (urlFields.includes(k)) {
-        payload[k] = val || null
-      } else {
-        payload[k] = val
-      }
-    })
-
-    // Asegurar hex válido
-    if (!/^#[0-9a-fA-F]{6}$/.test(payload.color_primario as string)) {
-      payload.color_primario = '#6366f1'
-    }
+    saveStatus.textContent = ''
 
     const { data: { user } } = await sb.auth.getUser()
     if (!user) { window.location.href = '/auth/login'; return }
 
+    // ── 1. Subir CV si hay uno pendiente ──────────────────────
+    const cvUrl = await subirCVSiPendiente(user.id)
+    // Si el upload falló y había un archivo pendiente, abortar
+    if (cvFilePendiente !== null && !cvUrl) {
+      btnSave.disabled = false
+      btnSave.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Guardar cambios'
+      return
+    }
+
+    // ── 2. Construir payload del perfil ───────────────────────
+    const fd = new FormData(form)
+    const payload: Record<string, unknown> = {}
+
+    fd.forEach((v, k) => {
+      const val = (v as string).trim()
+      const urlFields = ['foto_url', 'cv_pdf_url', 'foto_portada_url']
+      payload[k] = urlFields.includes(k) ? (val || null) : val
+    })
+
+    // Sobreescribir cv_pdf_url con la URL real del bucket
+    payload.cv_pdf_url = cvUrl
+
+    // Validar color
+    if (!/^#[0-9a-fA-F]{6}$/.test(payload.color_primario as string)) {
+      payload.color_primario = '#6366f1'
+    }
+
     payload.user_id = user.id
 
+    // ── 3. Upsert del perfil ──────────────────────────────────
     const { error } = await sb
       .from('perfiles')
       .upsert(payload, { onConflict: 'user_id' })
@@ -309,19 +655,21 @@ const { data: perfil } = await supabase
     btnSave.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Guardar cambios'
 
     if (error) {
-      ;(window as any).toast('Error: ' + error.message, 'error')
+      ;(window as any).toast?.('Error: ' + error.message, 'error')
     } else {
+      // Actualizar el hidden con la URL final
+      cvUrlHidden.value = cvUrl ?? ''
       saveStatus.textContent = `Guardado · ${new Date().toLocaleTimeString()}`
-      ;(window as any).toast('Perfil guardado correctamente', 'success')
+      ;(window as any).toast?.('Perfil guardado correctamente', 'success')
     }
   })
 
-  // ── Autosave en blur (campos clave) ──────────────────────────
+  // ── Indicador "sin guardar" al editar ─────────────────────────
   let autoSaveTimer: ReturnType<typeof setTimeout> | undefined
   form?.querySelectorAll('input,textarea,select').forEach(el => {
     el.addEventListener('input', () => {
       clearTimeout(autoSaveTimer)
-      saveStatus!.textContent = 'Sin guardar…'
+      saveStatus.textContent = 'Sin guardar…'
     })
   })
 </script>
