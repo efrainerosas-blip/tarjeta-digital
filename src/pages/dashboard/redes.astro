@@ -426,11 +426,14 @@ const LIMITE_TARJETA = 3
 
   // ── Editar ────────────────────────────────────────────────────
   document.querySelectorAll<HTMLButtonElement>('.btn-editar').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      btn.disabled = true
-      const { data, error } = await sb.from(tabla).select('*').eq('id', btn.dataset.id!).single()
-      btn.disabled = false
-      if (error || !data) { (window as any).toast('No se pudo cargar el registro', 'error'); return }
+    btn.addEventListener('click', () => {
+      const item = btn.closest<HTMLElement>('.sortable-item')!
+      const data = {
+        id:         item.dataset.id,
+        plataforma: item.querySelector('.list-item-title')?.childNodes[0]?.textContent?.trim(),
+        url:        item.querySelector('.list-item-sub')?.textContent?.trim(),
+        activo:     !item.classList.contains('item-oculto'),
+      }
       openModal('Editar red social', data)
     })
   })
