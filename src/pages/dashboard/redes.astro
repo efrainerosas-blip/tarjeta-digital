@@ -1,5 +1,5 @@
 ---
-// src/pages/dashboard/redes.astro — generado por scripts/gen-tabs.mjs
+// src/pages/dashboard/redes.astro
 export const prerender = false
 import DashboardLayout from '../../layouts/DashboardLayout.astro'
 import { createServerClient } from '@supabase/ssr'
@@ -30,23 +30,32 @@ const { data: perfil } = await supabase
 const perfilId = perfil?.id ?? null
 
 const { data: items } = perfilId
-  ? await supabase.from('redes_sociales').select('*').eq('perfil_id', perfilId).order('orden')
+  ? await supabase
+      .from('redes_sociales')
+      .select('*')
+      .eq('perfil_id', perfilId)
+      .order('orden')
   : { data: [] }
+
+// Cuántas redes se muestran en la tarjeta
+const LIMITE_TARJETA = 3
 ---
 
-<DashboardLayout title="Redes sociales" tabActivo="redes" user={{ email: user.email, id: user.id }}>
+<DashboardLayout title="Redes sociales" tabActivo="redes" user={{ email: user.email!, id: user.id }}>
 
   <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
     <div>
       <h1 class="page-title">Redes sociales</h1>
-      <p class="page-desc">Tus perfiles en LinkedIn, GitHub, Instagram y otras plataformas.</p>
+      <p class="page-desc">
+        Arrastra para reordenar. Las <strong style="color:var(--text-1)">{LIMITE_TARJETA} primeras</strong> aparecen en tu tarjeta.
+      </p>
     </div>
     <button
       class="btn btn-primary"
       id="btn-nuevo"
       data-perfil-id={perfilId ?? ''}
       data-tabla="redes_sociales"
-      data-label="redes sociales"
+      data-label="red social"
       disabled={!perfilId}
       title={!perfilId ? 'Primero guarda tu perfil básico' : undefined}
     >
@@ -63,37 +72,94 @@ const { data: items } = perfilId
     </div>
   )}
 
+  {/* Lista sortable */}
   <div id="lista-items">
-    {items && items.length > 0 ? items.map(item => (
-      <div class="list-item" data-id={item.id}>
-        <div style="width:36px;height:36px;border-radius:8px;background:var(--bg-4);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">
-          🔗
-        </div>
-        <div class="list-item-body">
-          <div class="list-item-title">{item.plataforma}</div>
-          <div class="list-item-sub">{item.url}</div>
-        </div>
-        <div class="list-item-actions">
-          <button class="icon-btn btn-editar" data-id={item.id} title="Editar">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/>
-            </svg>
-          </button>
-          <button class="icon-btn danger btn-eliminar" data-id={item.id} title="Eliminar">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-    )) : (
+    {items && items.length > 0 ? (
+      <>
+        {items.map((item, i) => (
+          <>
+            {/* Separador visual antes del item N+1 (índice LIMITE_TARJETA) */}
+            {i === LIMITE_TARJETA && (
+              <div
+                id="separador-limite"
+                style="display:flex;align-items:center;gap:10px;margin:8px 0;user-select:none"
+              >
+                <div style="flex:1;height:1px;background:var(--border)"></div>
+                <span style="font-size:11px;color:var(--text-3);font-weight:600;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap">
+                  No se muestran en la tarjeta
+                </span>
+                <div style="flex:1;height:1px;background:var(--border)"></div>
+              </div>
+            )}
+
+            <div
+              class={`list-item sortable-item ${i >= LIMITE_TARJETA ? 'item-oculto' : ''}`}
+              data-id={item.id}
+              data-orden={i}
+              style={i >= LIMITE_TARJETA ? 'opacity:.45' : ''}
+            >
+              {/* Handle de arrastre — visible en desktop, táctil en mobile */}
+              <div
+                class="drag-handle"
+                title="Arrastrar para reordenar"
+                style="display:flex;align-items:center;padding:0 4px 0 0;cursor:grab;color:var(--text-3);flex-shrink:0;touch-action:none"
+              >
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/>
+                </svg>
+              </div>
+
+              {/* Ícono de la red */}
+              <div style="width:36px;height:36px;border-radius:8px;background:var(--bg-4);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">
+                🔗
+              </div>
+
+              <div class="list-item-body">
+                <div class="list-item-title" style="display:flex;align-items:center;gap:6px">
+                  {item.plataforma}
+                  {/* Badge indicando si es visible en tarjeta */}
+                  {i < LIMITE_TARJETA && (
+                    <span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:99px;background:rgba(34,197,94,.12);color:var(--success);letter-spacing:.04em">
+                      EN TARJETA
+                    </span>
+                  )}
+                </div>
+                <div class="list-item-sub" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px">
+                  {item.url}
+                </div>
+              </div>
+
+              <div class="list-item-actions">
+                <button class="icon-btn btn-editar" data-id={item.id} title="Editar">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/>
+                  </svg>
+                </button>
+                <button class="icon-btn danger btn-eliminar" data-id={item.id} title="Eliminar">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </>
+        ))}
+
+        {/* Si hay exactamente LIMITE_TARJETA o menos items, mostrar hint */}
+        {items.length <= LIMITE_TARJETA && (
+          <div style="text-align:center;padding:12px;font-size:12px;color:var(--text-3)">
+            Todas tus redes aparecen en la tarjeta · Agrega más para poder elegir cuáles mostrar
+          </div>
+        )}
+      </>
+    ) : (
       <div style="text-align:center;padding:48px 20px;color:var(--text-3)">
         <div style="font-size:36px;margin-bottom:12px">🔗</div>
-        <div style="font-size:14px;font-weight:600;color:var(--text-2);margin-bottom:4px">Sin registros aún</div>
-        <div style="font-size:13px">Tus perfiles en LinkedIn, GitHub, Instagram y otras plataformas.</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text-2);margin-bottom:4px">Sin redes aún</div>
+        <div style="font-size:13px">LinkedIn, GitHub, WhatsApp, Instagram y más.</div>
         {perfilId && (
           <button class="btn btn-primary" style="margin-top:16px" id="btn-empty-state">
-            Agregar el primero
+            Agregar la primera
           </button>
         )}
       </div>
@@ -102,53 +168,54 @@ const { data: items } = perfilId
 
 </DashboardLayout>
 
-<!-- MODAL — fuera del slot del layout -->
+<!-- MODAL -->
 <div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
   <div class="modal">
     <div class="modal-header">
-      <h2 class="modal-title" id="modal-title">Agregar redes sociales</h2>
+      <h2 class="modal-title" id="modal-title">Agregar red social</h2>
       <button class="modal-close" id="modal-close" aria-label="Cerrar modal">✕</button>
     </div>
     <div class="form-grid" style="gap:14px">
       <input type="hidden" id="item-id" />
 
-        <div class="form-group">
-          <label for="f_plataforma">Plataforma *</label>
-          <select id="f_plataforma" data-field="plataforma" required>
-              <option value="LinkedIn">LinkedIn</option>
-              <option value="GitHub">GitHub</option>
-              <option value="Twitter/X">Twitter/X</option>
-              <option value="Instagram">Instagram</option>
-              <option value="Facebook">Facebook</option>
-              <option value="YouTube">YouTube</option>
-              <option value="TikTok">TikTok</option>
-              <option value="Behance">Behance</option>
-              <option value="Dribbble">Dribbble</option>
-              <option value="Pinterest">Pinterest</option>
-              <option value="Portfolio">Portfolio</option>
-              <option value="WhatsApp">WhatsApp</option>
-              <option value="Telegram">Telegram</option>
-              <option value="Otro">Otro</option>
-          </select>
-        </div>
+      <div class="form-group">
+        <label for="f_plataforma">Plataforma *</label>
+        <select id="f_plataforma" data-field="plataforma" required>
+          <option value="LinkedIn">LinkedIn</option>
+          <option value="GitHub">GitHub</option>
+          <option value="Twitter/X">Twitter/X</option>
+          <option value="Instagram">Instagram</option>
+          <option value="Facebook">Facebook</option>
+          <option value="YouTube">YouTube</option>
+          <option value="TikTok">TikTok</option>
+          <option value="WhatsApp">WhatsApp</option>
+          <option value="Telegram">Telegram</option>
+          <option value="Behance">Behance</option>
+          <option value="Dribbble">Dribbble</option>
+          <option value="Portfolio">Portfolio</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
 
-        <div class="form-group">
-          <label for="f_url">URL completa *</label>
-          <input
-            type="url"
-            id="f_url"
-            data-field="url"
-            placeholder="https://linkedin.com/in/tu-perfil"
-            maxlength="500"
-            required
-          />
-        </div>
+      <div class="form-group">
+        <label for="f_url">URL completa *</label>
+        <input
+          type="url"
+          id="f_url"
+          data-field="url"
+          placeholder="https://linkedin.com/in/tu-perfil"
+          maxlength="500"
+          required
+        />
+        <span class="form-hint" id="url-hint">Para WhatsApp: https://wa.me/51XXXXXXXXX</span>
+      </div>
 
-        <label class="toggle">
-          <input type="checkbox" id="f_activo" data-field="activo" />
-          <span class="toggle-track"><span class="toggle-thumb"></span></span>
-          Visible en tarjeta
-        </label>
+      <label class="toggle">
+        <input type="checkbox" id="f_activo" data-field="activo" checked />
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        Visible en tarjeta
+      </label>
+
       <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--border);margin-top:4px">
         <button class="btn btn-ghost" id="btn-cancelar">Cancelar</button>
         <button class="btn btn-primary" id="btn-submit">
@@ -162,21 +229,148 @@ const { data: items } = perfilId
   </div>
 </div>
 
+<style>
+  /* El item siendo arrastrado */
+  .sortable-ghost {
+    opacity: .35;
+    background: var(--bg-4) !important;
+    border-color: var(--accent) !important;
+  }
+  /* Mientras se arrastra */
+  .sortable-drag {
+    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    border-color: var(--accent) !important;
+  }
+  .drag-handle:active { cursor: grabbing; }
+
+  /* Transición suave al reordenar */
+  .sortable-item {
+    transition: opacity .2s, border-color .2s;
+  }
+</style>
+
 <script>
+  // ── Importar SortableJS desde CDN (sin npm install) ──────────
+  // Sortable es liviano (~15KB), soporta touch nativo
+  // y no requiere ninguna dependencia adicional.
+
   import { createBrowserClient } from '@supabase/ssr'
 
-  const btnNuevo = document.getElementById('btn-nuevo') as HTMLButtonElement
-  const perfilId = btnNuevo?.dataset.perfilId || null
-  const tabla    = btnNuevo?.dataset.tabla    || ''
-  const labelStr = btnNuevo?.dataset.label    || ''
+  const LIMITE = 3  // Cuántas redes se muestran en la tarjeta
 
   const sb = createBrowserClient(
     document.querySelector<HTMLMetaElement>('meta[name="supabase-url"]')!.content,
     document.querySelector<HTMLMetaElement>('meta[name="supabase-anon"]')!.content,
   )
 
+  const btnNuevo  = document.getElementById('btn-nuevo') as HTMLButtonElement
+  const perfilId  = btnNuevo?.dataset.perfilId || null
+  const tabla     = 'redes_sociales'
+  const listaEl   = document.getElementById('lista-items')!
+
+  // ── Cargar SortableJS dinámicamente ──────────────────────────
+  async function initSortable() {
+    // @ts-ignore — carga dinámica del script
+    if (!(window as any).Sortable) {
+      await new Promise<void>((resolve, reject) => {
+        const s = document.createElement('script')
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js'
+        s.onload  = () => resolve()
+        s.onerror = () => reject(new Error('No se pudo cargar SortableJS'))
+        document.head.appendChild(s)
+      })
+    }
+
+    const Sortable = (window as any).Sortable
+
+    Sortable.create(listaEl, {
+      // Solo activar arrastre desde el handle (las dos líneas)
+      handle:    '.drag-handle',
+      // Clase CSS del placeholder mientras se arrastra
+      ghostClass: 'sortable-ghost',
+      dragClass:  'sortable-drag',
+      // Funciona en touch/mobile nativamente
+      forceFallback: false,
+      // Animación suave al reordenar
+      animation: 180,
+      easing:    'cubic-bezier(.25,.1,.25,1)',
+
+      // ── Al terminar el arrastre ─────────────────────────────
+      onEnd: async (evt: any) => {
+        // Recoger todos los items en su nuevo orden
+        const todosItems = listaEl.querySelectorAll<HTMLElement>('.sortable-item')
+
+        // Actualizar estilos visuales (opacidad + badge) según nueva posición
+        actualizarEstilosVisuales(todosItems)
+
+        // Construir array de updates para Supabase
+        const updates = Array.from(todosItems).map((el, i) => ({
+          id:    el.dataset.id!,
+          orden: i + 1,
+        }))
+
+        // Guardar nuevo orden en Supabase
+        // Usamos Promise.all para hacer todos los updates en paralelo
+        try {
+          await Promise.all(
+            updates.map(({ id, orden }) =>
+              sb.from(tabla).update({ orden }).eq('id', id)
+            )
+          )
+          ;(window as any).toast?.('Orden guardado', 'success')
+        } catch (err) {
+          ;(window as any).toast?.('Error al guardar el orden', 'error')
+          console.error('Error guardando orden:', err)
+        }
+      },
+    })
+  }
+
+  // ── Actualizar estilos según posición actual ──────────────────
+  // Opacidad para los que no se muestran, badge "EN TARJETA"
+  // y posición del separador
+  function actualizarEstilosVisuales(items: NodeListOf<HTMLElement>) {
+    // Quitar el separador actual si existe
+    document.getElementById('separador-limite')?.remove()
+
+    items.forEach((el, i) => {
+      const badge = el.querySelector<HTMLElement>('[style*="EN TARJETA"], [style*="success"]')
+
+      if (i < LIMITE) {
+        // Visible en tarjeta
+        el.style.opacity = '1'
+        el.classList.remove('item-oculto')
+        if (badge) badge.style.display = 'inline-flex'
+      } else {
+        // No visible en tarjeta
+        el.style.opacity = '.45'
+        el.classList.add('item-oculto')
+        if (badge) badge.style.display = 'none'
+
+        // Insertar separador justo antes del primer item oculto
+        if (i === LIMITE) {
+          const sep = document.createElement('div')
+          sep.id = 'separador-limite'
+          sep.style.cssText = 'display:flex;align-items:center;gap:10px;margin:8px 0;user-select:none'
+          sep.innerHTML = `
+            <div style="flex:1;height:1px;background:var(--border)"></div>
+            <span style="font-size:11px;color:var(--text-3);font-weight:600;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap">
+              No se muestran en la tarjeta
+            </span>
+            <div style="flex:1;height:1px;background:var(--border)"></div>
+          `
+          listaEl.insertBefore(sep, el)
+        }
+      }
+    })
+  }
+
+  // Inicializar Sortable al cargar
+  initSortable()
+
+  // ── Modal helpers ─────────────────────────────────────────────
   function getField(name: string) {
-    return document.querySelector<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
+    return document.querySelector<HTMLInputElement | HTMLSelectElement>(
       `[data-field="${name}"]`
     )!
   }
@@ -185,84 +379,117 @@ const { data: items } = perfilId
   const modalTitle = document.getElementById('modal-title')!
   const itemIdEl   = document.getElementById('item-id') as HTMLInputElement
   const submitBtn  = document.getElementById('btn-submit') as HTMLButtonElement
+  const urlHint    = document.getElementById('url-hint')!
+
+  // Hints dinámicos según plataforma seleccionada
+  const HINTS: Record<string, string> = {
+    'WhatsApp':  'Formato: https://wa.me/51XXXXXXXXX (con código de país)',
+    'Telegram':  'Formato: https://t.me/tu-usuario',
+    'LinkedIn':  'Formato: https://linkedin.com/in/tu-perfil',
+    'GitHub':    'Formato: https://github.com/tu-usuario',
+    'Twitter/X': 'Formato: https://x.com/tu-usuario',
+    'Instagram': 'Formato: https://instagram.com/tu-usuario',
+  }
+
+  getField('plataforma')?.addEventListener('change', (e) => {
+    const plat = (e.target as HTMLSelectElement).value
+    urlHint.textContent = HINTS[plat] ?? 'URL completa de tu perfil'
+  })
 
   function openModal(titulo: string, data: Record<string, any> | null = null) {
     modalTitle.textContent = titulo
     itemIdEl.value = ''
-    document.querySelectorAll<HTMLElement>('[data-field]').forEach(el => {
-      if (el instanceof HTMLInputElement && el.type === 'checkbox') el.checked = false
-      else if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement || el instanceof HTMLTextAreaElement)
-        el.value = ''
-    })
+    getField('plataforma').value = 'LinkedIn'
+    getField('url').value = ''
+    ;(getField('activo') as HTMLInputElement).checked = true
+    urlHint.textContent = HINTS['LinkedIn']
+
     if (data) {
-      itemIdEl.value = data['id'] ?? ''
-    getField('plataforma').value = (data && data['plataforma'] != null) ? String(data['plataforma']) : ''
-    getField('url').value = (data && data['url'] != null) ? String(data['url']) : ''
-    getField('activo').checked = !!(data && data['activo'])
+      itemIdEl.value = data.id ?? ''
+      getField('plataforma').value = data.plataforma ?? 'LinkedIn'
+      getField('url').value = data.url ?? ''
+      ;(getField('activo') as HTMLInputElement).checked = !!data.activo
+      urlHint.textContent = HINTS[data.plataforma] ?? 'URL completa de tu perfil'
     }
+
     backdrop.classList.add('open')
-    setTimeout(() => document.querySelector<HTMLElement>('[data-field]')?.focus(), 60)
+    setTimeout(() => (getField('url') as HTMLInputElement).focus(), 60)
   }
 
   function closeModal() { backdrop.classList.remove('open') }
 
-  btnNuevo?.addEventListener('click', () => openModal('Agregar ' + labelStr))
-  document.getElementById('btn-empty-state')?.addEventListener('click', () => openModal('Agregar ' + labelStr))
+  document.getElementById('btn-nuevo')?.addEventListener('click', () => openModal('Agregar red social'))
+  document.getElementById('btn-empty-state')?.addEventListener('click', () => openModal('Agregar red social'))
   document.getElementById('modal-close')!.addEventListener('click', closeModal)
   document.getElementById('btn-cancelar')!.addEventListener('click', closeModal)
   backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal() })
 
+  // ── Editar ────────────────────────────────────────────────────
   document.querySelectorAll<HTMLButtonElement>('.btn-editar').forEach(btn => {
     btn.addEventListener('click', async () => {
       btn.disabled = true
       const { data, error } = await sb.from(tabla).select('*').eq('id', btn.dataset.id!).single()
       btn.disabled = false
-      if (error || !data) { window.toast('No se pudo cargar el registro', 'error'); return }
-      openModal('Editar ' + labelStr, data)
+      if (error || !data) { (window as any).toast('No se pudo cargar el registro', 'error'); return }
+      openModal('Editar red social', data)
     })
   })
 
+  // ── Eliminar ──────────────────────────────────────────────────
   document.querySelectorAll<HTMLButtonElement>('.btn-eliminar').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (!confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) return
+      if (!confirm('¿Eliminar esta red social?')) return
       btn.disabled = true
       const { error } = await sb.from(tabla).delete().eq('id', btn.dataset.id!)
-      if (error) { window.toast('Error: ' + error.message, 'error'); btn.disabled = false; return }
-      document.querySelector(`.list-item[data-id="${btn.dataset.id}"]`)?.remove()
-      window.toast('Eliminado correctamente', 'success')
+      if (error) { (window as any).toast('Error: ' + error.message, 'error'); btn.disabled = false; return }
+      const item = document.querySelector<HTMLElement>(`.sortable-item[data-id="${btn.dataset.id}"]`)
+      item?.remove()
+      // Re-evaluar estilos después de eliminar
+      actualizarEstilosVisuales(listaEl.querySelectorAll<HTMLElement>('.sortable-item'))
+      ;(window as any).toast('Eliminado correctamente', 'success')
     })
   })
 
+  // ── Guardar ───────────────────────────────────────────────────
   submitBtn.addEventListener('click', async () => {
+    const url = (getField('url') as HTMLInputElement).value.trim()
+    const plataforma = getField('plataforma').value.trim()
+
+    if (!url || !plataforma) {
+      ;(window as any).toast('Completa todos los campos requeridos', 'warn')
+      return
+    }
+
     submitBtn.disabled = true
     submitBtn.innerHTML = '<span style="opacity:.6">Guardando…</span>'
 
     const id = itemIdEl.value.trim()
     const payload: Record<string, any> = {
-      perfil_id: perfilId,
-      plataforma: getField('plataforma').value.trim() || null,
-      url: getField('url').value.trim() || null,
-      activo: getField('activo').checked,
+      perfil_id:  perfilId,
+      plataforma,
+      url,
+      activo: (getField('activo') as HTMLInputElement).checked,
     }
 
     let error: any
     if (id) {
       ;({ error } = await sb.from(tabla).update(payload).eq('id', id))
     } else {
+      // El orden del nuevo item es el último
       const { data: last } = await sb
         .from(tabla).select('orden')
         .eq('perfil_id', perfilId!)
         .order('orden', { ascending: false })
-        .limit(1).single()
-      payload['orden'] = (last?.orden ?? 0) + 1
+        .limit(1).maybeSingle()
+      payload.orden = (last?.orden ?? 0) + 1
       ;({ error } = await sb.from(tabla).insert(payload))
     }
 
     submitBtn.disabled = false
     submitBtn.innerHTML = `<svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Guardar`
 
-    if (error) { window.toast('Error: ' + error.message, 'error'); return }
-    window.toast(id ? 'Actualizado correctamente' : 'Agregado correctamente', 'success')
+    if (error) { (window as any).toast('Error: ' + error.message, 'error'); return }
+    ;(window as any).toast(id ? 'Actualizado correctamente' : 'Red social agregada', 'success')
     closeModal()
     setTimeout(() => window.location.reload(), 500)
   })
