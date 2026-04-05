@@ -8,13 +8,15 @@ const redirectTo = Astro.url.searchParams.get('redirect') ?? '/dashboard'
   <main class="min-h-screen flex items-center justify-center px-4">
     <div class="w-full max-w-sm">
 
+      <!-- Encabezado -->
       <div class="text-center mb-8">
         <h1 class="text-2xl font-bold text-gray-900">Tarjeta Digital</h1>
         <p class="text-gray-500 text-sm mt-2">Ingresa tu email para acceder o crear tu cuenta</p>
       </div>
 
-      <div id="form-container" class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-        <form id="auth-form" class="space-y-4">
+      <!-- ── PASO 1: Formulario de email ─────────────────────────── -->
+      <div id="step-email" class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+        <form id="email-form" class="space-y-4">
           <div>
             <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
@@ -22,36 +24,126 @@ const redirectTo = Astro.url.searchParams.get('redirect') ?? '/dashboard'
               id="email"
               name="email"
               required
+              autocomplete="email"
               placeholder="tu@email.com"
               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
           <button
             type="submit"
-            id="submit-btn"
+            id="email-btn"
             class="w-full bg-blue-600 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Continuar con email
           </button>
-          <p id="error-msg" class="text-red-500 text-xs text-center hidden"></p>
+          <p id="email-error" class="text-red-500 text-xs text-center hidden"></p>
         </form>
       </div>
 
-      <div id="success-container" class="hidden bg-white border border-gray-200 rounded-2xl p-6 shadow-sm text-center">
-        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-          </svg>
+      <!-- ── PASO 2: Input del código OTP ───────────────────────── -->
+      <div id="step-otp" class="hidden bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+
+        <!-- Ícono de email -->
+        <div class="text-center mb-5">
+          <div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-3">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+          </div>
+          <h2 class="font-semibold text-gray-900 text-base">Revisa tu email</h2>
+          <p class="text-gray-500 text-sm mt-1">
+            Enviamos un código de 6 dígitos a<br/>
+            <span id="otp-sent-to" class="text-blue-600 font-medium"></span>
+          </p>
         </div>
-        <h2 class="font-semibold text-gray-900 mb-2">Revisa tu email</h2>
-        <p class="text-gray-500 text-sm">Te enviamos un enlace mágico. Válido por 1 hora.</p>
-        <p id="sent-to" class="text-blue-600 text-sm font-medium mt-2"></p>
+
+        <!-- Los 6 inputs del código -->
+        <div id="otp-inputs" class="flex gap-2 justify-center mb-4">
+          <input data-idx="0" type="text" inputmode="numeric" maxlength="1" class="otp-digit" autocomplete="one-time-code" />
+          <input data-idx="1" type="text" inputmode="numeric" maxlength="1" class="otp-digit" />
+          <input data-idx="2" type="text" inputmode="numeric" maxlength="1" class="otp-digit" />
+          <!-- separador visual -->
+          <span class="flex items-center text-gray-300 text-lg select-none">—</span>
+          <input data-idx="3" type="text" inputmode="numeric" maxlength="1" class="otp-digit" />
+          <input data-idx="4" type="text" inputmode="numeric" maxlength="1" class="otp-digit" />
+          <input data-idx="5" type="text" inputmode="numeric" maxlength="1" class="otp-digit" />
+        </div>
+
+        <!-- Botón verificar -->
+        <button
+          id="otp-btn"
+          disabled
+          class="w-full bg-blue-600 text-white text-sm font-medium py-2.5 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Verificar código
+        </button>
+
+        <p id="otp-error" class="text-red-500 text-xs text-center mt-3 hidden"></p>
+
+        <!-- Reenviar -->
+        <div class="text-center mt-4">
+          <p class="text-gray-400 text-xs">
+            ¿No llegó?
+            <button id="resend-btn" class="text-blue-600 hover:underline disabled:opacity-40" disabled>
+              Reenviar código
+            </button>
+            <span id="resend-timer" class="text-gray-400"></span>
+          </p>
+        </div>
+
+        <!-- Volver -->
+        <button id="back-btn" class="mt-3 w-full text-xs text-gray-400 hover:text-gray-600 transition-colors">
+          ← Usar otro email
+        </button>
       </div>
 
       <p class="text-center text-xs text-gray-400 mt-6">Sin contraseñas. Sin complicaciones.</p>
     </div>
   </main>
 
+  <!-- CSS de los inputs OTP -->
+  <style>
+    .otp-digit {
+      width: 44px;
+      height: 52px;
+      text-align: center;
+      font-size: 1.4rem;
+      font-weight: 600;
+      border: 1.5px solid #d1d5db;
+      border-radius: 10px;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+      color: #111827;
+      background: #fff;
+      /* en iOS previene zoom al enfocar */
+      font-size: clamp(1rem, 4vw, 1.4rem);
+    }
+    .otp-digit:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+    }
+    .otp-digit.filled {
+      border-color: #6366f1;
+      background: #f5f3ff;
+    }
+    .otp-digit.error {
+      border-color: #ef4444;
+      background: #fef2f2;
+      animation: shake .3s ease;
+    }
+    @keyframes shake {
+      0%,100% { transform: translateX(0) }
+      25%      { transform: translateX(-4px) }
+      75%      { transform: translateX(4px) }
+    }
+    /* mobile: inputs un poco más pequeños */
+    @media (max-width: 380px) {
+      .otp-digit { width: 38px; height: 46px; }
+    }
+  </style>
+
+  <!-- Datos del servidor al script, sin define:vars -->
   <div
     id="app-config"
     data-url={import.meta.env.PUBLIC_SUPABASE_URL}
@@ -64,44 +156,257 @@ const redirectTo = Astro.url.searchParams.get('redirect') ?? '/dashboard'
 <script>
   import { createBrowserClient } from '@supabase/ssr'
 
-  const cfg          = document.getElementById('app-config')!
-  const supabase     = createBrowserClient(cfg.dataset.url!, cfg.dataset.anon!)
-  const redirectTo   = cfg.dataset.redirect!
+  // ── Config ──────────────────────────────────────────────────────
+  const cfg        = document.getElementById('app-config')!
+  const supabase   = createBrowserClient(cfg.dataset.url!, cfg.dataset.anon!)
+  const redirectTo = cfg.dataset.redirect!
 
-  const form             = document.getElementById('auth-form')!
-  const btn              = document.getElementById('submit-btn') as HTMLButtonElement
-  const errorMsg         = document.getElementById('error-msg')!
-  const formContainer    = document.getElementById('form-container')!
-  const successContainer = document.getElementById('success-container')!
-  const sentTo           = document.getElementById('sent-to')!
+  // ── Elementos ───────────────────────────────────────────────────
+  const stepEmail  = document.getElementById('step-email')!
+  const stepOtp    = document.getElementById('step-otp')!
+  const emailForm  = document.getElementById('email-form')!
+  const emailInput = document.getElementById('email') as HTMLInputElement
+  const emailBtn   = document.getElementById('email-btn') as HTMLButtonElement
+  const emailError = document.getElementById('email-error')!
 
-  form.addEventListener('submit', async (e) => {
+  const otpSentTo  = document.getElementById('otp-sent-to')!
+  const otpBtn     = document.getElementById('otp-btn') as HTMLButtonElement
+  const otpError   = document.getElementById('otp-error')!
+  const resendBtn  = document.getElementById('resend-btn') as HTMLButtonElement
+  const resendTimer= document.getElementById('resend-timer')!
+  const backBtn    = document.getElementById('back-btn') as HTMLButtonElement
+
+  const digits     = Array.from(document.querySelectorAll<HTMLInputElement>('.otp-digit'))
+
+  let emailActual  = ''
+  let resendCountdown: ReturnType<typeof setInterval> | null = null
+
+  // ── PASO 1: Enviar email con OTP ────────────────────────────────
+  emailForm.addEventListener('submit', async (e) => {
     e.preventDefault()
-    const email = (document.getElementById('email') as HTMLInputElement).value.trim()
+    const email = emailInput.value.trim().toLowerCase()
     if (!email) return
 
-    btn.disabled = true
-    btn.textContent = 'Enviando...'
-    errorMsg.classList.add('hidden')
+    emailBtn.disabled    = true
+    emailBtn.textContent = 'Enviando...'
+    emailError.classList.add('hidden')
 
-    // Sin encodeURIComponent aquí — Supabase lo maneja internamente
-    const callbackUrl = `${window.location.origin}/auth/callback?redirect=${redirectTo}`
-
+    // signInWithOtp sin emailRedirectTo → Supabase envía código numérico
+    // shouldCreateUser: true → crea la cuenta si no existe
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: callbackUrl }
+      options: { shouldCreateUser: true }
     })
 
     if (error) {
-      errorMsg.textContent = error.message
-      errorMsg.classList.remove('hidden')
-      btn.disabled = false
-      btn.textContent = 'Continuar con email'
+      emailError.textContent = error.message
+      emailError.classList.remove('hidden')
+      emailBtn.disabled    = false
+      emailBtn.textContent = 'Continuar con email'
       return
     }
 
-    formContainer.classList.add('hidden')
-    successContainer.classList.remove('hidden')
-    sentTo.textContent = email
+    // Guardar email y pasar al paso 2
+    emailActual = email
+    otpSentTo.textContent = email
+    stepEmail.classList.add('hidden')
+    stepOtp.classList.remove('hidden')
+
+    // Enfocar el primer dígito
+    digits[0].focus()
+
+    // Iniciar countdown para reenviar (60 segundos)
+    iniciarCountdown()
+  })
+
+  // ── PASO 2: Manejo de los inputs OTP ────────────────────────────
+
+  // Limpiar estado de error al empezar a escribir de nuevo
+  function limpiarError() {
+    otpError.classList.add('hidden')
+    digits.forEach(d => d.classList.remove('error'))
+  }
+
+  // Actualizar el estado del botón según si los 6 dígitos están completos
+  function actualizarBoton() {
+    const completo = digits.every(d => d.value !== '')
+    otpBtn.disabled = !completo
+  }
+
+  digits.forEach((input, idx) => {
+    input.addEventListener('input', (e) => {
+      limpiarError()
+      const val = input.value
+
+      // Solo aceptar dígitos — rechazar letras silenciosamente
+      if (!/^\d$/.test(val)) {
+        input.value = ''
+        return
+      }
+
+      input.classList.add('filled')
+
+      // Avanzar al siguiente input automáticamente
+      if (idx < 5) digits[idx + 1].focus()
+
+      actualizarBoton()
+
+      // Si completó los 6, verificar automáticamente después de 300ms
+      // (da tiempo a que el usuario vea el último dígito)
+      if (digits.every(d => d.value !== '')) {
+        setTimeout(() => verificarOtp(), 300)
+      }
+    })
+
+    // Borrar con Backspace → volver al anterior
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace') {
+        if (input.value === '' && idx > 0) {
+          digits[idx - 1].value = ''
+          digits[idx - 1].classList.remove('filled')
+          digits[idx - 1].focus()
+        } else {
+          input.value = ''
+          input.classList.remove('filled')
+        }
+        actualizarBoton()
+      }
+    })
+
+    // Pegar código completo — si el usuario pega "123456" en cualquier input
+    input.addEventListener('paste', (e) => {
+      e.preventDefault()
+      const pasted = e.clipboardData?.getData('text').replace(/\D/g, '').slice(0, 6) ?? ''
+      if (pasted.length === 6) {
+        digits.forEach((d, i) => {
+          d.value = pasted[i]
+          d.classList.add('filled')
+        })
+        digits[5].focus()
+        actualizarBoton()
+        setTimeout(() => verificarOtp(), 300)
+      }
+    })
+
+    // En móvil, el autocomplete="one-time-code" del primero puede
+    // rellenar todos los inputs — manejarlo igual que paste
+    input.addEventListener('change', () => {
+      if (input.value.length > 1) {
+        const val = input.value.replace(/\D/g, '').slice(0, 6)
+        digits.forEach((d, i) => {
+          d.value = val[i] ?? ''
+          d.classList.toggle('filled', !!val[i])
+        })
+        digits[Math.min(val.length, 5)].focus()
+        actualizarBoton()
+      }
+    })
+  })
+
+  // ── Verificar el código con Supabase ────────────────────────────
+  async function verificarOtp() {
+    const token = digits.map(d => d.value).join('')
+    if (token.length !== 6) return
+
+    otpBtn.disabled    = true
+    otpBtn.textContent = 'Verificando...'
+    limpiarError()
+
+    const { error } = await supabase.auth.verifyOtp({
+      email: emailActual,
+      token,
+      type: 'email'   // tipo OTP por email (no magic link)
+    })
+
+    if (error) {
+      // Código incorrecto o expirado
+      otpError.textContent =
+        error.message.includes('expired')  ? 'El código expiró. Solicita uno nuevo.' :
+        error.message.includes('Invalid')  ? 'Código incorrecto. Revisa los dígitos.' :
+        error.message
+      otpError.classList.remove('hidden')
+
+      // Animación de error en los inputs
+      digits.forEach(d => d.classList.add('error'))
+      setTimeout(() => digits.forEach(d => d.classList.remove('error')), 600)
+
+      // Limpiar inputs y volver al foco en el primero
+      digits.forEach(d => { d.value = ''; d.classList.remove('filled') })
+      digits[0].focus()
+
+      otpBtn.disabled    = false
+      otpBtn.textContent = 'Verificar código'
+      return
+    }
+
+    // Éxito — redirigir
+    otpBtn.textContent = '✓ Accediendo...'
+    window.location.href = redirectTo
+  }
+
+  // Botón verificar manual (por si no se disparó automáticamente)
+  otpBtn.addEventListener('click', verificarOtp)
+
+  // ── Reenviar código con countdown ───────────────────────────────
+  function iniciarCountdown(segundos = 60) {
+    resendBtn.disabled = true
+    let restantes      = segundos
+
+    const tick = () => {
+      resendTimer.textContent = ` (${restantes}s)`
+      restantes--
+      if (restantes < 0) {
+        clearInterval(resendCountdown!)
+        resendBtn.disabled      = false
+        resendTimer.textContent = ''
+      }
+    }
+    tick()
+    resendCountdown = setInterval(tick, 1000)
+  }
+
+  resendBtn.addEventListener('click', async () => {
+    resendBtn.disabled    = true
+    resendBtn.textContent = 'Enviando...'
+    limpiarError()
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email: emailActual,
+      options: { shouldCreateUser: true }
+    })
+
+    resendBtn.textContent = 'Reenviar código'
+
+    if (error) {
+      otpError.textContent = 'No se pudo reenviar. Intenta en un momento.'
+      otpError.classList.remove('hidden')
+      resendBtn.disabled = false
+      return
+    }
+
+    // Limpiar inputs y reiniciar countdown
+    digits.forEach(d => { d.value = ''; d.classList.remove('filled') })
+    digits[0].focus()
+    iniciarCountdown()
+  })
+
+  // ── Volver al paso 1 ────────────────────────────────────────────
+  backBtn.addEventListener('click', () => {
+    // Limpiar todo
+    digits.forEach(d => { d.value = ''; d.classList.remove('filled', 'error') })
+    otpError.classList.add('hidden')
+    otpBtn.disabled = true
+
+    // Cancelar countdown
+    if (resendCountdown) clearInterval(resendCountdown)
+    resendTimer.textContent = ''
+    resendBtn.disabled = false
+
+    // Volver al paso 1
+    stepOtp.classList.add('hidden')
+    stepEmail.classList.remove('hidden')
+    emailBtn.disabled    = false
+    emailBtn.textContent = 'Continuar con email'
+    emailInput.focus()
   })
 </script>
