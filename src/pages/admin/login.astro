@@ -1,0 +1,425 @@
+---
+// src/pages/admin/login.astro
+// Login exclusivo para el SuperAdmin.
+// Diseño oscuro, email + contraseña.
+// Si ya tiene sesión admin válida → redirige directo a /admin
+export const prerender = false
+
+import Layout from '../../layouts/Layout.astro'
+import { createServerClient } from '@supabase/ssr'
+import { isAdmin } from '../../lib/supabase-admin'
+
+// Si ya tiene sesión admin válida → redirigir directo
+const supabase = createServerClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+  {
+    cookies: {
+      getAll() {
+        return (Astro.request.headers.get('Cookie') ?? '')
+          .split(';').filter(Boolean)
+          .map(c => { const [k,...v]=c.trim().split('='); return { name:k, value:v.join('=') } })
+      },
+      setAll(cs) { cs.forEach(({name,value,options}) => Astro.cookies.set(name,value,options)) },
+    },
+  }
+)
+
+const { data: { user } } = await supabase.auth.getUser()
+const yaEsAdmin = user && await isAdmin(user.email)
+if (yaEsAdmin) return Astro.redirect('/admin')
+---
+
+<Layout title="Admin Portal — Tarjeta Digital">
+
+  <div class="admin-login-shell">
+
+    <!-- Card central -->
+    <div class="admin-login-card">
+
+      <!-- Logo + título -->
+      <div class="admin-login-header">
+        <div class="admin-login-logo-wrap">
+          <img
+            src="/CardVirtual-logo.png"
+            alt="Tarjeta Digital"
+            class="admin-login-logo"
+            onerror="this.style.display='none';document.getElementById('logo-fb').style.display='flex'"
+          />
+          <!-- Fallback ícono corona -->
+          <div id="logo-fb" style="display:none;width:64px;height:64px;background:linear-gradient(135deg,#f59e0b,#ef4444);border-radius:16px;align-items:center;justify-content:center;font-size:28px">
+            👑
+          </div>
+        </div>
+        <h1 class="admin-login-title">Admin Portal</h1>
+        <p class="admin-login-subtitle">Panel de super administrador</p>
+      </div>
+
+      <!-- Formulario -->
+      <div class="admin-login-form">
+
+        <!-- Error banner -->
+        <div id="error-banner" class="admin-error-banner" style="display:none">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+          </svg>
+          <span id="error-text"></span>
+        </div>
+
+        <!-- Email -->
+        <div class="admin-field">
+          <label class="admin-label" for="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            autocomplete="email"
+            placeholder="admin@tudominio.com"
+            class="admin-input"
+          />
+        </div>
+
+        <!-- Contraseña -->
+        <div class="admin-field">
+          <label class="admin-label" for="password">Contraseña</label>
+          <div class="admin-input-wrap">
+            <input
+              type="password"
+              id="password"
+              autocomplete="current-password"
+              placeholder="••••••••"
+              class="admin-input admin-input-pass"
+            />
+            <button
+              type="button"
+              id="toggle-pass"
+              class="admin-eye-btn"
+              tabindex="-1"
+              aria-label="Mostrar contraseña"
+            >
+              <svg id="eye-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Botón -->
+        <button id="btn-ingresar" class="admin-btn" type="button">
+          Ingresar al Dashboard
+        </button>
+
+        <!-- Volver -->
+        <a href="/auth/login" class="admin-back-link">
+          ← Volver al login de usuarios
+        </a>
+
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="admin-login-footer">
+      🔒 Conexión segura • Solo personal autorizado
+    </div>
+
+  </div>
+
+  <!-- Config -->
+  <div
+    id="app-config"
+    data-url={import.meta.env.PUBLIC_SUPABASE_URL}
+    data-anon={import.meta.env.PUBLIC_SUPABASE_ANON_KEY}
+    style="display:none"
+  ></div>
+
+</Layout>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+
+  /* Shell — fondo oscuro degradado, centrado */
+  .admin-login-shell {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    background: radial-gradient(ellipse at 60% 20%, #1e2a4a 0%, #0d1117 60%, #0a0a0f 100%);
+    font-family: system-ui, sans-serif;
+  }
+
+  /* Card central */
+  .admin-login-card {
+    width: 100%;
+    max-width: 440px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 20px;
+    padding: 40px 36px;
+    backdrop-filter: blur(12px);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,.05),
+      0 24px 64px rgba(0,0,0,.5);
+  }
+
+  /* Header */
+  .admin-login-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .admin-login-logo-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  .admin-login-logo {
+    height: 64px;
+    width: auto;
+    object-fit: contain;
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.4);
+  }
+  .admin-login-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: #f8fafc;
+    letter-spacing: -.02em;
+    margin-bottom: 6px;
+  }
+  .admin-login-subtitle {
+    font-size: 13px;
+    color: rgba(255,255,255,.45);
+  }
+
+  /* Error banner */
+  .admin-error-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 14px;
+    background: rgba(239,68,68,.12);
+    border: 1px solid rgba(239,68,68,.3);
+    border-radius: 10px;
+    color: #fca5a5;
+    font-size: 13px;
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+
+  /* Campos */
+  .admin-field {
+    margin-bottom: 18px;
+  }
+  .admin-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255,255,255,.6);
+    margin-bottom: 6px;
+  }
+  .admin-input {
+    display: block;
+    width: 100%;
+    padding: 11px 14px;
+    background: rgba(255,255,255,.06);
+    border: 1.5px solid rgba(255,255,255,.12);
+    border-radius: 10px;
+    font-size: 14px;
+    color: #f1f5f9;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s, background .15s;
+    font-family: system-ui, sans-serif;
+  }
+  .admin-input::placeholder { color: rgba(255,255,255,.2); }
+  .admin-input:hover {
+    border-color: rgba(255,255,255,.2);
+    background: rgba(255,255,255,.08);
+  }
+  .admin-input:focus {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239,68,68,.15);
+    background: rgba(255,255,255,.08);
+  }
+  .admin-input.error {
+    border-color: #ef4444;
+    animation: shake .3s ease;
+  }
+  .admin-input-pass { padding-right: 42px; }
+
+  .admin-input-wrap { position: relative; }
+  .admin-eye-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: rgba(255,255,255,.3);
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    transition: color .15s;
+    width: auto;
+  }
+  .admin-eye-btn:hover { color: rgba(255,255,255,.6); }
+
+  /* Botón */
+  .admin-btn {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: system-ui, sans-serif;
+    cursor: pointer;
+    transition: opacity .15s, transform .1s, box-shadow .15s;
+    box-shadow: 0 4px 20px rgba(239,68,68,.35);
+    margin-bottom: 16px;
+    letter-spacing: .01em;
+    width: 100%;
+  }
+  .admin-btn:hover {
+    opacity: .92;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(239,68,68,.45);
+  }
+  .admin-btn:active { transform: translateY(0); }
+  .admin-btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Volver link */
+  .admin-back-link {
+    display: block;
+    text-align: center;
+    font-size: 12px;
+    color: rgba(255,255,255,.3);
+    text-decoration: none;
+    transition: color .15s;
+  }
+  .admin-back-link:hover { color: rgba(255,255,255,.6); }
+
+  /* Footer */
+  .admin-login-footer {
+    margin-top: 24px;
+    font-size: 11px;
+    color: rgba(255,255,255,.2);
+    text-align: center;
+    letter-spacing: .04em;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25%       { transform: translateX(-4px); }
+    75%       { transform: translateX(4px); }
+  }
+
+  /* Mobile */
+  @media (max-width: 480px) {
+    .admin-login-card {
+      padding: 32px 24px;
+      border-radius: 16px;
+    }
+    .admin-login-title { font-size: 22px; }
+  }
+</style>
+
+<script>
+  import { createBrowserClient } from '@supabase/ssr'
+
+  const cfg    = document.getElementById('app-config')!
+  const sb     = createBrowserClient(cfg.dataset.url!, cfg.dataset.anon!)
+
+  const emailInput = document.getElementById('email')    as HTMLInputElement
+  const passInput  = document.getElementById('password') as HTMLInputElement
+  const btnIngresar = document.getElementById('btn-ingresar') as HTMLButtonElement
+  const errorBanner = document.getElementById('error-banner') as HTMLDivElement
+  const errorText   = document.getElementById('error-text')   as HTMLSpanElement
+  const togglePass  = document.getElementById('toggle-pass')  as HTMLButtonElement
+
+  function ocultarError() {
+    errorBanner.style.display = 'none'
+    emailInput.classList.remove('error')
+    passInput.classList.remove('error')
+  }
+
+  function mostrarError(msg: string) {
+    errorText.textContent     = msg
+    errorBanner.style.display = 'flex'
+    emailInput.classList.add('error')
+    passInput.classList.add('error')
+    void emailInput.offsetWidth // reflow para reiniciar animación
+  }
+
+  emailInput.addEventListener('input', ocultarError)
+  passInput.addEventListener('input',  ocultarError)
+
+  // Toggle ojo
+  togglePass.addEventListener('click', () => {
+    const mostrar = passInput.type === 'password'
+    passInput.type = mostrar ? 'text' : 'password'
+    document.getElementById('eye-icon')!.innerHTML = mostrar
+      ? `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/>`
+      : `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>`
+  })
+
+  // Enter dispara login
+  ;[emailInput, passInput].forEach(el => {
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') btnIngresar.click()
+    })
+  })
+
+  // Login admin
+  btnIngresar.addEventListener('click', async () => {
+    const email    = emailInput.value.trim().toLowerCase()
+    const password = passInput.value
+
+    if (!email) {
+      mostrarError('Ingresa tu email.')
+      emailInput.focus()
+      return
+    }
+    if (!password) {
+      mostrarError('Ingresa tu contraseña.')
+      passInput.focus()
+      return
+    }
+
+    btnIngresar.disabled    = true
+    btnIngresar.textContent = 'Verificando...'
+    ocultarError()
+
+    // Intentar login con email real (no el ficticio de móvil)
+    const { data, error } = await sb.auth.signInWithPassword({ email, password })
+
+    if (error) {
+      const msg =
+        error.message.includes('Invalid login')    ? 'Email o contraseña incorrectos.' :
+        error.message.includes('Too many requests') ? 'Demasiados intentos. Espera un momento.' :
+        'Error al ingresar. Intenta de nuevo.'
+      mostrarError(msg)
+      btnIngresar.disabled    = false
+      btnIngresar.textContent = 'Ingresar al Dashboard'
+      passInput.value = ''
+      passInput.focus()
+      return
+    }
+
+    // Verificar que realmente es admin
+    // Hacemos una query al perfil para comprobarlo server-side en la redirección
+    // El middleware de /admin bloqueará si no es admin
+    btnIngresar.textContent = '✓ Accediendo...'
+    window.location.href = '/admin'
+  })
+</script>

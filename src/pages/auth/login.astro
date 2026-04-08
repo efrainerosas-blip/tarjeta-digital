@@ -175,7 +175,7 @@ const errorParam = Astro.url.searchParams.get('error') ?? ''
         <div class="login-form-footer">
           <p class="login-footer-text">¿No tienes cuenta? Contacta al administrador.</p>
           <!-- Link admin — discreto, no invasivo -->
-          <a href="/admin" class="login-admin-link">Admin</a>
+          <a href="/admin/login" class="login-admin-link">Admin</a>
         </div>
 
       </div>
@@ -214,14 +214,15 @@ const errorParam = Astro.url.searchParams.get('error') ?? ''
     overflow: hidden;
   }
 
-  /* Imagen de Unsplash — networking/tarjetas profesionales */
+  /* Imagen de Unsplash — networking/tarjetas profesionales
+     Usamos el parámetro fm=jpg&fit=crop para máxima compatibilidad
+     La URL directa de Unsplash funciona como background-image en todos los navegadores */
   .login-bg-image {
     position: absolute;
     inset: 0;
-    background-image: url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80&auto=format&fit=crop');
+    background-image: url('https://images.unsplash.com/photo-1600880292203-757bb62b4baf?fm=jpg&w=1200&q=75&fit=crop&crop=center');
     background-size: cover;
     background-position: center;
-    /* Zoom-in sutil para dar vida */
     animation: bgZoom 20s ease-in-out infinite alternate;
   }
   @keyframes bgZoom {
@@ -258,10 +259,11 @@ const errorParam = Astro.url.searchParams.get('error') ?? ''
     align-items: center;
   }
   .login-logo-img {
-    height: 48px;
+    height: 56px;
     width: auto;
     object-fit: contain;
-    filter: drop-shadow(0 2px 8px rgba(0,0,0,.3));
+    filter: drop-shadow(0 2px 12px rgba(0,0,0,.5)) brightness(1.1);
+    border-radius: 12px;
   }
   .login-logo-fallback {
     display: flex;
@@ -271,6 +273,10 @@ const errorParam = Astro.url.searchParams.get('error') ?? ''
     font-size: 18px;
     font-weight: 700;
     font-family: system-ui, sans-serif;
+    background: rgba(255,255,255,.1);
+    padding: 10px 16px;
+    border-radius: 12px;
+    backdrop-filter: blur(8px);
   }
 
   /* Tagline */
