@@ -1,0 +1,536 @@
+---
+// src/pages/dashboard/seguridad.astro
+// Tab de seguridad — permite al usuario cambiar su contraseña.
+// Dos modos:
+//   1. Primer login (?primer-login=1) — aviso destacado, no puede saltárselo fácilmente
+//   2. Uso normal — accesible desde el sidebar/drawer en cualquier momento
+export const prerender = false
+
+import DashboardLayout from '../../layouts/DashboardLayout.astro'
+import { createServerClient } from '@supabase/ssr'
+
+// ── 1. Verificar sesión ───────────────────────────────────────
+const supabase = createServerClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+  {
+    cookies: {
+      getAll() {
+        return (Astro.request.headers.get('Cookie') ?? '')
+          .split(';').filter(Boolean)
+          .map(c => { const [k,...v]=c.trim().split('='); return { name:k, value:v.join('=') } })
+      },
+      setAll(cs) {
+        cs.forEach(({ name, value, options }) => Astro.cookies.set(name, value, options))
+      },
+    },
+  }
+)
+
+const { data: { user }, error: authError } = await supabase.auth.getUser()
+if (authError || !user) return Astro.redirect('/auth/login')
+
+// ── 2. Cargar perfil para saber si es primer login ────────────
+const { data: perfil } = await supabase
+  .from('perfiles')
+  .select('id, slug, nombre, debe_cambiar_password, telefono')
+  .eq('user_id', user.id)
+  .maybeSingle()
+
+// Detectar primer login por query param O por el flag en BD
+const esPrimerLogin =
+  Astro.url.searchParams.get('primer-login') === '1' ||
+  perfil?.debe_cambiar_password === true
+---
+
+<DashboardLayout
+  title="Seguridad"
+  tabActivo="seguridad"
+  user={{ email: user.email!, id: user.id }}
+  slug={perfil?.slug}
+>
+
+  <!-- ── BANNER DE PRIMER LOGIN ──────────────────────────────── -->
+  {esPrimerLogin && (
+    <div
+      id="banner-primer-login"
+      style="
+        display:flex;align-items:flex-start;gap:14px;
+        padding:16px 20px;margin-bottom:24px;
+        background:rgba(245,158,11,.08);
+        border:1px solid rgba(245,158,11,.3);
+        border-radius:var(--radius-lg);
+      "
+    >
+      <div style="font-size:22px;flex-shrink:0;line-height:1">⚠️</div>
+      <div>
+        <div style="font-size:14px;font-weight:700;color:var(--warn);margin-bottom:4px">
+          Estás usando una contraseña temporal
+        </div>
+        <div style="font-size:13px;color:var(--text-2);line-height:1.6">
+          El administrador generó esta contraseña para darte acceso inicial.
+          <strong style="color:var(--text-1)">Cámbiala ahora</strong> para proteger tu cuenta.
+          Elige algo que solo tú conozcas.
+        </div>
+      </div>
+    </div>
+  )}
+
+  <!-- ── ENCABEZADO ──────────────────────────────────────────── -->
+  <div class="page-header">
+    <h1 class="page-title">Seguridad</h1>
+    <p class="page-desc">Administra tu contraseña de acceso.</p>
+  </div>
+
+  <!-- ── CARD: CAMBIAR CONTRASEÑA ────────────────────────────── -->
+  <div class="section-card" style="max-width:480px">
+
+    <div class="section-card-title">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+          d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
+      </svg>
+      Cambiar contraseña
+    </div>
+
+    <div class="form-grid">
+
+      <!-- Contraseña nueva -->
+      <div class="form-group">
+        <label for="pass-nueva">Nueva contraseña</label>
+        <div style="position:relative">
+          <input
+            type="password"
+            id="pass-nueva"
+            autocomplete="new-password"
+            placeholder="Mínimo 8 caracteres"
+            maxlength="72"
+            style="padding-right:40px"
+          />
+          <button
+            type="button"
+            class="toggle-eye"
+            data-target="pass-nueva"
+            tabindex="-1"
+            aria-label="Mostrar contraseña"
+          >
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="eye-open">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Barra de fortaleza de contraseña -->
+        <div id="strength-bar-wrap" style="margin-top:8px;display:none">
+          <div style="display:flex;gap:4px;margin-bottom:4px">
+            {[1,2,3,4].map(i => (
+              <div
+                class="strength-segment"
+                data-n={i}
+                style="flex:1;height:3px;border-radius:99px;background:var(--border);transition:background .2s"
+              ></div>
+            ))}
+          </div>
+          <span id="strength-label" style="font-size:11px;color:var(--text-3)"></span>
+        </div>
+      </div>
+
+      <!-- Confirmar contraseña -->
+      <div class="form-group">
+        <label for="pass-confirmar">Confirmar nueva contraseña</label>
+        <div style="position:relative">
+          <input
+            type="password"
+            id="pass-confirmar"
+            autocomplete="new-password"
+            placeholder="Repite la contraseña"
+            maxlength="72"
+            style="padding-right:40px"
+          />
+          <button
+            type="button"
+            class="toggle-eye"
+            data-target="pass-confirmar"
+            tabindex="-1"
+            aria-label="Mostrar confirmación"
+          >
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="eye-open">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+        <!-- Mensaje de coincidencia -->
+        <span id="match-msg" style="font-size:11px;margin-top:4px;display:none"></span>
+      </div>
+
+      <!-- Mensaje de error global -->
+      <div
+        id="error-msg"
+        style="display:none;padding:10px 14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius);font-size:13px;color:var(--danger)"
+      ></div>
+
+      <!-- Botón guardar -->
+      <button
+        id="btn-guardar"
+        class="btn btn-primary"
+        style="width:100%;justify-content:center;padding:11px"
+        disabled
+      >
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.5 12.75l6 6 9-13.5"/>
+        </svg>
+        Guardar nueva contraseña
+      </button>
+
+    </div>
+
+    <!-- Reglas de contraseña — se muestran solo cuando el campo tiene foco -->
+    <div id="reglas" style="margin-top:16px;padding:12px 14px;background:var(--bg-3);border-radius:var(--radius);display:none">
+      <div style="font-size:11px;font-weight:600;color:var(--text-3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">
+        Requisitos
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px">
+        {[
+          { id: 'r-len',    texto: 'Mínimo 8 caracteres' },
+          { id: 'r-upper',  texto: 'Al menos una mayúscula' },
+          { id: 'r-number', texto: 'Al menos un número' },
+        ].map(r => (
+          <div id={r.id} style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-3)">
+            <svg class="regla-icon" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="9"/>
+            </svg>
+            {r.texto}
+          </div>
+        ))}
+      </div>
+    </div>
+
+  </div><!-- /section-card -->
+
+  <!-- ── CARD: INFO DE ACCESO ─────────────────────────────────── -->
+  <div class="section-card" style="max-width:480px;margin-top:0">
+    <div class="section-card-title" style="font-size:13px;color:var(--text-2)">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+          d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3"/>
+      </svg>
+      Tu datos de acceso
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:12px;color:var(--text-3)">Número de acceso</span>
+        <code style="font-family:var(--font-mono);font-size:13px;color:var(--text-1)">
+          {perfil?.telefono ?? '—'}
+        </code>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0">
+        <span style="font-size:12px;color:var(--text-3)">Contraseña</span>
+        <span style="font-size:12px;color:var(--text-3)">
+          {perfil?.debe_cambiar_password ? '⚠ Temporal — cámbiala' : '✓ Personalizada'}
+        </span>
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--text-3);margin-top:12px;line-height:1.6">
+      Si pierdes acceso, contacta al administrador para restablecer tu contraseña.
+    </p>
+  </div>
+
+</DashboardLayout>
+
+<!-- Datos del servidor para el script -->
+<div
+  id="page-data"
+  data-primer-login={esPrimerLogin ? '1' : '0'}
+  data-user-id={user.id}
+  style="display:none"
+></div>
+
+<style>
+  /* Botón de ojo dentro del input */
+  .toggle-eye {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text-3);
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color var(--transition);
+    width: auto;         /* override del input width:100% global */
+  }
+  .toggle-eye:hover { color: var(--text-1); }
+
+  /* Regla cumplida — ícono verde + texto más claro */
+  .regla-ok .regla-icon {
+    stroke: var(--success);
+  }
+  .regla-ok {
+    color: var(--success) !important;
+  }
+</style>
+
+<script>
+  import { createBrowserClient } from '@supabase/ssr'
+
+  // ── Config ──────────────────────────────────────────────────
+  const pageData   = document.getElementById('page-data')!
+  const esPrimer   = pageData.dataset.primerLogin === '1'
+
+  const sb = createBrowserClient(
+    document.querySelector<HTMLMetaElement>('meta[name="supabase-url"]')!.content,
+    document.querySelector<HTMLMetaElement>('meta[name="supabase-anon"]')!.content,
+  )
+
+  // ── Elementos ───────────────────────────────────────────────
+  const inputNueva      = document.getElementById('pass-nueva')      as HTMLInputElement
+  const inputConfirmar  = document.getElementById('pass-confirmar')  as HTMLInputElement
+  const btnGuardar      = document.getElementById('btn-guardar')     as HTMLButtonElement
+  const errorMsg        = document.getElementById('error-msg')       as HTMLDivElement
+  const matchMsg        = document.getElementById('match-msg')       as HTMLSpanElement
+  const reglas          = document.getElementById('reglas')          as HTMLDivElement
+  const strengthWrap    = document.getElementById('strength-bar-wrap') as HTMLDivElement
+  const strengthLabel   = document.getElementById('strength-label')  as HTMLSpanElement
+
+  // ── Toggle mostrar/ocultar contraseña ────────────────────────
+  document.querySelectorAll<HTMLButtonElement>('.toggle-eye').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.dataset.target!
+      const input    = document.getElementById(targetId) as HTMLInputElement
+      const mostrar  = input.type === 'password'
+      input.type     = mostrar ? 'text' : 'password'
+
+      // Cambiar ícono ojo abierto ↔ ojo tachado
+      btn.querySelector('svg')!.innerHTML = mostrar
+        ? `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/>`
+        : `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><circle cx="12" cy="12" r="3"/>`
+    })
+  })
+
+  // ── Evaluador de fortaleza de contraseña ─────────────────────
+  type StrengthLevel = 'débil' | 'regular' | 'buena' | 'fuerte'
+
+  function evaluarFortaleza(pass: string): { score: number; label: StrengthLevel } {
+    let score = 0
+    if (pass.length >= 8)                     score++
+    if (pass.length >= 12)                    score++
+    if (/[A-Z]/.test(pass))                   score++
+    if (/[0-9]/.test(pass))                   score++
+    if (/[^A-Za-z0-9]/.test(pass))            score++
+
+    // Normalizar a 1-4
+    const nivel = Math.max(1, Math.min(4, score)) as 1|2|3|4
+    const labels: Record<1|2|3|4, StrengthLevel> = {
+      1: 'débil', 2: 'regular', 3: 'buena', 4: 'fuerte'
+    }
+    return { score: nivel, label: labels[nivel] }
+  }
+
+  const strengthColors = ['', '#ef4444', '#f59e0b', '#3b82f6', '#22c55e']
+
+  function actualizarStrength(pass: string) {
+    if (!pass) {
+      strengthWrap.style.display = 'none'
+      return
+    }
+    strengthWrap.style.display = 'block'
+    const { score, label } = evaluarFortaleza(pass)
+    const color = strengthColors[score]
+
+    document.querySelectorAll<HTMLElement>('.strength-segment').forEach(seg => {
+      const n = parseInt(seg.dataset.n!)
+      seg.style.background = n <= score ? color : 'var(--border)'
+    })
+
+    strengthLabel.textContent = `Contraseña ${label}`
+    strengthLabel.style.color = color
+  }
+
+  // ── Validador de reglas ──────────────────────────────────────
+  function validarReglas(pass: string): boolean {
+    const reglaLen    = document.getElementById('r-len')!
+    const reglaUpper  = document.getElementById('r-upper')!
+    const reglaNumber = document.getElementById('r-number')!
+
+    const okLen    = pass.length >= 8
+    const okUpper  = /[A-Z]/.test(pass)
+    const okNumber = /[0-9]/.test(pass)
+
+    // Actualizar íconos y colores de cada regla
+    ;[
+      { el: reglaLen,    ok: okLen },
+      { el: reglaUpper,  ok: okUpper },
+      { el: reglaNumber, ok: okNumber },
+    ].forEach(({ el, ok }) => {
+      el.classList.toggle('regla-ok', ok)
+      const icon = el.querySelector<SVGElement>('.regla-icon')!
+      icon.innerHTML = ok
+        ? `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4.5 12.75l6 6 9-13.5"/>`
+        : `<circle cx="12" cy="12" r="9"/>`
+    })
+
+    return okLen && okUpper && okNumber
+  }
+
+  // ── Validar coincidencia de contraseñas ──────────────────────
+  function validarCoincidencia(): boolean {
+    const a = inputNueva.value
+    const b = inputConfirmar.value
+    if (!b) {
+      matchMsg.style.display = 'none'
+      return false
+    }
+    const coincide = a === b
+    matchMsg.style.display = 'block'
+    matchMsg.textContent   = coincide ? '✓ Las contraseñas coinciden' : '✕ No coinciden'
+    matchMsg.style.color   = coincide ? 'var(--success)' : 'var(--danger)'
+    return coincide
+  }
+
+  // ── Actualizar estado del botón ──────────────────────────────
+  function actualizarBoton() {
+    const reglasOk     = validarReglas(inputNueva.value)
+    const coincidencia = validarCoincidencia()
+    btnGuardar.disabled = !(reglasOk && coincidencia)
+  }
+
+  // ── Listeners de los inputs ──────────────────────────────────
+  inputNueva.addEventListener('focus', () => {
+    reglas.style.display = 'block'
+  })
+
+  inputNueva.addEventListener('input', () => {
+    ocultarError()
+    actualizarStrength(inputNueva.value)
+    validarReglas(inputNueva.value)
+    actualizarBoton()
+  })
+
+  inputConfirmar.addEventListener('input', () => {
+    ocultarError()
+    actualizarBoton()
+  })
+
+  // ── Helpers de error ─────────────────────────────────────────
+  function ocultarError() {
+    errorMsg.style.display = 'none'
+    errorMsg.textContent   = ''
+  }
+
+  function mostrarError(msg: string) {
+    errorMsg.textContent   = msg
+    errorMsg.style.display = 'block'
+    // Scroll suave al error
+    errorMsg.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }
+
+  // ── Guardar nueva contraseña ─────────────────────────────────
+  btnGuardar.addEventListener('click', async () => {
+    const nueva     = inputNueva.value
+    const confirmar = inputConfirmar.value
+
+    // Doble validación en el cliente (por si acaso)
+    if (!validarReglas(nueva)) {
+      mostrarError('La contraseña no cumple los requisitos mínimos.')
+      return
+    }
+    if (nueva !== confirmar) {
+      mostrarError('Las contraseñas no coinciden.')
+      return
+    }
+
+    // Estado de carga
+    btnGuardar.disabled    = true
+    btnGuardar.innerHTML   = '<span style="opacity:.6">Guardando…</span>'
+    ocultarError()
+
+    try {
+      // ── 1. Actualizar contraseña en Supabase Auth ────────────
+      const { error: authError } = await sb.auth.updateUser({ password: nueva })
+
+      if (authError) {
+        throw new Error(
+          authError.message.includes('same password')
+            ? 'La nueva contraseña no puede ser igual a la temporal.'
+            : authError.message.includes('weak')
+            ? 'Contraseña demasiado débil. Elige una más segura.'
+            : `Error al actualizar: ${authError.message}`
+        )
+      }
+
+      // ── 2. Marcar debe_cambiar_password = false en perfiles ──
+      // Así el próximo login va directo al dashboard sin pasar por aquí
+      const { data: { user } } = await sb.auth.getUser()
+      if (user) {
+        await sb
+          .from('perfiles')
+          .update({ debe_cambiar_password: false })
+          .eq('user_id', user.id)
+      }
+
+      // ── 3. Feedback visual de éxito ──────────────────────────
+      btnGuardar.innerHTML   = `
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4.5 12.75l6 6 9-13.5"/>
+        </svg>
+        ¡Contraseña actualizada!
+      `
+      btnGuardar.style.background = 'var(--success)'
+
+      // Limpiar campos
+      inputNueva.value     = ''
+      inputConfirmar.value = ''
+      strengthWrap.style.display = 'none'
+      matchMsg.style.display     = 'none'
+      reglas.style.display       = 'none'
+
+      // Ocultar el banner de primer login si existía
+      document.getElementById('banner-primer-login')?.remove()
+
+      // ── 4. Redirigir al dashboard después de 1.5s ────────────
+      // Si era primer login → va al perfil. Si no → se queda.
+      if (esPrimer) {
+        setTimeout(() => {
+          window.location.href = '/dashboard'
+        }, 1500)
+      } else {
+        ;(window as any).toast?.('Contraseña actualizada correctamente', 'success')
+        // Restaurar botón después de 2s
+        setTimeout(() => {
+          btnGuardar.innerHTML = `
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.5 12.75l6 6 9-13.5"/>
+            </svg>
+            Guardar nueva contraseña
+          `
+          btnGuardar.style.background = ''
+          btnGuardar.disabled = true
+        }, 2000)
+      }
+
+    } catch (err: any) {
+      mostrarError(err.message ?? 'Error inesperado. Intenta de nuevo.')
+      btnGuardar.disabled  = false
+      btnGuardar.innerHTML = `
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.5 12.75l6 6 9-13.5"/>
+        </svg>
+        Guardar nueva contraseña
+      `
+    }
+  })
+
+  // ── Enter en confirmar → disparar guardar ────────────────────
+  inputConfirmar.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !btnGuardar.disabled) btnGuardar.click()
+  })
+</script>

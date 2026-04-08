@@ -1,0 +1,486 @@
+---
+// src/pages/admin/crear-usuario.astro
+// Formulario para que el SuperAdmin cree nuevos usuarios.
+// Genera contraseña temporal y muestra credenciales para
+// compartir por WhatsApp al finalizar.
+export const prerender = false
+
+import AdminLayout from '../../layouts/AdminLayout.astro'
+import { getSupabaseAdmin, isAdmin } from '../../lib/supabase-admin'
+import { createServerClient } from '@supabase/ssr'
+
+// ── 1. Verificar sesión + permisos admin ──────────────────────
+const supabaseAuth = createServerClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
+  {
+    cookies: {
+      getAll() {
+        return (Astro.request.headers.get('Cookie') ?? '')
+          .split(';').filter(Boolean)
+          .map(c => { const [k,...v]=c.trim().split('='); return { name:k, value:v.join('=') } })
+      },
+      setAll(cs) { cs.forEach(({name,value,options}) => Astro.cookies.set(name,value,options)) },
+    },
+  }
+)
+
+const { data: { user }, error: authError } = await supabaseAuth.auth.getUser()
+if (authError || !user || !(await isAdmin(user.email))) {
+  return Astro.redirect('/dashboard?error=forbidden')
+}
+
+// ── 2. Cargar planes disponibles para el selector ─────────────
+const db = getSupabaseAdmin()
+const { data: planes } = await db
+  .from('planes')
+  .select('id, nombre, descripcion, precio_mensual, duracion_prueba_dias')
+  .eq('activo', true)
+  .order('precio_mensual')
+---
+
+<AdminLayout title="Crear Usuario" tabActivo="usuarios" user={{ email: user.email!, id: user.id }}>
+
+  <!-- Encabezado de página con botón volver -->
+  <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1 class="page-title">Crear nuevo usuario</h1>
+      <p class="page-desc">El sistema generará credenciales para compartir por WhatsApp.</p>
+    </div>
+    <a href="/admin/usuarios" class="btn btn-ghost">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 15L3 9m0 0l6-6M3 9h12"/>
+      </svg>
+      Volver a usuarios
+    </a>
+  </div>
+
+  <!-- Layout de dos columnas: formulario + ayuda -->
+  <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start">
+
+    <!-- ── FORMULARIO PRINCIPAL ──────────────────────────────── -->
+    <div>
+
+      <!-- Datos personales -->
+      <div class="section-card">
+        <div class="section-card-title">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
+          </svg>
+          Datos personales
+        </div>
+
+        <div class="form-grid form-grid-2">
+          <div class="form-group">
+            <label for="nombre">Nombre *</label>
+            <input
+              type="text"
+              id="nombre"
+              name="nombre"
+              required
+              autocomplete="off"
+              placeholder="Ej: Carlos"
+              maxlength="60"
+            />
+          </div>
+          <div class="form-group">
+            <label for="apellidos">Apellidos</label>
+            <input
+              type="text"
+              id="apellidos"
+              name="apellidos"
+              autocomplete="off"
+              placeholder="Ej: García Pérez"
+              maxlength="80"
+            />
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top:16px">
+          <label for="titulo">Título profesional</label>
+          <input
+            type="text"
+            id="titulo"
+            name="titulo"
+            autocomplete="off"
+            placeholder="Ej: Diseñador UX / Abogado corporativo"
+            maxlength="100"
+          />
+          <span class="form-hint">Aparecerá debajo del nombre en la tarjeta.</span>
+        </div>
+      </div>
+
+      <!-- Móvil — el dato más importante -->
+      <div class="section-card" style="border-color:var(--accent);background:rgba(99,102,241,.04)">
+        <div class="section-card-title" style="color:var(--accent-2)">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 8.25h3"/>
+          </svg>
+          Número de móvil
+          <span style="font-size:11px;font-weight:400;color:var(--text-3);margin-left:4px">— será el usuario de login</span>
+        </div>
+
+        <div class="form-group">
+          <label for="movil">Número *</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <!-- Prefijo de país -->
+            <select id="prefijo" name="prefijo" style="width:110px;flex-shrink:0">
+              <option value="51">🇵🇪 +51</option>
+              <option value="52">🇲🇽 +52</option>
+              <option value="57">🇨🇴 +57</option>
+              <option value="56">🇨🇱 +56</option>
+              <option value="54">🇦🇷 +54</option>
+              <option value="34">🇪🇸 +34</option>
+              <option value="1">🇺🇸 +1</option>
+            </select>
+            <input
+              type="tel"
+              id="movil"
+              name="movil"
+              required
+              autocomplete="off"
+              placeholder="987 654 321"
+              maxlength="12"
+              style="flex:1"
+            />
+          </div>
+          <span class="form-hint">
+            El usuario ingresará con este número + la contraseña temporal que se generará.
+          </span>
+        </div>
+      </div>
+
+      <!-- Plan -->
+      <div class="section-card">
+        <div class="section-card-title">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 6h.008v.008H6V6z"/>
+          </svg>
+          Plan de suscripción
+        </div>
+
+        <div style="display:grid;gap:10px">
+          {(planes ?? []).map(plan => (
+            <label
+              class="plan-option"
+              data-plan-id={plan.id}
+              style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:1.5px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all var(--transition)"
+            >
+              <input
+                type="radio"
+                name="plan_id"
+                value={plan.id}
+                checked={plan.id === 'free'}
+                style="width:16px;height:16px;flex-shrink:0;accent-color:var(--accent)"
+              />
+              <div style="flex:1">
+                <div style="font-size:13px;font-weight:600;color:var(--text-1);display:flex;align-items:center;gap:8px">
+                  {plan.nombre}
+                  {plan.precio_mensual === 0
+                    ? <span class="badge badge-free">Gratis</span>
+                    : <span class="badge badge-premium">${plan.precio_mensual}/mes</span>
+                  }
+                </div>
+                {plan.descripcion && (
+                  <div style="font-size:12px;color:var(--text-3);margin-top:2px">{plan.descripcion}</div>
+                )}
+                {plan.duracion_prueba_dias > 0 && (
+                  <div style="font-size:11px;color:var(--warn);margin-top:2px">
+                    ⏱ Expira en {plan.duracion_prueba_dias} días
+                  </div>
+                )}
+              </div>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <!-- Botón crear -->
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <a href="/admin/usuarios" class="btn btn-ghost">Cancelar</a>
+        <button type="button" id="btn-crear" class="btn btn-primary" style="min-width:160px">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15"/>
+          </svg>
+          Crear usuario
+        </button>
+      </div>
+
+    </div>
+
+    <!-- ── PANEL DE AYUDA ────────────────────────────────────── -->
+    <div style="position:sticky;top:calc(var(--header-h) + 20px)">
+
+      <div class="section-card" style="margin-bottom:12px">
+        <div class="section-card-title" style="font-size:13px">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
+          </svg>
+          ¿Cómo funciona?
+        </div>
+        <ol style="font-size:12px;color:var(--text-3);line-height:1.8;padding-left:16px">
+          <li>Completa los datos del usuario</li>
+          <li>El sistema genera una contraseña temporal automática</li>
+          <li>Se crea la cuenta en Supabase Auth</li>
+          <li>Las credenciales aparecen para copiar o enviar por WhatsApp</li>
+          <li>El usuario cambia su contraseña al primer login</li>
+        </ol>
+      </div>
+
+      <div class="section-card" style="background:rgba(245,158,11,.04);border-color:rgba(245,158,11,.2)">
+        <div class="section-card-title" style="font-size:13px;color:var(--warn)">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+          </svg>
+          Importante
+        </div>
+        <ul style="font-size:12px;color:var(--text-3);line-height:1.8;padding-left:16px">
+          <li>El número de móvil es el <strong style="color:var(--text-2)">único</strong> identificador del usuario</li>
+          <li>No se puede cambiar después — úsalo con cuidado</li>
+          <li>La contraseña temporal <strong style="color:var(--text-2)">expira</strong> al cambiarla en el primer login</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── MODAL DE CREDENCIALES (aparece al crear exitosamente) ── -->
+  <div class="modal-backdrop" id="modal-credenciales">
+    <div class="modal" style="max-width:460px">
+      <div class="modal-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;border-radius:50%;background:rgba(34,197,94,.12);display:flex;align-items:center;justify-content:center">
+            <svg width="16" height="16" fill="none" stroke="var(--success)" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.5 12.75l6 6 9-13.5"/>
+            </svg>
+          </div>
+          <span class="modal-title">¡Usuario creado!</span>
+        </div>
+        <!-- No hay botón cerrar aquí — el admin debe copiar las credenciales primero -->
+      </div>
+
+      <!-- Credenciales generadas -->
+      <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">
+          Credenciales de acceso
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px;color:var(--text-3)">Usuario (móvil):</span>
+            <code id="cred-movil" style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--text-1)">—</code>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px;color:var(--text-3)">Contraseña temporal:</span>
+            <code id="cred-password" style="font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--accent-2);letter-spacing:.05em">—</code>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px;color:var(--text-3)">URL de acceso:</span>
+            <code style="font-family:var(--font-mono);font-size:11px;color:var(--text-3)">
+              /auth/login
+            </code>
+          </div>
+        </div>
+      </div>
+
+      <!-- Acciones -->
+      <div style="display:flex;flex-direction:column;gap:8px">
+
+        <!-- WhatsApp — acción principal -->
+        <a
+          id="btn-whatsapp"
+          href="#"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn btn-success"
+          style="width:100%;justify-content:center;padding:12px"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+          </svg>
+          Enviar credenciales por WhatsApp
+        </a>
+
+        <!-- Copiar -->
+        <button id="btn-copiar" class="btn btn-ghost" style="width:100%;justify-content:center">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"/>
+          </svg>
+          Copiar credenciales
+        </button>
+
+        <!-- Crear otro + Ir a usuarios -->
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button id="btn-crear-otro" class="btn btn-ghost" style="flex:1;justify-content:center;font-size:12px">
+            + Crear otro
+          </button>
+          <a href="/admin/usuarios" class="btn btn-ghost" style="flex:1;justify-content:center;font-size:12px">
+            Ver usuarios →
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</AdminLayout>
+
+<!-- Datos del servidor para el script -->
+<div
+  id="page-data"
+  data-url={import.meta.env.PUBLIC_SUPABASE_URL}
+  style="display:none"
+></div>
+
+<style>
+  /* Resaltar la opción de plan seleccionada */
+  .plan-option:has(input:checked) {
+    border-color: var(--accent);
+    background: var(--accent-bg);
+  }
+
+  /* Responsive: colapsar a una columna en mobile/tablet */
+  @media (max-width: 900px) {
+    div[style*="grid-template-columns:1fr 340px"] {
+      grid-template-columns: 1fr !important;
+    }
+    div[style*="position:sticky"] {
+      position: static !important;
+    }
+  }
+</style>
+
+<script>
+  // ── Elementos del formulario ─────────────────────────────────
+  const btnCrear   = document.getElementById('btn-crear')   as HTMLButtonElement
+  const inputMovil = document.getElementById('movil')       as HTMLInputElement
+  const inputPref  = document.getElementById('prefijo')     as HTMLSelectElement
+
+  // ── Elementos del modal de credenciales ─────────────────────
+  const modal        = document.getElementById('modal-credenciales')!
+  const credMovil    = document.getElementById('cred-movil')!
+  const credPassword = document.getElementById('cred-password')!
+  const btnWhatsapp  = document.getElementById('btn-whatsapp') as HTMLAnchorElement
+  const btnCopiar    = document.getElementById('btn-copiar')   as HTMLButtonElement
+  const btnCrearOtro = document.getElementById('btn-crear-otro') as HTMLButtonElement
+
+  // ── Limpiar el móvil al escribir (solo dígitos) ──────────────
+  inputMovil.addEventListener('input', () => {
+    inputMovil.value = inputMovil.value.replace(/\D/g, '')
+  })
+
+  // ── Crear usuario ────────────────────────────────────────────
+  btnCrear.addEventListener('click', async () => {
+    // Recoger datos del formulario
+    const nombre    = (document.getElementById('nombre')    as HTMLInputElement).value.trim()
+    const apellidos = (document.getElementById('apellidos') as HTMLInputElement).value.trim()
+    const titulo    = (document.getElementById('titulo')    as HTMLInputElement).value.trim()
+    const prefijo   = inputPref.value
+    const movil     = inputMovil.value.trim()
+    const plan_id   = (document.querySelector<HTMLInputElement>('input[name="plan_id"]:checked'))?.value ?? 'free'
+
+    // Validación básica en el cliente
+    if (!nombre) {
+      ;(window as any).toast?.('El nombre es requerido', 'error')
+      document.getElementById('nombre')?.focus()
+      return
+    }
+    if (!movil || movil.length < 7) {
+      ;(window as any).toast?.('Ingresa un número de móvil válido', 'error')
+      inputMovil.focus()
+      return
+    }
+
+    // Construir el móvil completo con prefijo
+    const movilCompleto = `${prefijo}${movil}`
+
+    // Estado de carga
+    btnCrear.disabled    = true
+    btnCrear.innerHTML   = '<span style="opacity:.6">Creando usuario…</span>'
+
+    try {
+      const res = await fetch('/api/admin/crear-usuario', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre,
+          apellidos,
+          titulo,
+          movil: movilCompleto,
+          plan_id,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error ?? `Error ${res.status}`)
+      }
+
+      // ── Éxito: mostrar modal con credenciales ──────────────
+      credMovil.textContent    = movilCompleto
+      credPassword.textContent = data.password
+
+      // Construir URL de WhatsApp con las credenciales
+      btnWhatsapp.href = data.whatsapp_url
+
+      // Abrir modal
+      modal.classList.add('open')
+
+      ;(window as any).toast?.(`Usuario ${nombre} creado correctamente`, 'success')
+
+    } catch (err: any) {
+      ;(window as any).toast?.(`Error: ${err.message}`, 'error')
+
+    } finally {
+      btnCrear.disabled  = false
+      btnCrear.innerHTML = `
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15"/>
+        </svg>
+        Crear usuario
+      `
+    }
+  })
+
+  // ── Copiar credenciales al portapapeles ──────────────────────
+  btnCopiar.addEventListener('click', async () => {
+    const texto = `Usuario: ${credMovil.textContent}\nContraseña: ${credPassword.textContent}\nAcceso: ${window.location.origin}/auth/login`
+
+    try {
+      await navigator.clipboard.writeText(texto)
+      btnCopiar.textContent = '✓ ¡Copiado!'
+      setTimeout(() => {
+        btnCopiar.innerHTML = `
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"/>
+          </svg>
+          Copiar credenciales
+        `
+      }, 2000)
+    } catch {
+      ;(window as any).toast?.('No se pudo copiar. Hazlo manualmente.', 'warn')
+    }
+  })
+
+  // ── Crear otro usuario — limpiar formulario y cerrar modal ───
+  btnCrearOtro.addEventListener('click', () => {
+    modal.classList.remove('open')
+
+    // Limpiar todos los inputs
+    ;(document.getElementById('nombre')    as HTMLInputElement).value = ''
+    ;(document.getElementById('apellidos') as HTMLInputElement).value = ''
+    ;(document.getElementById('titulo')    as HTMLInputElement).value = ''
+    inputMovil.value = ''
+
+    // Resetear al primer plan
+    const primerPlan = document.querySelector<HTMLInputElement>('input[name="plan_id"]')
+    if (primerPlan) primerPlan.checked = true
+
+    // Foco en el nombre para empezar de nuevo
+    document.getElementById('nombre')?.focus()
+  })
+
+  // ── Cerrar modal con Escape ──────────────────────────────────
+  // (ya está manejado globalmente en AdminLayout con Escape → .modal-backdrop.open)
+</script>
