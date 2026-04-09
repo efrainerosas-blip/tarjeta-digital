@@ -14,7 +14,7 @@ export const onRequest = defineMiddleware(async ({ url, redirect, request }, nex
   const pathname = url.pathname
 
   // 👇 ========================================================= 👇
-  //    CAMBIO AÑADIDO: EXCEPCIÓN PARA EL LOGIN DE ADMIN
+  //    EXCEPCIÓN PARA EL LOGIN DE ADMIN
   // ==============================================================
   // Permitimos el acceso directo si la URL es exactamente /admin/login.
   // De lo contrario, el paso 1 la bloquearía porque empieza con /admin.
@@ -68,6 +68,6 @@ export const onRequest = defineMiddleware(async ({ url, redirect, request }, nex
     }
   }
 
-  // ── 6. Todo OK → continuar con el request ────────────────────
+  // ── 6. continuar con el request ────────────────────
   return next()
 })
