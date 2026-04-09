@@ -6,13 +6,22 @@ import { createServerClient } from '@supabase/ssr'
 const RUTAS_PROTEGIDAS = ['/dashboard', '/admin']
 
 // ── Rutas que además requieren ser SuperAdmin ─────────────────
-
 const RUTAS_ADMIN = ['/admin']
 
 // ── Lista de SuperAdmins directo en la BD Supabase ──────────────────────────────────────
 
 export const onRequest = defineMiddleware(async ({ url, redirect, request }, next) => {
   const pathname = url.pathname
+
+  // 👇 ========================================================= 👇
+  //    CAMBIO AÑADIDO: EXCEPCIÓN PARA EL LOGIN DE ADMIN
+  // ==============================================================
+  // Permitimos el acceso directo si la URL es exactamente /admin/login.
+  // De lo contrario, el paso 1 la bloquearía porque empieza con /admin.
+  if (pathname === '/admin/login') {
+    return next()
+  }
+  // 👆 ========================================================= 👆
 
   // ── 1. Si la ruta no está protegida, pasar directo ────────────
   const estaProtegida = RUTAS_PROTEGIDAS.some(r => pathname.startsWith(r))
@@ -53,7 +62,7 @@ export const onRequest = defineMiddleware(async ({ url, redirect, request }, nex
 
   if (esRutaAdmin) {
     const { isAdmin } = await import('../lib/supabase-admin')
-    const adminOk = await isAdmin(user.email)
+    const adminOk = await isAdmin(user?.email)
     if (!adminOk) {
       return redirect('/dashboard?error=forbidden')
     }
