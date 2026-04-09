@@ -1,8 +1,7 @@
 ---
 // src/pages/auth/login.astro
-// Login con número de móvil + contraseña.
-// Layout de dos columnas: imagen izquierda, formulario derecha.
-// En mobile: solo formulario con logo arriba.
+// Login usuarios — dos columnas, imagen izquierda, formulario derecho.
+// Patrón idéntico al proyecto MenuHoy para garantizar que la imagen cargue.
 import Layout from '../../layouts/Layout.astro'
 
 const redirectTo = Astro.url.searchParams.get('redirect') ?? '/dashboard'
@@ -10,91 +9,84 @@ const errorParam = Astro.url.searchParams.get('error') ?? ''
 ---
 
 <Layout title="Acceder — Tarjeta Digital">
+  <div class="min-h-screen flex bg-white">
 
-  <div class="login-shell">
+    <!-- ── COLUMNA IZQUIERDA — imagen + branding ──────────────── -->
+    <div class="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-900">
 
-    <!-- ── COLUMNA IZQUIERDA — imagen + branding ─────────────── -->
-    <div class="login-left">
+      <!-- Imagen Unsplash — profesional con tarjetas de presentación -->
+      <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1600880292203-757bb62b4baf?q=80&w=1974&auto=format&fit=crop')] bg-cover bg-center opacity-60"></div>
 
-      <!-- Imagen de fondo via Unsplash — tarjetas/networking profesional -->
-      <!-- La cargamos como background CSS para poder aplicar overlay -->
-      <div class="login-bg-image"></div>
-
-      <!-- Overlay degradado oscuro para legibilidad -->
-      <div class="login-overlay"></div>
+      <!-- Overlay degradado -->
+      <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
 
       <!-- Contenido sobre la imagen -->
-      <div class="login-left-content">
+      <div class="relative z-10 flex flex-col justify-between p-14 text-white h-full">
 
-        <!-- Logo -->
-        <div class="login-logo">
-          <img
-            src="/CardVirtual-logo.png"
-            alt="Tarjeta Digital"
-            class="login-logo-img"
-            onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='flex'"
-          />
-          <!-- Fallback si no carga el PNG -->
-          <div id="logo-fallback" class="login-logo-fallback" style="display:none">
-            <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/>
-            </svg>
-            <span>TarjetaDigital</span>
+        <!-- Logo arriba -->
+        <div class="flex items-center">
+          <div class="w-14 h-14 bg-white/95 rounded-2xl flex items-center justify-center shadow-2xl ring-2 ring-white/20 overflow-hidden">
+            <img
+              src="/CardVirtual-logo.png"
+              alt="Tarjeta Digital"
+              class="w-10 h-10 object-contain"
+              onerror="this.parentElement.innerHTML='<span class=\'text-2xl\'>🪪</span>'"
+            />
           </div>
         </div>
 
-        <!-- Tagline -->
-        <div class="login-tagline">
-          <h2 class="login-tagline-title">
+        <!-- Tagline abajo -->
+        <div>
+          <h2 class="text-5xl font-black mb-4 leading-tight">
             Tu tarjeta digital,<br/>
-            <span class="login-tagline-accent">siempre contigo.</span>
+            <span class="text-indigo-400">siempre contigo.</span>
           </h2>
-          <p class="login-tagline-sub">
+          <p class="text-white/70 text-lg mb-8">
             Comparte tu perfil profesional con un solo enlace.
           </p>
-        </div>
 
-        <!-- Badges de features -->
-        <div class="login-features">
-          {['Sin papel', 'Actualización instantánea', 'Siempre disponible'].map(f => (
-            <div class="login-feature-badge">
-              <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4.5 12.75l6 6 9-13.5"/>
-              </svg>
-              {f}
-            </div>
-          ))}
+          <!-- Features -->
+          <div class="flex flex-col gap-3">
+            {['Sin papel ni impresión', 'Actualización instantánea', 'Siempre disponible'].map(f => (
+              <div class="flex items-center gap-3 text-white/80 text-sm">
+                <svg class="w-4 h-4 text-indigo-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4.5 12.75l6 6 9-13.5"/>
+                </svg>
+                {f}
+              </div>
+            ))}
+          </div>
         </div>
 
       </div>
     </div>
 
     <!-- ── COLUMNA DERECHA — formulario ──────────────────────── -->
-    <div class="login-right">
+    <div class="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 bg-slate-50">
+      <div class="w-full max-w-[400px] space-y-8">
 
-      <!-- Logo visible solo en mobile (la columna izquierda se oculta) -->
-      <div class="login-mobile-logo">
-        <img
-          src="/CardVirtual-logo.png"
-          alt="Tarjeta Digital"
-          class="login-mobile-logo-img"
-          onerror="this.style.display='none'"
-        />
-      </div>
-
-      <!-- Formulario centrado -->
-      <div class="login-form-wrap">
-
-        <div class="login-form-header">
-          <h1 class="login-title">Bienvenido</h1>
-          <p class="login-subtitle">Ingresa con tu número de WhatsApp.</p>
+        <!-- Logo mobile — solo visible cuando la imagen está oculta -->
+        <div class="flex justify-center lg:hidden">
+          <div class="w-16 h-16 bg-white shadow-xl rounded-2xl flex items-center justify-center ring-2 ring-indigo-100 overflow-hidden">
+            <img
+              src="/CardVirtual-logo.png"
+              alt="Tarjeta Digital"
+              class="w-10 h-10 object-contain"
+              onerror="this.parentElement.innerHTML='<span class=\'text-2xl\'>🪪</span>'"
+            />
+          </div>
         </div>
 
-        <!-- Error banner -->
+        <!-- Header -->
+        <div>
+          <h1 class="text-3xl font-black text-slate-900">Bienvenido</h1>
+          <p class="mt-2 text-slate-500">Ingresa con tu número de WhatsApp.</p>
+        </div>
+
+        <!-- Error de URL param -->
         {errorParam && (
-          <div class="login-error-banner">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0">
+          <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
             </svg>
             {errorParam === 'forbidden'
@@ -103,79 +95,96 @@ const errorParam = Astro.url.searchParams.get('error') ?? ''
           </div>
         )}
 
-        <!-- Campo móvil -->
-        <div class="login-field">
-          <label class="login-label" for="movil">Número de WhatsApp</label>
-          <div class="login-phone-row">
-            <select id="prefijo" class="login-prefix-select">
-              <option value="51">🇵🇪 +51</option>
-              <option value="52">🇲🇽 +52</option>
-              <option value="57">🇨🇴 +57</option>
-              <option value="56">🇨🇱 +56</option>
-              <option value="54">🇦🇷 +54</option>
-              <option value="34">🇪🇸 +34</option>
-              <option value="1">🇺🇸 +1</option>
-            </select>
-            <input
-              type="tel"
-              id="movil"
-              inputmode="numeric"
-              autocomplete="tel"
-              placeholder="987654321"
-              maxlength="12"
-              class="login-input login-input-phone"
-            />
+        <div class="space-y-5">
+
+          <!-- Campo WhatsApp -->
+          <div>
+            <label class="block text-sm font-bold text-slate-700 mb-2" for="movil">
+              Número de WhatsApp
+            </label>
+            <div class="flex">
+              <select
+                id="prefijo"
+                class="px-3 py-3 rounded-l-xl border border-r-0 border-slate-200 bg-slate-100 text-slate-600 text-sm font-medium outline-none focus:border-indigo-500 cursor-pointer"
+              >
+                <option value="51">🇵🇪 +51</option>
+                <option value="52">🇲🇽 +52</option>
+                <option value="57">🇨🇴 +57</option>
+                <option value="56">🇨🇱 +56</option>
+                <option value="54">🇦🇷 +54</option>
+                <option value="34">🇪🇸 +34</option>
+                <option value="1">🇺🇸 +1</option>
+              </select>
+              <input
+                type="tel"
+                id="movil"
+                inputmode="numeric"
+                autocomplete="tel"
+                placeholder="987654321"
+                maxlength="12"
+                class="flex-1 px-4 py-3 rounded-r-xl border border-slate-200 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none text-slate-900 font-mono text-base tracking-wide placeholder-slate-300"
+              />
+            </div>
+            <p class="text-xs text-slate-400 mt-1">El mismo número que usaste al activar tu cuenta</p>
           </div>
-          <span class="login-field-hint">El mismo número que usaste al activar tu cuenta</span>
+
+          <!-- Campo contraseña -->
+          <div>
+            <label class="block text-sm font-bold text-slate-700 mb-2" for="password">
+              Contraseña
+            </label>
+            <div class="relative">
+              <input
+                type="password"
+                id="password"
+                autocomplete="current-password"
+                placeholder="••••••••"
+                class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none text-slate-900 pr-11"
+              />
+              <button
+                type="button"
+                id="toggle-password"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                tabindex="-1"
+              >
+                <svg id="eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Error inline -->
+          <div id="login-error" class="hidden bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+            <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+            <span id="login-error-text"></span>
+          </div>
+
+          <!-- Botón ingresar -->
+          <button
+            id="btn-login"
+            type="button"
+            class="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 disabled:opacity-60 disabled:cursor-not-allowed text-base"
+          >
+            Ingresar
+          </button>
+
         </div>
 
-        <!-- Campo contraseña -->
-        <div class="login-field">
-          <div class="login-label-row">
-            <label class="login-label" for="password">Contraseña</label>
-          </div>
-          <div class="login-input-wrap">
-            <input
-              type="password"
-              id="password"
-              autocomplete="current-password"
-              placeholder="••••••••"
-              class="login-input login-input-pass"
-            />
-            <button
-              type="button"
-              id="toggle-password"
-              class="login-eye-btn"
-              tabindex="-1"
-              aria-label="Mostrar contraseña"
-            >
-              <svg id="eye-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- Error inline -->
-        <div id="login-error" class="login-inline-error" style="display:none">
-          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
-          </svg>
-          <span id="login-error-text"></span>
-        </div>
-
-        <!-- Botón ingresar -->
-        <button id="btn-login" class="login-btn" type="button">
-          Ingresar
-        </button>
-
-        <!-- Footer del formulario -->
-        <div class="login-form-footer">
-          <p class="login-footer-text">¿No tienes cuenta? Contacta al administrador.</p>
-          <!-- Link admin — discreto, no invasivo -->
-          <a href="/admin/login" class="login-admin-link">Admin</a>
+        <!-- Footer -->
+        <div class="text-center space-y-2">
+          <p class="text-sm text-slate-400">¿No tienes cuenta? Contacta al administrador.</p>
+          <!-- Link admin — muy discreto -->
+          <a
+            href="/admin/login"
+            class="text-xs text-slate-300 hover:text-slate-500 transition-colors block"
+          >
+            Admin
+          </a>
         </div>
 
       </div>
@@ -183,7 +192,7 @@ const errorParam = Astro.url.searchParams.get('error') ?? ''
 
   </div>
 
-  <!-- Datos del servidor → script -->
+  <!-- Config -->
   <div
     id="app-config"
     data-url={import.meta.env.PUBLIC_SUPABASE_URL}
@@ -191,430 +200,15 @@ const errorParam = Astro.url.searchParams.get('error') ?? ''
     data-redirect={redirectTo}
     style="display:none"
   ></div>
-
 </Layout>
 
 <style>
-  /* ── Reset base para esta página ────────────────────────────── */
-  *, *::before, *::after { box-sizing: border-box; }
-
-  /* ── Shell — ocupa toda la pantalla, dos columnas ───────────── */
-  .login-shell {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    min-height: 100svh;
-    background: #fff;
-  }
-
-  /* ══════════════════════════════════════════════════════════════
-     COLUMNA IZQUIERDA
-  ══════════════════════════════════════════════════════════════ */
-  .login-left {
-    position: relative;
-    overflow: hidden;
-  }
-
-  /* Imagen de Unsplash — networking/tarjetas profesionales
-     Usamos el parámetro fm=jpg&fit=crop para máxima compatibilidad
-     La URL directa de Unsplash funciona como background-image en todos los navegadores */
-  .login-bg-image {
-    position: absolute;
-    inset: 0;
-    background-image: url('https://images.unsplash.com/photo-1600880292203-757bb62b4baf?fm=jpg&w=1200&q=75&fit=crop&crop=center');
-    background-size: cover;
-    background-position: center;
-    animation: bgZoom 20s ease-in-out infinite alternate;
-  }
-  @keyframes bgZoom {
-    from { transform: scale(1); }
-    to   { transform: scale(1.05); }
-  }
-
-  /* Overlay degradado: oscuro abajo, semi-oscuro arriba */
-  .login-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      to bottom,
-      rgba(10, 15, 30, 0.55) 0%,
-      rgba(10, 15, 30, 0.75) 60%,
-      rgba(10, 15, 30, 0.92) 100%
-    );
-  }
-
-  /* Contenido sobre la imagen */
-  .login-left-content {
-    position: relative;
-    z-index: 2;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 40px 48px;
-  }
-
-  /* Logo */
-  .login-logo {
-    display: flex;
-    align-items: center;
-  }
-  .login-logo-img {
-    height: 56px;
-    width: auto;
-    object-fit: contain;
-    filter: drop-shadow(0 2px 12px rgba(0,0,0,.5)) brightness(1.1);
-    border-radius: 12px;
-  }
-  .login-logo-fallback {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: #fff;
-    font-size: 18px;
-    font-weight: 700;
-    font-family: system-ui, sans-serif;
-    background: rgba(255,255,255,.1);
-    padding: 10px 16px;
-    border-radius: 12px;
-    backdrop-filter: blur(8px);
-  }
-
-  /* Tagline */
-  .login-tagline {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 40px 0;
-  }
-  .login-tagline-title {
-    font-size: clamp(28px, 3.5vw, 42px);
-    font-weight: 800;
-    color: #fff;
-    line-height: 1.2;
-    letter-spacing: -.02em;
-    font-family: system-ui, sans-serif;
-    margin-bottom: 16px;
-  }
-  .login-tagline-accent {
-    color: #818cf8; /* índigo suave */
-  }
-  .login-tagline-sub {
-    font-size: 15px;
-    color: rgba(255,255,255,.7);
-    line-height: 1.6;
-    font-family: system-ui, sans-serif;
-    max-width: 320px;
-  }
-
-  /* Badges de features */
-  .login-features {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  .login-feature-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: rgba(255,255,255,.8);
-    font-size: 13px;
-    font-family: system-ui, sans-serif;
-  }
-  .login-feature-badge svg {
-    color: #818cf8;
-    flex-shrink: 0;
-  }
-
-  /* ══════════════════════════════════════════════════════════════
-     COLUMNA DERECHA — formulario
-  ══════════════════════════════════════════════════════════════ */
-  .login-right {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 48px 56px;
-    background: #fff;
-    overflow-y: auto;
-  }
-
-  /* Logo mobile — oculto en desktop */
-  .login-mobile-logo {
-    display: none;
-    justify-content: center;
-    margin-bottom: 32px;
-  }
-  .login-mobile-logo-img {
-    height: 52px;
-    width: auto;
-    object-fit: contain;
-  }
-
-  /* Contenedor del formulario */
-  .login-form-wrap {
-    width: 100%;
-    max-width: 380px;
-    margin: 0 auto;
-  }
-
-  /* Header del form */
-  .login-form-header {
-    margin-bottom: 32px;
-  }
-  .login-title {
-    font-size: 28px;
-    font-weight: 800;
-    color: #0f172a;
-    letter-spacing: -.02em;
-    line-height: 1.2;
-    font-family: system-ui, sans-serif;
-    margin-bottom: 6px;
-  }
-  .login-subtitle {
-    font-size: 14px;
-    color: #64748b;
-    font-family: system-ui, sans-serif;
-    line-height: 1.5;
-  }
-
-  /* Error banner (param de URL) */
-  .login-error-banner {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 10px 14px;
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    border-radius: 10px;
-    color: #dc2626;
-    font-size: 13px;
-    font-family: system-ui, sans-serif;
-    margin-bottom: 20px;
-    line-height: 1.5;
-  }
-
-  /* Campos */
-  .login-field {
-    margin-bottom: 20px;
-  }
-  .login-label-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 6px;
-  }
-  .login-label {
-    display: block;
-    font-size: 13px;
-    font-weight: 600;
-    color: #374151;
-    font-family: system-ui, sans-serif;
-    margin-bottom: 6px;
-  }
-  .login-field-hint {
-    display: block;
-    font-size: 11px;
-    color: #94a3b8;
-    margin-top: 5px;
-    font-family: system-ui, sans-serif;
-  }
-
-  /* Fila de teléfono (prefijo + número) */
-  .login-phone-row {
-    display: flex;
-    gap: 8px;
-  }
-  .login-prefix-select {
-    width: 100px;
-    flex-shrink: 0;
-    padding: 10px 8px;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 10px;
-    font-size: 13px;
-    font-family: system-ui, sans-serif;
-    background: #f8fafc;
-    color: #374151;
-    outline: none;
-    cursor: pointer;
-    transition: border-color .15s;
-    /* override del global */
-    width: auto;
-  }
-  .login-prefix-select:focus {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 3px rgba(99,102,241,.1);
-  }
-
-  /* Input base */
-  .login-input {
-    display: block;
-    width: 100%;
-    padding: 11px 14px;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 10px;
-    font-size: 14px;
-    font-family: system-ui, sans-serif;
-    color: #0f172a;
-    background: #fff;
-    outline: none;
-    transition: border-color .15s, box-shadow .15s;
-  }
-  .login-input::placeholder { color: #cbd5e1; }
-  .login-input:hover { border-color: #cbd5e1; }
-  .login-input:focus {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 3px rgba(99,102,241,.1);
-  }
-  .login-input.error {
-    border-color: #ef4444;
-    box-shadow: 0 0 0 3px rgba(239,68,68,.1);
-    animation: shake .3s ease;
-  }
-  .login-input-phone { flex: 1; }
-  .login-input-pass  { padding-right: 42px; }
-
-  /* Wrap del input de contraseña */
-  .login-input-wrap {
-    position: relative;
-  }
-  .login-eye-btn {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    color: #94a3b8;
-    padding: 4px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    transition: color .15s;
-    /* override del global width:100% en button */
-    width: auto;
-  }
-  .login-eye-btn:hover { color: #475569; }
-
-  /* Error inline */
-  .login-inline-error {
-    display: flex;
-    align-items: flex-start;
-    gap: 6px;
-    color: #dc2626;
-    font-size: 12px;
-    font-family: system-ui, sans-serif;
-    margin-bottom: 12px;
-    line-height: 1.4;
-  }
-
-  /* Botón principal */
-  .login-btn {
-    width: 100%;
-    padding: 13px;
-    background: #4f46e5;
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    font-size: 15px;
-    font-weight: 600;
-    font-family: system-ui, sans-serif;
-    cursor: pointer;
-    transition: background .15s, transform .1s, box-shadow .15s;
-    box-shadow: 0 2px 12px rgba(79,70,229,.25);
-    /* override del global */
-    width: 100%;
-    margin-bottom: 24px;
-  }
-  .login-btn:hover {
-    background: #4338ca;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(79,70,229,.35);
-  }
-  .login-btn:active { transform: translateY(0); }
-  .login-btn:disabled {
-    opacity: .6;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-  }
-
-  /* Footer del form */
-  .login-form-footer {
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-  }
-  .login-footer-text {
-    font-size: 12px;
-    color: #94a3b8;
-    font-family: system-ui, sans-serif;
-  }
-
-  /* Link admin — muy discreto */
-  .login-admin-link {
-    font-size: 11px;
-    color: #cbd5e1;
-    text-decoration: none;
-    font-family: system-ui, sans-serif;
-    transition: color .15s;
-    letter-spacing: .03em;
-  }
-  .login-admin-link:hover { color: #94a3b8; }
-
-  /* ══════════════════════════════════════════════════════════════
-     ANIMACIÓN SHAKE
-  ══════════════════════════════════════════════════════════════ */
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
     25%       { transform: translateX(-4px); }
     75%       { transform: translateX(4px); }
   }
-
-  /* ══════════════════════════════════════════════════════════════
-     RESPONSIVE
-  ══════════════════════════════════════════════════════════════ */
-
-  /* Tablet — reducir padding */
-  @media (max-width: 1024px) {
-    .login-left-content { padding: 32px 36px; }
-    .login-right        { padding: 40px 36px; }
-  }
-
-  /* Mobile — colapsar a una columna, ocultar imagen */
-  @media (max-width: 767px) {
-    .login-shell {
-      grid-template-columns: 1fr;
-      grid-template-rows: auto;
-    }
-
-    /* Ocultar columna izquierda en mobile */
-    .login-left { display: none; }
-
-    /* Columna derecha ocupa todo */
-    .login-right {
-      padding: 40px 24px 32px;
-      min-height: 100svh;
-      justify-content: center;
-    }
-
-    /* Mostrar logo en mobile */
-    .login-mobile-logo { display: flex; }
-
-    .login-form-wrap { max-width: 100%; }
-
-    .login-title    { font-size: 24px; }
-    .login-subtitle { font-size: 13px; }
-
-    .login-prefix-select { width: 90px; }
-  }
-
-  /* Mobile pequeño */
-  @media (max-width: 380px) {
-    .login-right { padding: 32px 16px; }
-  }
+  .shake { animation: shake .3s ease; }
 </style>
 
 <script>
@@ -632,22 +226,21 @@ const errorParam = Astro.url.searchParams.get('error') ?? ''
   const errorText     = document.getElementById('login-error-text') as HTMLSpanElement
   const toggleBtn     = document.getElementById('toggle-password')  as HTMLButtonElement
 
-  // ── Limpiar error ────────────────────────────────────────────
   function ocultarError() {
-    errorEl.style.display = 'none'
-    movilInput.classList.remove('error')
-    passwordInput.classList.remove('error')
+    errorEl.classList.add('hidden')
+    movilInput.classList.remove('border-red-400')
+    passwordInput.classList.remove('border-red-400')
   }
 
-  // ── Mostrar error ────────────────────────────────────────────
   function mostrarError(msg: string) {
-    errorText.textContent  = msg
-    errorEl.style.display  = 'flex'
-    movilInput.classList.add('error')
-    passwordInput.classList.add('error')
-    // Forzar reflow para reiniciar la animación
-    void movilInput.offsetWidth
-    void passwordInput.offsetWidth
+    errorText.textContent = msg
+    errorEl.classList.remove('hidden')
+    movilInput.classList.add('border-red-400', 'shake')
+    passwordInput.classList.add('border-red-400', 'shake')
+    setTimeout(() => {
+      movilInput.classList.remove('shake')
+      passwordInput.classList.remove('shake')
+    }, 300)
   }
 
   movilInput.addEventListener('input', () => {
@@ -656,7 +249,7 @@ const errorParam = Astro.url.searchParams.get('error') ?? ''
   })
   passwordInput.addEventListener('input', ocultarError)
 
-  // ── Toggle ojo ───────────────────────────────────────────────
+  // Toggle ojo
   toggleBtn.addEventListener('click', () => {
     const mostrar = passwordInput.type === 'password'
     passwordInput.type = mostrar ? 'text' : 'password'
@@ -665,34 +258,20 @@ const errorParam = Astro.url.searchParams.get('error') ?? ''
       : `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>`
   })
 
-  // ── Enter dispara login ──────────────────────────────────────
+  // Enter dispara login
   ;[movilInput, passwordInput].forEach(el => {
-    el.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') btnLogin.click()
-    })
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter') btnLogin.click() })
   })
 
-  // ── Login ────────────────────────────────────────────────────
+  // Login
   btnLogin.addEventListener('click', async () => {
     const prefijo  = prefijoInput.value.trim()
     const movil    = movilInput.value.trim()
     const password = passwordInput.value
 
-    if (!movil) {
-      mostrarError('Ingresa tu número de móvil.')
-      movilInput.focus()
-      return
-    }
-    if (movil.length < 7) {
-      mostrarError('El número parece muy corto.')
-      movilInput.focus()
-      return
-    }
-    if (!password) {
-      mostrarError('Ingresa tu contraseña.')
-      passwordInput.focus()
-      return
-    }
+    if (!movil) { mostrarError('Ingresa tu número de móvil.'); movilInput.focus(); return }
+    if (movil.length < 7) { mostrarError('El número parece muy corto.'); movilInput.focus(); return }
+    if (!password) { mostrarError('Ingresa tu contraseña.'); passwordInput.focus(); return }
 
     const emailFicto = `${prefijo}${movil}@tarjetadigital.app`
 
@@ -701,8 +280,7 @@ const errorParam = Astro.url.searchParams.get('error') ?? ''
     ocultarError()
 
     const { data, error } = await supabase.auth.signInWithPassword({
-      email:    emailFicto,
-      password,
+      email: emailFicto, password,
     })
 
     if (error) {
@@ -711,7 +289,6 @@ const errorParam = Astro.url.searchParams.get('error') ?? ''
         error.message.includes('Email not confirm') ? 'Cuenta no confirmada. Contacta al administrador.' :
         error.message.includes('Too many requests') ? 'Demasiados intentos. Espera un momento.' :
         'Error al ingresar. Intenta de nuevo.'
-
       mostrarError(msg)
       btnLogin.disabled    = false
       btnLogin.textContent = 'Ingresar'
@@ -722,17 +299,14 @@ const errorParam = Astro.url.searchParams.get('error') ?? ''
 
     btnLogin.textContent = '✓ Ingresando...'
 
-    // Verificar primer login
     const { data: perfil } = await supabase
       .from('perfiles')
       .select('debe_cambiar_password')
       .eq('user_id', data.user.id)
       .maybeSingle()
 
-    if (perfil?.debe_cambiar_password) {
-      window.location.href = '/dashboard/seguridad?primer-login=1'
-    } else {
-      window.location.href = redirectTo
-    }
+    window.location.href = perfil?.debe_cambiar_password
+      ? '/dashboard/seguridad?primer-login=1'
+      : redirectTo
   })
 </script>
