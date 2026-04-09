@@ -6,6 +6,7 @@ import MinimalCard      from '../../themes/minimal/Card.astro'
 import ExecutiveCard    from '../../themes/executive/Card.astro'
 import BoldCard         from '../../themes/bold/Card.astro'
 import AppCardCard from '../../themes/app-card/Card.astro'
+import ModernBlueCard   from '../../themes/modern-blue/Card.astro'
 
 const supabase = createClient(
   import.meta.env.PUBLIC_SUPABASE_URL,
@@ -69,7 +70,9 @@ const cardProps = {
 {theme.id === 'executive' && <ExecutiveCard {...cardProps} />}
 {theme.id === 'bold'      && <BoldCard      {...cardProps} />}
 {theme.id === 'app-card'  && <AppCardCard   {...cardProps} />}
-{(theme.id === 'minimal' || !['executive','bold','app-card'].includes(theme.id)) && <MinimalCard {...cardProps} />}
+{theme.id === 'modern-blue' && <ModernBlueCard {...cardProps} />}
+
+{(theme.id === 'minimal' || !['executive','bold','app-card', 'modern-blue'].includes(theme.id)) && <MinimalCard {...cardProps} />}
 
 <div id="track-data" data-perfil-id={perfil.id} style="display:none"></div>
 
