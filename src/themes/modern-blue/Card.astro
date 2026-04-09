@@ -1,6 +1,12 @@
 ---
 // src/themes/modern-blue/Card.astro
-// THEME: Modern Blue — Diseño Limpio y Mobile-First
+// THEME: Modern Blue
+// Réplica del diseño de referencia:
+// — Foto hero superior que se funde con degradado azul
+// — Nombre + título sobre el degradado
+// — 4 íconos circulares blancos de contacto/redes
+// — Tarjetas redondeadas azules para cada sección
+// — Todo visible, sin colapsables
 
 import type { CardProps } from '../types'
 
@@ -9,18 +15,24 @@ const {
   servicios, proyectos, redes, logros, capacitaciones,
 } = Astro.props as CardProps
 
-const accent = '#1E90FF' // Un azul brillante profesional, similar al de la imagen
 const nombre = [perfil.nombre, perfil.apellidos].filter(Boolean).join(' ')
 
-// Íconos simplificados para la fila de contacto
+// Íconos de redes sociales
 const ICONOS: Record<string, string> = {
-  Teléfono: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.15 15.15 0 006.59 6.59l2.2-2.2a1 1 0 011.11-.27c1.12.37 2.32.57 3.56.57a1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.24.2 2.44.57 3.56a1 1 0 01-.27 1.11z"/></svg>`,
-  Email:    `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>`,
-  Mensaje:  `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/></svg>`,
-  WhatsApp: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`,
+  LinkedIn:    `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>`,
+  GitHub:      `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>`,
+  'Twitter/X': `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`,
+  Instagram:   `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>`,
+  Facebook:    `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>`,
+  WhatsApp:    `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`,
+  Telegram:    `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>`,
+  YouTube:     `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>`,
+  TikTok:      `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>`,
 }
 
-const fotoUrl = perfil.foto_url || '/CardVirtual.png' // Usa logo como placeholder si no hay foto
+function icon(p: string) {
+  return ICONOS[p] ?? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>`
+}
 ---
 
 <!doctype html>
@@ -32,220 +44,569 @@ const fotoUrl = perfil.foto_url || '/CardVirtual.png' // Usa logo como placehold
   <title>{nombre}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
 
-  <style define:vars={{ accent }}>
+  <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --accent: var(--accent);
-      --bg-header: #E8F0FE; // Gris muy claro azulado, idéntico al fondo superior de la imagen
-      --bg-main: linear-gradient(160deg, #0A7AFF 0%, #0056D6 100%); // Degradado azul vibrante
-      --card-bg: #3D99FF; // Azul ligeramente más claro para las tarjetas flotantes
-      --t1: #ffffff;
-      --t2: rgba(255,255,255,.9);
-      --font: 'Outfit', sans-serif;
-      --max-w: 480px;
+      /* Azules exactos de la imagen de referencia */
+      --blue-deep:   #1a4fa0;   /* azul más oscuro, parte inferior */
+      --blue-mid:    #1e6dd8;   /* azul medio del degradado */
+      --blue-hero:   #2a7de1;   /* azul del área de la foto */
+      --blue-card:   #2878d4;   /* fondo de las tarjetas */
+      --blue-card2:  #1f6cc8;   /* tarjetas ligeramente más oscuras */
+      --white:       #ffffff;
+      --white-90:    rgba(255,255,255,.90);
+      --white-70:    rgba(255,255,255,.70);
+      --white-50:    rgba(255,255,255,.50);
+      --white-20:    rgba(255,255,255,.20);
+      --font:        'Poppins', sans-serif;
+      --max-w:       420px;
     }
+
+    html { scroll-behavior: smooth; }
 
     body {
       font-family: var(--font);
-      background: #111; // Fondo exterior oscuro para centrar la tarjeta
-      color: var(--t2);
+      background: #0d1b3e;
       -webkit-font-smoothing: antialiased;
       min-height: 100vh;
-      display: flex; justify-content: center; align-items: flex-start;
-      padding: 0;
     }
 
-    @media (min-width: 480px) { body { padding: 48px 0; } }
+    /* Centrar en desktop como tarjeta móvil */
+    @media (min-width: 480px) {
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 32px 0 64px;
+      }
+    }
 
+    /* ── Página completa ─────────────────────────────────────── */
     .page {
       width: 100%;
       max-width: var(--max-w);
       min-height: 100vh;
-      background: var(--bg-main);
-      display: flex; flex-direction: column;
-      border-radius: 0; overflow: hidden;
+      /* Degradado azul de referencia: más claro arriba (zona foto), más oscuro abajo */
+      background: linear-gradient(
+        180deg,
+        #2a7de1 0%,      /* azul brillante arriba */
+        #1e6dd8 30%,     /* transición media */
+        #1a4fa0 65%,     /* azul profundo */
+        #163d85 100%     /* azul muy oscuro al fondo */
+      );
+      overflow: hidden;
     }
 
     @media (min-width: 480px) {
-      .page { border-radius: 32px; min-height: fit-content; box-shadow: 0 32px 80px rgba(0,0,0,.6); }
+      .page {
+        min-height: auto;
+        border-radius: 40px;
+        box-shadow: 0 40px 100px rgba(0,0,0,.7);
+        overflow: hidden;
+      }
     }
 
-    /* ══ ENCABEZADO (Header) ══ */
-    .header {
-      background: var(--bg-header);
-      padding: 40px 24px 32px;
-      text-align: center;
-      display: flex; flex-direction: column; align-items: center; gap: 16px;
+    /* ══ HERO — foto + nombre ═══════════════════════════════════ */
+    .hero {
+      position: relative;
+      width: 100%;
+      /* Alto del hero: suficiente para que la foto sea protagonista */
+      padding-bottom: 40px;
     }
 
-    .profile-photo {
-      width: 140px; height: 140px; // Foto grande y protagonista
-      border-radius: 50%;
+    /* Foto ocupa la parte superior, sin recorte circular */
+    .hero-foto-wrap {
+      width: 100%;
+      height: 320px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-foto {
+      width: 100%;
+      height: 100%;
       object-fit: cover;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-      border: 4px solid #fff;
+      object-position: center top; /* enfocar el rostro */
+      display: block;
     }
 
-    .name-title {
-      display: flex; flex-direction: column; gap: 4px;
+    /* Placeholder cuando no hay foto */
+    .hero-foto-placeholder {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(160deg, #3a8eef 0%, #2060c0 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .hero-foto-placeholder svg {
+      width: 80px;
+      height: 80px;
+      color: rgba(255,255,255,.3);
     }
 
-    .name {
-      font-size: 32px; font-weight: 900;
-      color: #000; // Nombre en negro sobre fondo claro
-      letter-spacing: -0.03em; line-height: 1;
+    /* Degradado que funde la foto con el fondo azul */
+    /* Exactamente como en la imagen: transparente arriba, azul sólido abajo */
+    .hero-fade {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 180px; /* cubre la mitad inferior de la foto */
+      background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        rgba(26, 79, 160, 0.6) 40%,
+        rgba(26, 79, 160, 0.92) 70%,
+        #1a4fa0 100%
+      );
+      pointer-events: none;
     }
 
-    .title {
-      font-size: 14px; font-weight: 500;
-      color: #666;
-      letter-spacing: 0.02em;
+    /* Nombre y título sobre el degradado, dentro del hero-foto-wrap */
+    .hero-info {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 0 24px 20px;
+      z-index: 2;
     }
 
-    /* ══ FILA DE CONTACTO (Contact Strip) ══ */
-    .contact-strip {
-      padding: 16px 24px;
-      display: flex; justify-content: center; gap: 12px;
-      flex-wrap: wrap; // Por si hay muchos íconos
+    .hero-name {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--white);
+      line-height: 1.1;
+      letter-spacing: -.01em;
+      text-shadow: 0 2px 12px rgba(0,0,0,.3);
     }
 
-    .contact-icon {
-      width: 52px; height: 52px; // Íconos circulares blancos grandes
+    .hero-title {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--white-70);
+      margin-top: 3px;
+      letter-spacing: .01em;
+    }
+
+    /* ── Íconos de contacto/redes ────────────────────────────── */
+    /* Fila de círculos blancos debajo del nombre, igual que la imagen */
+    .redes-row {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      padding: 20px 24px 8px;
+    }
+
+    .red-btn {
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
-      background: #fff;
-      display: flex; align-items: center; justify-content: center;
-      color: var(--accent); // El símbolo interno es azul
+      background: rgba(255,255,255,.18);
+      border: 1.5px solid rgba(255,255,255,.35);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--white);
       text-decoration: none;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      transition: transform 0.15s;
+      transition: background .15s, transform .15s;
+      flex-shrink: 0;
     }
-    .contact-icon:hover { transform: scale(1.1); }
-    .contact-icon svg { width: 22px; height: 22px; }
-
-    /* ══ CONTENIDO PRINCIPAL (Main Content) ══ */
-    .main-content {
-      flex: 1;
-      padding: 24px 20px 48px;
-      display: flex; flex-direction: column; gap: 16px;
+    .red-btn svg { width: 20px; height: 20px; }
+    .red-btn:hover {
+      background: rgba(255,255,255,.30);
+      transform: scale(1.08);
     }
 
-    /* Tarjetas de contenido (Rounded Cards) */
+    /* ══ SECCIONES — tarjetas redondeadas ═══════════════════════ */
+    .sections {
+      padding: 12px 16px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Tarjeta con bordes muy redondeados — exacta a la imagen */
     .card {
-      background: var(--card-bg);
-      border-radius: 24px; // Bordes muy redondeados, como en la imagen
-      padding: 24px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 20px;
+      padding: 20px 20px;
+      backdrop-filter: blur(4px);
     }
 
     .card-title {
-      font-size: 18px; font-weight: 700;
-      color: var(--t1);
-      margin-bottom: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 10px;
+      letter-spacing: -.01em;
     }
 
-    .card-body {
-      font-size: 14px; color: var(--t2);
-      line-height: 1.6;
+    .card-text {
+      font-size: 13px;
+      color: var(--white-70);
+      line-height: 1.7;
     }
 
-    /* Timeline para Experiencia/Educación */
-    .timeline { display: flex; flex-direction: column; gap: 16px; }
-    .tl-item { display: flex; flex-direction: column; gap: 2px; }
-    .tl-title { font-size: 14px; font-weight: 700; color: var(--t1); }
-    .tl-sub { font-size: 13px; color: var(--t2); }
-    .tl-period { font-size: 12px; color: var(--t2); opacity: 0.8; }
-    .tl-desc { font-size: 13px; color: var(--t2); opacity: 0.8; margin-top: 4px; line-height: 1.5; }
+    /* Logros / achievements — texto secundario en cursiva suave */
+    .card-subtitle {
+      font-size: 12px;
+      color: var(--white-50);
+      font-style: italic;
+      margin-top: 4px;
+    }
 
-    /* Footer */
-    .card-footer {
-      text-align: center;
-      padding: 24px;
+    /* ── Timeline dentro de tarjetas ────────────────────────── */
+    .timeline { display: flex; flex-direction: column; gap: 14px; }
+
+    .tl-item {
+      padding-left: 14px;
+      border-left: 2px solid rgba(255,255,255,.25);
+      position: relative;
+    }
+    .tl-item::before {
+      content: '';
+      position: absolute;
+      left: -5px; top: 5px;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--white);
+      opacity: .8;
+    }
+    .tl-name   { font-size: 13px; font-weight: 700; color: var(--white); }
+    .tl-sub    { font-size: 12px; color: var(--white-70); margin-top: 1px; }
+    .tl-period { font-size: 11px; color: var(--white-50); margin-top: 2px; }
+    .tl-desc   { font-size: 12px; color: var(--white-70); margin-top: 4px; line-height: 1.5; }
+
+    /* ── Skills ─────────────────────────────────────────────── */
+    .skills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+    .skill-tag {
       font-size: 11px;
-      color: rgba(255,255,255,0.6);
+      font-weight: 600;
+      padding: 5px 13px;
+      border-radius: 99px;
+      background: rgba(255,255,255,.18);
+      color: var(--white-90);
+      border: 1px solid rgba(255,255,255,.25);
+      letter-spacing: .02em;
+    }
+
+    /* ── Servicios ──────────────────────────────────────────── */
+    .services { display: flex; flex-direction: column; gap: 10px; }
+    .service-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px 14px;
+      background: rgba(255,255,255,.08);
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+    }
+    .service-emoji { font-size: 22px; flex-shrink: 0; line-height: 1; margin-top: 1px; }
+    .service-name  { font-size: 13px; font-weight: 700; color: var(--white); }
+    .service-desc  { font-size: 12px; color: var(--white-70); margin-top: 2px; line-height: 1.5; }
+    .service-price { font-size: 12px; font-weight: 700; color: rgba(255,255,255,.9); margin-top: 4px; display: inline-block; }
+
+    /* ── Proyectos ──────────────────────────────────────────── */
+    .projects { display: flex; flex-direction: column; gap: 10px; }
+    .project-item {
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+    }
+    .project-img { width: 100%; height: 140px; object-fit: cover; display: block; }
+    .project-body { padding: 12px; }
+    .project-name { font-size: 13px; font-weight: 700; color: var(--white); }
+    .project-desc { font-size: 12px; color: var(--white-70); margin-top: 3px; line-height: 1.5; }
+    .project-link {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 700;
+      color: rgba(255,255,255,.9); text-decoration: none; margin-top: 6px;
+    }
+
+    /* ── Logros ─────────────────────────────────────────────── */
+    .logros { display: flex; flex-direction: column; gap: 10px; }
+    .logro-item {
+      display: flex; gap: 12px;
+      padding: 12px 14px;
+      background: rgba(255,255,255,.08);
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+    }
+    .logro-num   { font-size: 18px; font-weight: 900; color: rgba(255,255,255,.25); min-width: 28px; line-height: 1; }
+    .logro-name  { font-size: 13px; font-weight: 700; color: var(--white); }
+    .logro-desc  { font-size: 12px; color: var(--white-70); margin-top: 2px; }
+    .logro-fecha { font-size: 10px; color: var(--white-50); margin-top: 2px; }
+
+    /* ── Capacitaciones ─────────────────────────────────────── */
+    .caps { display: flex; flex-direction: column; gap: 10px; }
+    .cap-item {
+      display: flex; gap: 10px;
+      padding: 12px 14px;
+      background: rgba(255,255,255,.08);
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+    }
+    .cap-dot   { width: 8px; height: 8px; border-radius: 50%; background: var(--white); flex-shrink: 0; margin-top: 4px; opacity: .7; }
+    .cap-name  { font-size: 13px; font-weight: 700; color: var(--white); }
+    .cap-inst  { font-size: 12px; color: var(--white-70); margin-top: 1px; }
+    .cap-fecha { font-size: 10px; color: var(--white-50); margin-top: 2px; }
+    .cap-cert  {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 600; color: var(--white);
+      text-decoration: none; margin-top: 4px;
+    }
+
+    /* ── CV button ──────────────────────────────────────────── */
+    .cv-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 13px 20px;
+      background: rgba(255,255,255,.20);
+      border: 1.5px solid rgba(255,255,255,.40);
+      border-radius: 14px;
+      color: var(--white);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+      transition: background .15s;
+      margin: 0 16px;
+    }
+    .cv-btn:hover { background: rgba(255,255,255,.28); }
+    .cv-btn svg { width: 18px; height: 18px; }
+
+    /* ── Footer ─────────────────────────────────────────────── */
+    .footer {
+      text-align: center;
+      padding: 24px 24px 40px;
+      font-size: 11px;
+      color: rgba(255,255,255,.35);
       letter-spacing: .04em;
     }
-    .card-footer a { color: var(--t1); text-decoration: none; font-weight: 700; }
+    .footer a { color: rgba(255,255,255,.6); text-decoration: none; font-weight: 600; }
+
+    /* ── Animación de entrada ────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .hero-info  { animation: fadeUp .5s ease-out .1s both; }
+    .redes-row  { animation: fadeUp .5s ease-out .2s both; }
+    .sections   { animation: fadeUp .5s ease-out .3s both; }
   </style>
 </head>
 
 <body>
-  <div class="page">
+<div class="page">
 
-    <header class="header">
-      <img src={fotoUrl} alt={nombre} class="profile-photo" loading="lazy" />
-      <div class="name-title">
-        <h1 class="name">{nombre}</h1>
-        {perfil.titulo_profesional && <p class="title">{perfil.titulo_profesional}</p>}
+  <!-- ══ HERO ═══════════════════════════════════════════════════ -->
+  <div class="hero">
+    <div class="hero-foto-wrap">
+      {perfil.foto_url
+        ? <img src={perfil.foto_url} alt={nombre} class="hero-foto" />
+        : (
+          <div class="hero-foto-placeholder">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+                d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0"/>
+            </svg>
+          </div>
+        )
+      }
+      <!-- Degradado que funde foto con fondo azul -->
+      <div class="hero-fade"></div>
+      <!-- Nombre + título sobre el degradado -->
+      <div class="hero-info">
+        <h1 class="hero-name">{nombre}</h1>
+        {perfil.titulo_profesional && <p class="hero-title">{perfil.titulo_profesional}</p>}
       </div>
-    </header>
-
-    <section class="contact-strip">
-      {perfil.telefono && (
-        <a href={`tel:${perfil.telefono.replace(/\s/g,'')}`} class="contact-icon" title="Llamar">
-          <Fragment set:html={ICONOS['Teléfono']} />
-        </a>
-      )}
-      {perfil.email && (
-        <a href={`mailto:${perfil.email}`} class="contact-icon" title="Enviar Email">
-          <Fragment set:html={ICONOS['Email']} />
-        </a>
-      )}
-      {perfil.telefono && (
-        <a href={`sms:${perfil.telefono.replace(/\s/g,'')}`} class="contact-icon" title="Enviar Mensaje">
-          <Fragment set:html={ICONOS['Mensaje']} />
-        </a>
-      )}
-      {perfil.telefono && (
-        <a href={`https://wa.me/${perfil.telefono.replace(/\s/g,'')}`} class="contact-icon" title="WhatsApp">
-          <Fragment set:html={ICONOS['WhatsApp']} />
-        </a>
-      )}
-    </section>
-
-    <main class="main-content">
-
-      {perfil.bio && (
-        <div class="card">
-          <h2 class="card-title">Sobre mí</h2>
-          <p class="card-body">{perfil.bio}</p>
-        </div>
-      )}
-
-      {experiencia.length > 0 && (
-        <div class="card">
-          <h2 class="card-title">Experiencia</h2>
-          <div class="timeline card-body">
-            {experiencia.map(exp => (
-              <div class="tl-item">
-                <div class="tl-title">{exp.cargo}</div>
-                <div class="tl-sub">{exp.empresa}</div>
-                {exp.periodo && <div class="tl-period">{exp.periodo}</div>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {estudios.length > 0 && (
-        <div class="card">
-          <h2 class="card-title">Educación</h2>
-          <div class="timeline card-body">
-            {estudios.map(e => (
-              <div class="tl-item">
-                <div class="tl-title">{e.titulo_obtenido ?? e.nivel}</div>
-                <div class="tl-sub">{e.institucion}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-    </main>
-
-    <footer class="card-footer">Creado con <a href="/">TarjetaDigital</a></footer>
+    </div>
   </div>
+
+  <!-- ══ REDES — íconos circulares ══════════════════════════════ -->
+  {redes.length > 0 && (
+    <div class="redes-row">
+      {redes.slice(0, 4).map(red => (
+        <a
+          href={red.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="red-btn track-red"
+          data-plataforma={red.plataforma}
+          title={red.plataforma}
+        >
+          <Fragment set:html={icon(red.plataforma)} />
+        </a>
+      ))}
+    </div>
+  )}
+
+  <!-- ══ SECCIONES ══════════════════════════════════════════════ -->
+  <div class="sections">
+
+    <!-- Bio / About Me -->
+    {perfil.bio && (
+      <div class="card">
+        <div class="card-title">About Me</div>
+        <p class="card-text">{perfil.bio}</p>
+      </div>
+    )}
+
+    <!-- CV -->
+    {perfil.cv_pdf_url && (
+      <a href={perfil.cv_pdf_url} target="_blank" rel="noopener noreferrer" class="cv-btn track-cv">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Descargar CV
+      </a>
+    )}
+
+    <!-- Servicios -->
+    {servicios.length > 0 && (
+      <div class="card">
+        <div class="card-title">Servicios</div>
+        <div class="services">
+          {servicios.map(s => (
+            <div class="service-item">
+              {s.icono && <div class="service-emoji">{s.icono}</div>}
+              <div>
+                <div class="service-name">{s.nombre}</div>
+                {s.descripcion && <p class="service-desc">{s.descripcion}</p>}
+                {s.precio_referencial && <span class="service-price">{s.precio_referencial}</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    <!-- Experiencia -->
+    {experiencia.length > 0 && (
+      <div class="card">
+        <div class="card-title">Experiencia</div>
+        <div class="timeline">
+          {experiencia.map(exp => (
+            <div class="tl-item">
+              <div class="tl-name">{exp.cargo}</div>
+              <div class="tl-sub">{exp.empresa}</div>
+              {exp.periodo && <div class="tl-period">{exp.periodo}</div>}
+              {exp.descripcion && <p class="tl-desc">{exp.descripcion}</p>}
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    <!-- Educación -->
+    {estudios.length > 0 && (
+      <div class="card">
+        <div class="card-title">Educación</div>
+        <div class="timeline">
+          {estudios.map(e => (
+            <div class="tl-item">
+              <div class="tl-name">{e.titulo_obtenido ?? e.nivel}</div>
+              <div class="tl-sub">{e.institucion}</div>
+              {(e.fecha_inicio || e.fecha_fin) && (
+                <div class="tl-period">
+                  {e.fecha_inicio ?? ''}{e.fecha_fin ? ` — ${e.fecha_fin}` : ''}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    <!-- Habilidades -->
+    {habilidades.length > 0 && (
+      <div class="card">
+        <div class="card-title">Habilidades</div>
+        <div class="skills">
+          {habilidades.map(h => <span class="skill-tag">{h.nombre}</span>)}
+        </div>
+      </div>
+    )}
+
+    <!-- Proyectos -->
+    {proyectos.length > 0 && (
+      <div class="card">
+        <div class="card-title">Proyectos</div>
+        <div class="projects">
+          {proyectos.map(p => (
+            <div class="project-item">
+              {p.imagen_url && <img src={p.imagen_url} alt={p.titulo} class="project-img" loading="lazy" />}
+              <div class="project-body">
+                <div class="project-name">{p.titulo}</div>
+                {p.descripcion && <p class="project-desc">{p.descripcion}</p>}
+                {p.enlace_url && (
+                  <a href={p.enlace_url} target="_blank" rel="noopener noreferrer"
+                     class="project-link track-proyecto" data-titulo={p.titulo}>
+                    Ver proyecto →
+                  </a>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    <!-- Logros -->
+    {logros.length > 0 && (
+      <div class="card">
+        <div class="card-title">Logros</div>
+        <div class="logros">
+          {logros.map((l, i) => (
+            <div class="logro-item">
+              <div class="logro-num">0{i + 1}</div>
+              <div>
+                <div class="logro-name">{l.titulo}</div>
+                {l.descripcion && <p class="logro-desc">{l.descripcion}</p>}
+                {l.fecha && <div class="logro-fecha">{l.fecha}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    <!-- Capacitaciones -->
+    {capacitaciones.length > 0 && (
+      <div class="card">
+        <div class="card-title">Cursos & Certificados</div>
+        <div class="caps">
+          {capacitaciones.map(c => (
+            <div class="cap-item">
+              <div class="cap-dot"></div>
+              <div>
+                <div class="cap-name">{c.nombre}</div>
+                {c.institucion && <div class="cap-inst">{c.institucion}</div>}
+                {c.fecha && <div class="cap-fecha">{c.fecha}</div>}
+                {c.certificado_url && (
+                  <a href={c.certificado_url} target="_blank" rel="noopener noreferrer" class="cap-cert">
+                    Ver certificado →
+                  </a>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+  </div>
+
+  <footer class="footer">Creado con <a href="/">TarjetaDigital</a></footer>
+</div>
 </body>
 </html>
