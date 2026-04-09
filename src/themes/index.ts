@@ -15,36 +15,6 @@ export interface ThemeMeta {
   
   export const THEMES: ThemeMeta[] = [
     {
-      id: 'minimal',
-      nombre: 'Minimal',
-      descripcion: 'Limpio, tipográfico y atemporal. Deja que el contenido hable.',
-      preview_bg: '#ffffff',
-      preview_accent: '#111827',
-      etiquetas: ['minimalista', 'profesional'],
-      componente: 'minimal/Card.astro',
-      premium: false,
-    },
-    {
-      id: 'executive',
-      nombre: 'Executive',
-      descripcion: 'Oscuro, sofisticado y elegante. Para perfiles de alto impacto.',
-      preview_bg: '#0f172a',
-      preview_accent: '#38bdf8',
-      etiquetas: ['oscuro', 'premium', 'ejecutivo'],
-      componente: 'executive/Card.astro',
-      premium: false,
-    },
-    {
-      id: 'bold',
-      nombre: 'Bold',
-      descripcion: 'Colores fuertes, layouts audaces. Ideal para creativos.',
-      preview_bg: '#fafaf9',
-      preview_accent: '#f97316',
-      etiquetas: ['creativo', 'colorido'],
-      componente: 'bold/Card.astro',
-      premium: true,
-    },
-    {
       id: 'app-card',
       nombre: 'App Card',
       descripcion: 'Tarjeta tipo app móvil con portada, íconos circulares y secciones colapsables.',
@@ -52,6 +22,16 @@ export interface ThemeMeta {
       preview_accent: '#2563eb',
       etiquetas: ['móvil', 'app', 'moderno'],
       componente: 'app-card/Card.astro',
+      premium: false,
+    },
+    {
+      id: 'modern-blue',
+      nombre: 'Modern Blue',
+      descripcion: 'Diseño limpio y mobile-first con degradado azul, foto protagonista y tarjetas flotantes.',
+      preview_bg: '#E8F0FE',
+      preview_accent: '#1E90FF',
+      etiquetas: ['profesional', 'limpio', 'corporativo'],
+      componente: 'modern-blue/Card.astro',
       premium: false,
     },
   ]
