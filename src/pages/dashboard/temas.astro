@@ -31,12 +31,12 @@ if (authError || !user) return Astro.redirect('/auth/login')
 
 const { data: perfil } = await supabase
   .from('perfiles')
-  .select('id, slug, template_id, plan_tipo')
+  .select('id, slug, template_id, plan_id')
   .eq('user_id', user.id)
-  .single()
+  .maybeSingle()
 
 const temaActual = perfil?.template_id ?? 'minimal'
-const plan       = perfil?.plan_tipo   ?? 'free'
+const plan       = perfil?.plan_id     ?? 'free'
 const slug       = perfil?.slug        ?? ''
 ---
 
