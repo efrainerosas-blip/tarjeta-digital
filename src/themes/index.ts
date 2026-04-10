@@ -1,17 +1,25 @@
 // src/themes/index.ts
 // ============================================================
-// THEME REGISTRY — agrega un theme creando una carpeta y
-// registrándolo aquí
+// THEME REGISTRY — para agregar un theme nuevo:
+//   1. Crear carpeta src/themes/{id}/Card.astro
+//   2. Importarlo aquí abajo
+//   3. Agregarlo al array THEMES
 // ============================================================
+
+import type { AstroComponentFactory } from 'astro/runtime/server/index.js'
+import AppCard    from './app-card/Card.astro'
+import ModernBlue from './modern-blue/Card.astro'
+import CleanWhite from './clean-white/Card.astro'
+
 export interface ThemeMeta {
   id:             string
   nombre:         string
   descripcion:    string
-  preview_bg:     string      // color de fondo para la miniatura
-  preview_accent: string      // color de acento
-  etiquetas:      string[]    // ej: ['moderno', 'minimalista']
-  componente:     string      // nombre del archivo en src/themes/{id}/Card.astro
-  premium:        boolean     // true = solo plan pro/business
+  preview_bg:     string
+  preview_accent: string
+  etiquetas:      string[] 
+  componente:     AstroComponentFactory
+  premium:        boolean
 }
 
 export const THEMES: ThemeMeta[] = [
@@ -22,7 +30,7 @@ export const THEMES: ThemeMeta[] = [
     preview_bg:     '#0a0508',
     preview_accent: '#2563eb',
     etiquetas:      ['móvil', 'app', 'moderno'],
-    componente:     'app-card/Card.astro',
+    componente:     AppCard,
     premium:        false,
   },
   {
@@ -32,7 +40,17 @@ export const THEMES: ThemeMeta[] = [
     preview_bg:     '#1a4fa0',
     preview_accent: '#ffffff',
     etiquetas:      ['profesional', 'corporativo', 'azul'],
-    componente:     'modern-blue/Card.astro',
+    componente:     ModernBlue,
+    premium:        false,
+  },
+  {
+    id:             'clean-white',
+    nombre:         'Clean White',
+    descripcion:    'Foto hero con ola ondulada, íconos con colores oficiales y tarjetas blancas flotantes.',
+    preview_bg:     '#f2f4f7',
+    preview_accent: '#4f46e5',
+    etiquetas:      ['limpio', 'blanco', 'moderno'],
+    componente:     CleanWhite,
     premium:        false,
   },
 ]

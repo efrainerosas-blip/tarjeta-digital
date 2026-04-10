@@ -1,12 +1,12 @@
 ---
+// src/pages/[slug]/index.astro
+// ─────────────────────────────────────────────────────────────
+// Para agregar un theme nuevo: solo tocar src/themes/index.ts
+// ─────────────────────────────────────────────────────────────
 export const prerender = false
-import { createClient } from '@supabase/supabase-js'
-import { getTheme }     from '../../themes/index'
-import MinimalCard      from '../../themes/minimal/Card.astro'
-import ExecutiveCard    from '../../themes/executive/Card.astro'
-import BoldCard         from '../../themes/bold/Card.astro'
-import AppCardCard from '../../themes/app-card/Card.astro'
-import ModernBlueCard   from '../../themes/modern-blue/Card.astro'
+
+import { createClient }  from '@supabase/supabase-js'
+import { getTheme, THEMES } from '../../themes/index'
 
 const supabase = createClient(
   import.meta.env.PUBLIC_SUPABASE_URL,
@@ -52,7 +52,9 @@ const [
   supabase.from('logros').select('*').eq('perfil_id', perfil.id).order('orden'),
 ])
 
-const theme = getTheme(perfil.template_id ?? 'minimal')
+// Obtener el theme del registro — el componente ya viene incluido
+const theme = getTheme(perfil.template_id ?? THEMES[0].id)
+const Card = theme.componente as unknown as (props: typeof cardProps) => any
 
 const cardProps = {
   perfil,
@@ -67,31 +69,28 @@ const cardProps = {
 }
 ---
 
-{theme.id === 'executive' && <ExecutiveCard {...cardProps} />}
-{theme.id === 'bold'      && <BoldCard      {...cardProps} />}
-{theme.id === 'app-card'  && <AppCardCard   {...cardProps} />}
-{theme.id === 'modern-blue' && <ModernBlueCard {...cardProps} />}
-
-{(theme.id === 'minimal' || !['executive','bold','app-card', 'modern-blue'].includes(theme.id)) && <MinimalCard {...cardProps} />}
+<!-- Un solo render dinámico — funciona con cualquier theme del registro -->
+<Card {...cardProps} />
 
 <div id="track-data" data-perfil-id={perfil.id} style="display:none"></div>
 
 <script>
   const perfilId = document.getElementById('track-data')?.dataset.perfilId
+
   if (perfilId) {
     fetch('/api/track', {
-      method: 'POST',
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ perfil_id: perfilId })
+      body:    JSON.stringify({ perfil_id: perfilId })
     })
   }
 
   function track(tipo: string, metadata: Record<string, string>) {
     if (!perfilId) return
     fetch('/api/track', {
-      method: 'POST',
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ perfil_id: perfilId, tipo, metadata })
+      body:    JSON.stringify({ perfil_id: perfilId, tipo, metadata })
     })
   }
 
@@ -100,9 +99,11 @@ const cardProps = {
       track('click_red', { plataforma: el.dataset.plataforma ?? '' })
     )
   })
+
   document.querySelectorAll<HTMLElement>('.track-cv').forEach(el => {
     el.addEventListener('click', () => track('descarga_cv', {}))
   })
+
   document.querySelectorAll<HTMLElement>('.track-proyecto').forEach(el => {
     el.addEventListener('click', () =>
       track('click_proyecto', { titulo: el.dataset.titulo ?? '' })
