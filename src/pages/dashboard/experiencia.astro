@@ -132,136 +132,95 @@ const { data: items } = perfilId
 <script>
   import { createBrowserClient } from '@supabase/ssr'
 
-  // 1. Instanciamos Supabase
   const sb = createBrowserClient(
-    document.querySelector<HTMLMetaElement>('meta[name="supabase-url"]')!.content,
-    document.querySelector<HTMLMetaElement>('meta[name="supabase-anon"]')!.content,
+    document.querySelector('meta[name="supabase-url"]').content,
+    document.querySelector('meta[name="supabase-anon"]').content,
   )
 
-  // 2. Definimos la forma estricta para TypeScript (Evita el error 7053)
-  type ExperienciaPayload = {
-    perfil_id: string | null;
-    cargo: string;
-    empresa: string;
-    periodo: string | null;
-    descripcion: string | null;
-    es_trabajo_actual: boolean;
-    orden?: number; 
+  const btnNuevo = document.getElementById('btn-nuevo')
+  const perfilId = btnNuevo?.dataset.perfilId || null
+  const backdrop  = document.getElementById('modal-backdrop')
+  const modalTitle = document.getElementById('modal-title')
+  const form      = document.getElementById('item-form')
+  const itemIdEl  = document.getElementById('item-id')
+
+  function openModal(titulo = 'Agregar experiencia', data = null) {
+    modalTitle.textContent = titulo
+    form.reset()
+    itemIdEl.value = ''
+    if (data) {
+      itemIdEl.value = data.id ?? ''
+      form.cargo.value = data.cargo ?? ''
+      form.empresa.value = data.empresa ?? ''
+      form.periodo.value = data.periodo ?? ''
+      form.descripcion.value = data.descripcion ?? ''
+      form.es_trabajo_actual.checked = !!data.es_trabajo_actual
+    }
+    backdrop.classList.add('open')
+    form.querySelector('input:not([type=hidden])').focus()
   }
 
-  // 3. Envolvemos en astro:page-load
-  document.addEventListener('astro:page-load', () => {
-    
-    const formOriginal = document.getElementById('item-form') as HTMLFormElement | null
-    const btnNuevoOriginal = document.getElementById('btn-nuevo') as HTMLButtonElement | null
-    
-    if (!formOriginal || !btnNuevoOriginal) return
+  function closeModal() { backdrop.classList.remove('open') }
 
-    const perfilId = btnNuevoOriginal.dataset.perfilId || null
-    const backdrop = document.getElementById('modal-backdrop')!
-    const modalTitle = document.getElementById('modal-title')!
-    const itemIdEl = document.getElementById('item-id') as HTMLInputElement
+  document.getElementById('btn-nuevo').addEventListener('click', () => openModal())
+  document.getElementById('modal-close').addEventListener('click', closeModal)
+  document.getElementById('btn-cancelar').addEventListener('click', closeModal)
+  backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal() })
 
-    // Clonamos para evitar acumulación de eventos
-    const btnNuevo = btnNuevoOriginal.cloneNode(true) as HTMLButtonElement
-    btnNuevoOriginal.parentNode?.replaceChild(btnNuevo, btnNuevoOriginal)
+  // Editar
+  document.querySelectorAll('.btn-editar').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id
+      const { data } = await sb.from('experiencia_laboral').select('*').eq('id', id).single()
+      if (data) openModal('Editar experiencia', data)
+    })
+  })
 
-    const form = formOriginal.cloneNode(true) as HTMLFormElement
-    formOriginal.parentNode?.replaceChild(form, formOriginal)
+  // Eliminar
+  document.querySelectorAll('.btn-eliminar').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('¿Eliminar esta experiencia?')) return
+      const id = btn.dataset.id
+      const { error } = await sb.from('experiencia_laboral').delete().eq('id', id)
+      if (error) { window.toast('Error al eliminar', 'error'); return }
+      document.querySelector(`.list-item[data-id="${id}"]`)?.remove()
+      window.toast('Eliminado correctamente', 'success')
+    })
+  })
 
-    function openModal(titulo = 'Agregar experiencia', data: any = null) {
-      modalTitle.textContent = titulo
-      form.reset()
-      itemIdEl.value = ''
-      
-      if (data) {
-        itemIdEl.value = data.id ?? ''
-        // IMPORTANTE: Buscar los inputs DENTRO del form clonado
-        ;(form.querySelector('#cargo') as HTMLInputElement).value = data.cargo ?? ''
-        ;(form.querySelector('#empresa') as HTMLInputElement).value = data.empresa ?? ''
-        ;(form.querySelector('#periodo') as HTMLInputElement).value = data.periodo ?? ''
-        ;(form.querySelector('#descripcion') as HTMLTextAreaElement).value = data.descripcion ?? ''
-        ;(form.querySelector('#es_trabajo_actual') as HTMLInputElement).checked = !!data.es_trabajo_actual
-      }
-      
-      backdrop.classList.add('open')
-      setTimeout(() => form.querySelector<HTMLInputElement>('input:not([type=hidden])')?.focus(), 60)
+  // Guardar
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const btn = document.getElementById('btn-submit')
+    btn.disabled = true
+    btn.textContent = 'Guardando…'
+
+    const id = itemIdEl.value
+    const payload = {
+      perfil_id: perfilId,
+      cargo: form.cargo.value.trim(),
+      empresa: form.empresa.value.trim(),
+      periodo: form.periodo.value.trim() || null,
+      descripcion: form.descripcion.value.trim() || null,
+      es_trabajo_actual: form.es_trabajo_actual.checked,
     }
 
-    function closeModal() { backdrop.classList.remove('open') }
+    let error
+    if (id) {
+      ({ error } = await sb.from('experiencia_laboral').update(payload).eq('id', id))
+    } else {
+      const { data: maxOrden } = await sb.from('experiencia_laboral').select('orden').eq('perfil_id', perfilId).order('orden', { ascending: false }).limit(1).single()
+      payload.orden = (maxOrden?.orden ?? 0) + 1
+      ;({ error } = await sb.from('experiencia_laboral').insert(payload))
+    }
 
-    // Eventos UI
-    btnNuevo.addEventListener('click', () => openModal())
-    document.getElementById('modal-close')?.addEventListener('click', closeModal)
-    document.getElementById('btn-cancelar')?.addEventListener('click', closeModal)
-    backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal() })
+    btn.disabled = false
+    btn.textContent = 'Guardar'
 
-    // Botones Editar
-    document.querySelectorAll<HTMLButtonElement>('.btn-editar').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        btn.disabled = true
-        const id = btn.dataset.id!
-        const { data } = await sb.from('experiencia_laboral').select('*').eq('id', id).single()
-        btn.disabled = false
-        if (data) openModal('Editar experiencia', data)
-      })
-    })
+    if (error) { window.toast('Error: ' + error.message, 'error'); return }
 
-    // Botones Eliminar
-    document.querySelectorAll<HTMLButtonElement>('.btn-eliminar').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        if (!confirm('¿Eliminar esta experiencia?')) return
-        btn.disabled = true
-        const id = btn.dataset.id!
-        const { error } = await sb.from('experiencia_laboral').delete().eq('id', id)
-        if (error) { ;(window as any).toast?.('Error al eliminar', 'error'); btn.disabled = false; return }
-        document.querySelector(`.list-item[data-id="${id}"]`)?.remove()
-        ;(window as any).toast?.('Eliminado correctamente', 'success')
-      })
-    })
-
-    // Guardar Formulario
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault()
-      const btnSubmit = form.querySelector('#btn-submit') as HTMLButtonElement
-      btnSubmit.disabled = true
-      btnSubmit.textContent = 'Guardando…'
-
-      const id = itemIdEl.value
-      
-      // IMPORTANTE: Leer los valores DENTRO del form clonado
-      const cargoVal = (form.querySelector('#cargo') as HTMLInputElement).value.trim()
-      const empresaVal = (form.querySelector('#empresa') as HTMLInputElement).value.trim()
-      const periodoVal = (form.querySelector('#periodo') as HTMLInputElement).value.trim() || null
-      const descVal = (form.querySelector('#descripcion') as HTMLTextAreaElement).value.trim() || null
-      const actualChecked = (form.querySelector('#es_trabajo_actual') as HTMLInputElement).checked
-
-      const payload: ExperienciaPayload = {
-        perfil_id: perfilId,
-        cargo: cargoVal,
-        empresa: empresaVal,
-        periodo: periodoVal,
-        descripcion: descVal,
-        es_trabajo_actual: actualChecked,
-      }
-
-      let error
-      if (id) {
-        ({ error } = await sb.from('experiencia_laboral').update(payload).eq('id', id))
-      } else {
-        const { data: maxOrden } = await sb.from('experiencia_laboral').select('orden').eq('perfil_id', perfilId!).order('orden', { ascending: false }).limit(1).maybeSingle()
-        payload.orden = (maxOrden?.orden ?? 0) + 1
-        ;({ error } = await sb.from('experiencia_laboral').insert(payload))
-      }
-
-      btnSubmit.disabled = false
-      btnSubmit.textContent = 'Guardar'
-
-      if (error) { ;(window as any).toast?.('Error: ' + error.message, 'error'); return }
-
-      ;(window as any).toast?.(id ? 'Actualizado' : 'Agregado correctamente', 'success')
-      closeModal()
-      setTimeout(() => window.location.reload(), 400)
-    })
+    window.toast(id ? 'Actualizado' : 'Agregado correctamente', 'success')
+    closeModal()
+    setTimeout(() => window.location.reload(), 400)
   })
 </script>
