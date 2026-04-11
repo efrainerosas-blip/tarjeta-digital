@@ -911,7 +911,12 @@ const drawerTabs = tabs.filter(t => !BOTTOM_NAV.includes(t.id))
       const previewLink    = document.getElementById('preview-link') as HTMLAnchorElement | null
       const verTarjetaBtn  = document.getElementById('btn-ver-tarjeta') as HTMLAnchorElement | null
       if (previewLink && verTarjetaBtn) {
-        verTarjetaBtn.href = previewLink.href
+        if (previewLink.href.endsWith('#')) {
+          verTarjetaBtn.style.opacity = '0.35'
+          verTarjetaBtn.style.pointerEvents = 'none'
+        } else {
+          verTarjetaBtn.href = previewLink.href
+        }
       }
 
       // ── Drawer "Más" ─────────────────────────────────────────
