@@ -1,11 +1,10 @@
 ---
 // src/pages/[slug]/index.astro
-// ─────────────────────────────────────────────────────────────
 // Para agregar un theme nuevo: solo tocar src/themes/index.ts
-// ─────────────────────────────────────────────────────────────
 export const prerender = false
 
-import { createClient }  from '@supabase/supabase-js'
+import CardLayout from '../../layouts/CardLayout.astro'
+import { createClient } from '@supabase/supabase-js'
 import { getTheme, THEMES } from '../../themes/index'
 
 const supabase = createClient(
@@ -21,16 +20,8 @@ const { data: perfil, error } = await supabase
   .eq('slug', slug)
   .maybeSingle()
 
-console.log('[slug] perfil:', perfil?.slug, 'error:', error?.message)
-
-if (error) {
-  console.error('[slug] error BD:', error.message)
-  return Astro.redirect('/404')
-}
-if (!perfil) {
-  console.log('[slug] no encontrado:', slug)
-  return Astro.redirect('/404')
-}
+if (error) { console.error('[slug] error BD:', error.message); return Astro.redirect('/404') }
+if (!perfil) { console.log('[slug] no encontrado:', slug); return Astro.redirect('/404') }
 
 const [
   { data: experiencia },
@@ -52,10 +43,10 @@ const [
   supabase.from('logros').select('*').eq('perfil_id', perfil.id).order('orden'),
 ])
 
-// Obtener el theme del registro — el componente ya viene incluido
 const theme = getTheme(perfil.template_id ?? THEMES[0].id)
-const Card = theme.componente as unknown as (props: typeof cardProps) => any
+const Card  = theme.componente as any
 
+const nombre   = [perfil.nombre, perfil.apellidos].filter(Boolean).join(' ')
 const cardProps = {
   perfil,
   experiencia:    experiencia    ?? [],
@@ -69,44 +60,33 @@ const cardProps = {
 }
 ---
 
-<!-- Un solo render dinámico — funciona con cualquier theme del registro -->
-<Card {...cardProps} />
+<CardLayout
+  title={nombre}
+  description={perfil.bio ?? `Tarjeta digital de ${nombre}`}
+  ogImage={perfil.foto_url ?? undefined}
+  bgColor={theme.preview_bg}
+>
+  <Card {...cardProps} />
+</CardLayout>
 
 <div id="track-data" data-perfil-id={perfil.id} style="display:none"></div>
 
 <script>
   const perfilId = document.getElementById('track-data')?.dataset.perfilId
-
   if (perfilId) {
-    fetch('/api/track', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ perfil_id: perfilId })
-    })
+    fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ perfil_id: perfilId }) })
   }
-
   function track(tipo: string, metadata: Record<string, string>) {
     if (!perfilId) return
-    fetch('/api/track', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ perfil_id: perfilId, tipo, metadata })
-    })
+    fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ perfil_id: perfilId, tipo, metadata }) })
   }
-
   document.querySelectorAll<HTMLElement>('.track-red').forEach(el => {
-    el.addEventListener('click', () =>
-      track('click_red', { plataforma: el.dataset.plataforma ?? '' })
-    )
+    el.addEventListener('click', () => track('click_red', { plataforma: el.dataset.plataforma ?? '' }))
   })
-
   document.querySelectorAll<HTMLElement>('.track-cv').forEach(el => {
     el.addEventListener('click', () => track('descarga_cv', {}))
   })
-
   document.querySelectorAll<HTMLElement>('.track-proyecto').forEach(el => {
-    el.addEventListener('click', () =>
-      track('click_proyecto', { titulo: el.dataset.titulo ?? '' })
-    )
+    el.addEventListener('click', () => track('click_proyecto', { titulo: el.dataset.titulo ?? '' }))
   })
 </script>
