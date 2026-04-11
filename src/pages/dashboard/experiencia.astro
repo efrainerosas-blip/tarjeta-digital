@@ -149,7 +149,7 @@ const { data: items } = perfilId
     orden?: number; 
   }
 
-  // 3. Envolvemos en astro:page-load para que los botones sobrevivan al cambio de pestaña
+  // 3. Envolvemos en astro:page-load
   document.addEventListener('astro:page-load', () => {
     
     const formOriginal = document.getElementById('item-form') as HTMLFormElement | null
@@ -161,13 +161,6 @@ const { data: items } = perfilId
     const backdrop = document.getElementById('modal-backdrop')!
     const modalTitle = document.getElementById('modal-title')!
     const itemIdEl = document.getElementById('item-id') as HTMLInputElement
-
-    // Referencias a los inputs (Tipados para TypeScript)
-    const inputCargo = document.getElementById('cargo') as HTMLInputElement
-    const inputEmpresa = document.getElementById('empresa') as HTMLInputElement
-    const inputPeriodo = document.getElementById('periodo') as HTMLInputElement
-    const inputDesc = document.getElementById('descripcion') as HTMLTextAreaElement
-    const checkActual = document.getElementById('es_trabajo_actual') as HTMLInputElement
 
     // Clonamos para evitar acumulación de eventos
     const btnNuevo = btnNuevoOriginal.cloneNode(true) as HTMLButtonElement
@@ -183,11 +176,12 @@ const { data: items } = perfilId
       
       if (data) {
         itemIdEl.value = data.id ?? ''
-        inputCargo.value = data.cargo ?? ''
-        inputEmpresa.value = data.empresa ?? ''
-        inputPeriodo.value = data.periodo ?? ''
-        inputDesc.value = data.descripcion ?? ''
-        checkActual.checked = !!data.es_trabajo_actual
+        // IMPORTANTE: Buscar los inputs DENTRO del form clonado
+        ;(form.querySelector('#cargo') as HTMLInputElement).value = data.cargo ?? ''
+        ;(form.querySelector('#empresa') as HTMLInputElement).value = data.empresa ?? ''
+        ;(form.querySelector('#periodo') as HTMLInputElement).value = data.periodo ?? ''
+        ;(form.querySelector('#descripcion') as HTMLTextAreaElement).value = data.descripcion ?? ''
+        ;(form.querySelector('#es_trabajo_actual') as HTMLInputElement).checked = !!data.es_trabajo_actual
       }
       
       backdrop.classList.add('open')
@@ -235,14 +229,20 @@ const { data: items } = perfilId
 
       const id = itemIdEl.value
       
-      // Aplicamos el tipado correcto aquí
+      // IMPORTANTE: Leer los valores DENTRO del form clonado
+      const cargoVal = (form.querySelector('#cargo') as HTMLInputElement).value.trim()
+      const empresaVal = (form.querySelector('#empresa') as HTMLInputElement).value.trim()
+      const periodoVal = (form.querySelector('#periodo') as HTMLInputElement).value.trim() || null
+      const descVal = (form.querySelector('#descripcion') as HTMLTextAreaElement).value.trim() || null
+      const actualChecked = (form.querySelector('#es_trabajo_actual') as HTMLInputElement).checked
+
       const payload: ExperienciaPayload = {
         perfil_id: perfilId,
-        cargo: inputCargo.value.trim(),
-        empresa: inputEmpresa.value.trim(),
-        periodo: inputPeriodo.value.trim() || null,
-        descripcion: inputDesc.value.trim() || null,
-        es_trabajo_actual: checkActual.checked,
+        cargo: cargoVal,
+        empresa: empresaVal,
+        periodo: periodoVal,
+        descripcion: descVal,
+        es_trabajo_actual: actualChecked,
       }
 
       let error
