@@ -18,9 +18,9 @@ const supabase = createServerClient(
 const { data: { user }, error: authError } = await supabase.auth.getUser()
 if (authError || !user) return Astro.redirect('/auth/login')
 
-const { data: perfil } = await supabase.from('perfiles').select('id,slug,plan_tipo').eq('user_id', user.id).single()
+const { data: perfil } = await supabase.from('perfiles').select('id,slug,plan_id').eq('user_id', user.id).single()
 const perfilId = perfil?.id
-const plan = perfil?.plan_tipo ?? 'free'
+const plan = perfil?.plan_id ?? 'free'
 
 // Métricas básicas (disponibles en free)
 let totalVistas = 0, vistas7d = 0, vistas30d = 0
@@ -51,7 +51,7 @@ const tipoLabel: Record<string, string> = {
 }
 ---
 
-<DashboardLayout title="Analytics" tabActivo="analytics" user={{ email: user.email!, id: user.id }}>
+<DashboardLayout title="Analytics" tabActivo="analytics" user={{ email: user.email!, id: user.id }} slug={perfil?.slug}>
 
   <div class="page-header">
     <h1 class="page-title">Analytics</h1>

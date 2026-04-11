@@ -25,7 +25,7 @@ const { data: { user }, error: authError } = await supabase.auth.getUser()
 if (authError || !user) return Astro.redirect('/auth/login')
 
 const { data: perfil } = await supabase
-  .from('perfiles').select('id').eq('user_id', user.id).single()
+  .from('perfiles').select('id, slug').eq('user_id', user.id).single()
 
 const perfilId = perfil?.id ?? null
 
@@ -34,7 +34,7 @@ const { data: items } = perfilId
   : { data: [] }
 ---
 
-<DashboardLayout title="Habilidades" tabActivo="habilidades" user={{ email: user.email, id: user.id }}>
+<DashboardLayout title="Habilidades" tabActivo="habilidades" user={{ email: user.email!, id: user.id }} slug={perfil?.slug}>
 
   <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
     <div>
