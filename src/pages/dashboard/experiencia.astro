@@ -129,98 +129,133 @@ const { data: items } = perfilId
   </div>
 </div>
 
-<script type="module">
+<script>
   import { createBrowserClient } from '@supabase/ssr'
 
+  // 1. Instanciamos el cliente una sola vez
   const sb = createBrowserClient(
-    document.querySelector('meta[name="supabase-url"]').content,
-    document.querySelector('meta[name="supabase-anon"]').content,
+    document.querySelector<HTMLMetaElement>('meta[name="supabase-url"]')!.content,
+    document.querySelector<HTMLMetaElement>('meta[name="supabase-anon"]')!.content,
   )
 
-  const btnNuevo = document.getElementById('btn-nuevo')
-  const perfilId = btnNuevo?.dataset.perfilId || null
-  const backdrop  = document.getElementById('modal-backdrop')
-  const modalTitle = document.getElementById('modal-title')
-  const form      = document.getElementById('item-form')
-  const itemIdEl  = document.getElementById('item-id')
-
-  function openModal(titulo = 'Agregar experiencia', data = null) {
-    modalTitle.textContent = titulo
-    form.reset()
-    itemIdEl.value = ''
-    if (data) {
-      itemIdEl.value = data.id ?? ''
-      form.cargo.value = data.cargo ?? ''
-      form.empresa.value = data.empresa ?? ''
-      form.periodo.value = data.periodo ?? ''
-      form.descripcion.value = data.descripcion ?? ''
-      form.es_trabajo_actual.checked = !!data.es_trabajo_actual
-    }
-    backdrop.classList.add('open')
-    form.querySelector('input:not([type=hidden])').focus()
+  // 2. Definimos la estructura estricta para que TypeScript no se queje de "orden"
+  type ExperienciaPayload = {
+    perfil_id: string | null;
+    cargo: string;
+    empresa: string;
+    periodo: string | null;
+    descripcion: string | null;
+    es_trabajo_actual: boolean;
+    orden?: number; 
   }
 
-  function closeModal() { backdrop.classList.remove('open') }
+  // 3. El evento mágico de Astro para que los botones revivan al cambiar de pestaña
+  document.addEventListener('astro:page-load', () => {
+    
+    const form = document.getElementById('item-form') as HTMLFormElement | null
+    const btnNuevoOriginal = document.getElementById('btn-nuevo') as HTMLButtonElement | null
+    
+    // Si navegamos a otra página que no tiene este formulario, abortamos en silencio
+    if (!form || !btnNuevoOriginal) return
 
-  document.getElementById('btn-nuevo').addEventListener('click', () => openModal())
-  document.getElementById('modal-close').addEventListener('click', closeModal)
-  document.getElementById('btn-cancelar').addEventListener('click', closeModal)
-  backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal() })
+    const perfilId = btnNuevoOriginal.dataset.perfilId || null
+    const backdrop  = document.getElementById('modal-backdrop')!
+    const modalTitle = document.getElementById('modal-title')!
+    const itemIdEl  = document.getElementById('item-id') as HTMLInputElement
 
-  // Editar
-  document.querySelectorAll('.btn-editar').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = btn.dataset.id
-      const { data } = await sb.from('experiencia_laboral').select('*').eq('id', id).single()
-      if (data) openModal('Editar experiencia', data)
-    })
-  })
+    // CLONACIÓN DE SEGURIDAD: Limpiamos eventos "fantasmas" de navegaciones previas
+    const newBtnNuevo = btnNuevoOriginal.cloneNode(true) as HTMLButtonElement
+    btnNuevoOriginal.parentNode?.replaceChild(newBtnNuevo, btnNuevoOriginal)
 
-  // Eliminar
-  document.querySelectorAll('.btn-eliminar').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!confirm('¿Eliminar esta experiencia?')) return
-      const id = btn.dataset.id
-      const { error } = await sb.from('experiencia_laboral').delete().eq('id', id)
-      if (error) { window.toast('Error al eliminar', 'error'); return }
-      document.querySelector(`.list-item[data-id="${id}"]`)?.remove()
-      window.toast('Eliminado correctamente', 'success')
-    })
-  })
+    const newForm = form.cloneNode(true) as HTMLFormElement
+    form.parentNode?.replaceChild(newForm, form)
 
-  // Guardar
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault()
-    const btn = document.getElementById('btn-submit')
-    btn.disabled = true
-    btn.textContent = 'Guardando…'
-
-    const id = itemIdEl.value
-    const payload = {
-      perfil_id: perfilId,
-      cargo: form.cargo.value.trim(),
-      empresa: form.empresa.value.trim(),
-      periodo: form.periodo.value.trim() || null,
-      descripcion: form.descripcion.value.trim() || null,
-      es_trabajo_actual: form.es_trabajo_actual.checked,
+    // Funciones del Modal
+    function openModal(titulo = 'Agregar experiencia', data: any = null) {
+      modalTitle.textContent = titulo
+      newForm.reset()
+      itemIdEl.value = ''
+      if (data) {
+        itemIdEl.value = data.id ?? ''
+        newForm.cargo.value = data.cargo ?? ''
+        newForm.empresa.value = data.empresa ?? ''
+        newForm.periodo.value = data.periodo ?? ''
+        newForm.descripcion.value = data.descripcion ?? ''
+        newForm.es_trabajo_actual.checked = !!data.es_trabajo_actual
+      }
+      backdrop.classList.add('open')
+      setTimeout(() => newForm.querySelector<HTMLInputElement>('input:not([type=hidden])')?.focus(), 60)
     }
 
-    let error
-    if (id) {
-      ({ error } = await sb.from('experiencia_laboral').update(payload).eq('id', id))
-    } else {
-      const { data: maxOrden } = await sb.from('experiencia_laboral').select('orden').eq('perfil_id', perfilId).order('orden', { ascending: false }).limit(1).single()
-      payload.orden = (maxOrden?.orden ?? 0) + 1
-      ;({ error } = await sb.from('experiencia_laboral').insert(payload))
-    }
+    function closeModal() { backdrop.classList.remove('open') }
 
-    btn.disabled = false
-    btn.textContent = 'Guardar'
+    // Asignar eventos UI
+    newBtnNuevo.addEventListener('click', () => openModal())
+    document.getElementById('modal-close')?.addEventListener('click', closeModal)
+    document.getElementById('btn-cancelar')?.addEventListener('click', closeModal)
+    backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal() })
 
-    if (error) { window.toast('Error: ' + error.message, 'error'); return }
+    // Botones Editar
+    document.querySelectorAll<HTMLButtonElement>('.btn-editar').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id!
+        const { data } = await sb.from('experiencia_laboral').select('*').eq('id', id).single()
+        if (data) openModal('Editar experiencia', data)
+      })
+    })
 
-    window.toast(id ? 'Actualizado' : 'Agregado correctamente', 'success')
-    closeModal()
-    setTimeout(() => window.location.reload(), 400)
+    // Botones Eliminar
+    document.querySelectorAll<HTMLButtonElement>('.btn-eliminar').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('¿Eliminar esta experiencia?')) return
+        const id = btn.dataset.id!
+        const { error } = await sb.from('experiencia_laboral').delete().eq('id', id)
+        if (error) { ;(window as any).toast?.('Error al eliminar', 'error'); return }
+        document.querySelector(`.list-item[data-id="${id}"]`)?.remove()
+        ;(window as any).toast?.('Eliminado correctamente', 'success')
+      })
+    })
+
+    // Evento Guardar Formulario
+    newForm.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      const btnSubmit = newForm.querySelector('#btn-submit') as HTMLButtonElement
+      btnSubmit.disabled = true
+      btnSubmit.textContent = 'Guardando…'
+
+      const id = itemIdEl.value
+      
+      // ¡AQUÍ APLICAMOS EL TIPO!
+      const payload: ExperienciaPayload = {
+        perfil_id: perfilId,
+        cargo: newForm.cargo.value.trim(),
+        empresa: newForm.empresa.value.trim(),
+        periodo: newForm.periodo.value.trim() || null,
+        descripcion: newForm.descripcion.value.trim() || null,
+        es_trabajo_actual: newForm.es_trabajo_actual.checked,
+      }
+
+      let error
+      if (id) {
+        ({ error } = await sb.from('experiencia_laboral').update(payload).eq('id', id))
+      } else {
+        // maybeSingle previene el error cuando la tabla está vacía
+        const { data: maxOrden } = await sb.from('experiencia_laboral').select('orden').eq('perfil_id', perfilId!).order('orden', { ascending: false }).limit(1).maybeSingle()
+        
+        // Gracias al tipado "ExperienciaPayload", TypeScript ahora permite esta línea
+        payload['orden'] = (maxOrden?.orden ?? 0) + 1
+        
+        ;({ error } = await sb.from('experiencia_laboral').insert(payload))
+      }
+
+      btnSubmit.disabled = false
+      btnSubmit.textContent = 'Guardar'
+
+      if (error) { ;(window as any).toast?.('Error: ' + error.message, 'error'); return }
+
+      ;(window as any).toast?.(id ? 'Actualizado' : 'Agregado correctamente', 'success')
+      closeModal()
+      setTimeout(() => window.location.reload(), 400)
+    })
   })
 </script>
