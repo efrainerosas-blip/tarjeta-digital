@@ -1,5 +1,6 @@
 ---
 // src/layouts/DashboardLayout.astro
+import '../styles/global.css'
 
 interface Props {
   title?: string
@@ -25,7 +26,6 @@ const tabs = [
   { id: 'seguridad',      label: 'Seguridad',   icon: 'lock',      href: '/dashboard/seguridad' },
 ]
 
-// Los 4 tabs fijos del bottom nav mobile + botón "Más"
 const BOTTOM_NAV = ['perfil', 'experiencia', 'redes', 'temas']
 
 const iconSVG: Record<string, string> = {
@@ -40,952 +40,780 @@ const iconSVG: Record<string, string> = {
   book:      `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0118 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>`,
   palette:   `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.098 19.902a3.75 3.75 0 005.304 0l6.401-6.402M6.75 21A3.75 3.75 0 013 17.25V4.125C3 3.504 3.504 3 4.125 3h5.25c.621 0 1.125.504 1.125 1.125v4.072M6.75 21a3.75 3.75 0 003.75-3.75V8.197M6.75 21h13.125c.621 0 1.125-.504 1.125-1.125v-5.25c0-.621-.504-1.125-1.125-1.125h-4.072M10.5 8.197l2.88-2.88c.438-.439 1.15-.439 1.59 0l3.712 3.713c.44.44.44 1.152 0 1.59l-2.879 2.88M6.75 17.25h.008v.008H6.75v-.008z"/>`,
   chart:     `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>`,
-  lock: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>`,
+  lock:      `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>`,
 }
 
-// Tabs que van en el drawer "Más" (los que no están en bottom nav)
 const drawerTabs = tabs.filter(t => !BOTTOM_NAV.includes(t.id))
 ---
 
 <!doctype html>
 <html lang="es" class="h-full">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="supabase-url"  content={import.meta.env.PUBLIC_SUPABASE_URL} />
-    <meta name="supabase-anon" content={import.meta.env.PUBLIC_SUPABASE_ANON_KEY} />
-    <title>{title} — Tarjeta Digital</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
-    <style is:global>
-      /* ── Reset ─────────────────────────────────────────────── */
-      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="supabase-url"  content={import.meta.env.PUBLIC_SUPABASE_URL} />
+  <meta name="supabase-anon" content={import.meta.env.PUBLIC_SUPABASE_ANON_KEY} />
+  <title>{title} — CardVirtual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
-      /* ── Tokens de diseño ───────────────────────────────────── */
-      :root {
-        --bg:         #0d0d0f;
-        --bg-2:       #141416;
-        --bg-3:       #1c1c1f;
-        --bg-4:       #242428;
-        --border:     #2a2a2e;
-        --border-2:   #3a3a3f;
-        --text-1:     #f4f4f5;
-        --text-2:     #a1a1aa;
-        --text-3:     #71717a;
-        --accent:     #6366f1;
-        --accent-2:   #818cf8;
-        --accent-bg:  rgba(99,102,241,.12);
-        --success:    #22c55e;
-        --warn:       #f59e0b;
-        --danger:     #ef4444;
-        --radius:     10px;
-        --radius-lg:  16px;
-        --font:       'Geist', sans-serif;
-        --font-mono:  'Geist Mono', monospace;
-        --nav-w:      220px;
-        --header-h:   56px;
-        --bottom-h:   64px;   /* altura del bottom nav mobile */
-        --transition: 150ms cubic-bezier(.4,0,.2,1);
-      }
+  <style is:global>
+    /* ── Inputs ─────────────────────────────────────────────── */
+    input, textarea, select {
+      font-family: var(--font);
+      font-size: 14px;
+      background: var(--bg-2);
+      color: var(--text-1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 9px 12px;
+      width: 100%;
+      transition: border-color var(--transition), box-shadow var(--transition);
+      outline: none;
+    }
+    input:hover, textarea:hover, select:hover { border-color: var(--border-2); }
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-bg);
+    }
+    input::placeholder, textarea::placeholder { color: var(--text-3); }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-2);
+      margin-bottom: 6px;
+    }
 
-      html, body { height: 100%; }
+    /* ── Botones ─────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 500;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: all var(--transition);
+      border: none;
+      white-space: nowrap;
+      text-decoration: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff;
+      box-shadow: 0 2px 8px var(--accent-bg);
+    }
+    .btn-primary:hover { opacity: .9; transform: translateY(-1px); box-shadow: 0 4px 16px var(--accent-bg); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-2);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--bg-3); color: var(--text-1); border-color: var(--border-2); }
+    .btn-danger {
+      background: rgba(239,68,68,.08);
+      color: var(--danger);
+      border: 1px solid rgba(239,68,68,.2);
+    }
+    .btn-danger:hover { background: rgba(239,68,68,.15); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
 
-      body {
-        font-family: var(--font);
-        background: var(--bg);
-        color: var(--text-1);
-        font-size: 14px;
-        line-height: 1.6;
-        -webkit-font-smoothing: antialiased;
-      }
+    /* ── Badges ─────────────────────────────────────────────── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+    }
+    .badge-pro  { background: linear-gradient(135deg,#f59e0b,#f97316); color: #fff; }
+    .badge-free { background: var(--bg-4); color: var(--text-3); border: 1px solid var(--border); }
 
-      /* Scrollbar */
-      ::-webkit-scrollbar { width: 6px; height: 6px; }
-      ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 99px; }
+    /* ── Toast ──────────────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 80px;
+      right: 16px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .toast-item {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--text-1);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 20px rgba(75,108,247,.12);
+      animation: slideIn .2s ease;
+      pointer-events: all;
+      max-width: 280px;
+    }
+    .toast-item.success { border-left: 3px solid var(--success); }
+    .toast-item.error   { border-left: 3px solid var(--danger); }
+    .toast-item.warn    { border-left: 3px solid var(--warn); }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(12px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
 
-      :focus-visible {
-        outline: 2px solid var(--accent);
-        outline-offset: 2px;
-        border-radius: 6px;
-      }
+    /* ── Layout shell ───────────────────────────────────────── */
+    .dash-shell {
+      display: grid;
+      grid-template-rows: var(--header-h) 1fr;
+      grid-template-columns: var(--nav-w) 1fr;
+      grid-template-areas: "header header" "nav main";
+      min-height: 100vh;
+    }
 
-      /* ── Inputs ─────────────────────────────────────────────── */
-      input, textarea, select {
-        font-family: var(--font);
-        font-size: 14px;
-        background: var(--bg-3);
-        color: var(--text-1);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 9px 12px;
-        width: 100%;
-        transition: border-color var(--transition), box-shadow var(--transition);
-        outline: none;
-      }
-      input:hover, textarea:hover, select:hover { border-color: var(--border-2); }
-      input:focus, textarea:focus, select:focus {
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px var(--accent-bg);
-      }
-      input::placeholder, textarea::placeholder { color: var(--text-3); }
-      label {
-        display: block;
-        font-size: 13px;
-        font-weight: 500;
-        color: var(--text-2);
-        margin-bottom: 6px;
-      }
+    /* ── Header ─────────────────────────────────────────────── */
+    .dash-header {
+      grid-area: header;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      background: var(--bg-2);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      gap: 12px;
+      box-shadow: 0 1px 8px rgba(75,108,247,.06);
+    }
+    .dash-logo {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-1);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .dash-logo img {
+      height: 28px;
+      width: auto;
+      object-fit: contain;
+    }
+    .dash-header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+    .dash-user-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 4px 12px 4px 4px;
+      font-size: 13px;
+      color: var(--text-2);
+    }
+    .dash-avatar {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: var(--accent-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+    .dash-preview-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--accent);
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      padding: 5px 10px;
+      border-radius: var(--radius);
+      text-decoration: none;
+      transition: all var(--transition);
+      white-space: nowrap;
+      font-weight: 500;
+    }
+    .dash-preview-link:hover { background: var(--accent); color: #fff; }
 
-      /* ── Botones ─────────────────────────────────────────────── */
-      .btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 16px;
-        border-radius: var(--radius);
-        font-size: 13px;
-        font-weight: 500;
-        font-family: var(--font);
-        cursor: pointer;
-        transition: all var(--transition);
-        border: none;
-        white-space: nowrap;
-        text-decoration: none;
-      }
-      .btn-primary { background: var(--accent); color: #fff; }
-      .btn-primary:hover { background: var(--accent-2); transform: translateY(-1px); }
-      .btn-primary:active { transform: translateY(0); }
-      .btn-ghost { background: transparent; color: var(--text-2); border: 1px solid var(--border); }
-      .btn-ghost:hover { background: var(--bg-3); color: var(--text-1); }
-      .btn-danger { background: rgba(239,68,68,.12); color: var(--danger); border: 1px solid rgba(239,68,68,.2); }
-      .btn-danger:hover { background: rgba(239,68,68,.2); }
-      .btn:disabled { opacity: .45; cursor: not-allowed; transform: none !important; }
+    /* ── Sidebar ─────────────────────────────────────────────── */
+    .dash-nav {
+      grid-area: nav;
+      background: var(--bg-2);
+      border-right: 1px solid var(--border);
+      padding: 12px 8px;
+      overflow-y: auto;
+      position: sticky;
+      top: var(--header-h);
+      height: calc(100vh - var(--header-h));
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .nav-section-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      padding: 8px 10px 4px;
+      margin-top: 8px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      color: var(--text-2);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all var(--transition);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+    .nav-item svg { flex-shrink: 0; opacity: .6; }
+    .nav-item:hover { background: var(--bg-3); color: var(--text-1); }
+    .nav-item:hover svg { opacity: 1; }
+    .nav-item.active {
+      background: var(--accent-bg);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .nav-item.active svg { opacity: 1; }
 
-      /* ── Badges ─────────────────────────────────────────────── */
-      .badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 2px 8px;
-        border-radius: 99px;
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: .03em;
-        text-transform: uppercase;
-      }
-      .badge-pro  { background: linear-gradient(135deg,#f59e0b,#f97316); color: #fff; }
-      .badge-free { background: var(--bg-4); color: var(--text-3); }
+    /* ── Main ────────────────────────────────────────────────── */
+    .dash-main {
+      grid-area: main;
+      padding: 28px 32px;
+      overflow-y: auto;
+      max-width: 860px;
+      padding-bottom: 28px;
+    }
 
-      /* ── Toast ──────────────────────────────────────────────── */
-      #toast {
-        position: fixed;
-        bottom: 80px;   /* encima del bottom nav en mobile */
-        right: 16px;
-        z-index: 9999;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        pointer-events: none;
-      }
-      .toast-item {
-        background: var(--bg-3);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        padding: 10px 14px;
-        font-size: 13px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        box-shadow: 0 8px 32px rgba(0,0,0,.4);
-        animation: slideIn .2s ease;
-        pointer-events: all;
-        max-width: 280px;
-      }
-      .toast-item.success { border-left: 3px solid var(--success); }
-      .toast-item.error   { border-left: 3px solid var(--danger); }
-      .toast-item.warn    { border-left: 3px solid var(--warn); }
-      @keyframes slideIn {
-        from { opacity: 0; transform: translateX(12px); }
-        to   { opacity: 1; transform: translateX(0); }
-      }
+    /* ── Page header ─────────────────────────────────────────── */
+    .page-header   { margin-bottom: 24px; }
+    .page-title    { font-size: 22px; font-weight: 700; color: var(--text-1); line-height: 1.2; }
+    .page-desc     { font-size: 13px; color: var(--text-3); margin-top: 4px; }
 
-      /* ── Layout shell — desktop ──────────────────────────────── */
+    /* ── Form helpers ────────────────────────────────────────── */
+    .form-grid   { display: grid; gap: 16px; }
+    .form-grid-2 { grid-template-columns: 1fr 1fr; }
+    .form-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .form-group  { display: flex; flex-direction: column; }
+    .form-row    { display: flex; gap: 16px; align-items: flex-end; }
+    .form-hint   { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+    .form-divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+    /* ── Section card ────────────────────────────────────────── */
+    .section-card {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(75,108,247,.04);
+    }
+    .section-card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-1);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── List items ──────────────────────────────────────────── */
+    .list-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 8px;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .list-item:hover { border-color: var(--accent-border); box-shadow: 0 2px 8px var(--accent-bg); }
+    .list-item-body  { flex: 1; min-width: 0; }
+    .list-item-title { font-size: 14px; font-weight: 600; color: var(--text-1); }
+    .list-item-sub   { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+    .list-item-actions { display: flex; gap: 4px; flex-shrink: 0; }
+    .icon-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 30px; height: 30px;
+      border-radius: 6px; border: none;
+      background: transparent; color: var(--text-3);
+      cursor: pointer; transition: all var(--transition);
+    }
+    .icon-btn:hover { background: var(--bg-3); color: var(--text-1); }
+    .icon-btn.danger:hover { background: rgba(239,68,68,.1); color: var(--danger); }
+
+    /* ── Modal ───────────────────────────────────────────────── */
+    .modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(13,18,54,.4);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s;
+    }
+    .modal-backdrop.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      width: 100%;
+      max-width: 520px;
+      max-height: 90vh;
+      overflow-y: auto;
+      transform: scale(.96);
+      transition: transform .2s;
+      box-shadow: 0 20px 60px rgba(75,108,247,.12);
+    }
+    .modal-backdrop.open .modal { transform: scale(1); }
+    .modal-header {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .modal-title { font-size: 16px; font-weight: 700; color: var(--text-1); }
+    .modal-close {
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 6px; border: none;
+      background: var(--bg-3); color: var(--text-2);
+      cursor: pointer; font-size: 16px;
+      transition: all var(--transition);
+    }
+    .modal-close:hover { background: var(--bg-4); color: var(--text-1); }
+
+    /* ── Misc helpers ────────────────────────────────────────── */
+    .slug-preview {
+      font-family: var(--font-mono); font-size: 12px;
+      color: var(--accent); background: var(--accent-bg);
+      padding: 4px 10px; border-radius: 6px;
+      display: inline-flex; align-items: center; gap: 6px; margin-top: 6px;
+      border: 1px solid var(--accent-border);
+    }
+    .char-counter { font-size: 11px; color: var(--text-3); text-align: right; margin-top: 4px; }
+    .char-counter.warn { color: var(--warn); }
+    .char-counter.over { color: var(--danger); }
+
+    .toggle {
+      position: relative; display: inline-flex;
+      align-items: center; cursor: pointer;
+      gap: 10px; font-size: 13px; color: var(--text-2);
+    }
+    .toggle input { width: 0; height: 0; opacity: 0; position: absolute; }
+    .toggle-track {
+      width: 36px; height: 20px; background: var(--bg-4);
+      border-radius: 99px; border: 1px solid var(--border);
+      position: relative; transition: all var(--transition); flex-shrink: 0;
+    }
+    .toggle-thumb {
+      position: absolute; top: 2px; left: 2px;
+      width: 14px; height: 14px; background: var(--text-3);
+      border-radius: 50%; transition: all var(--transition);
+    }
+    .toggle input:checked + .toggle-track { background: var(--accent); border-color: var(--accent); }
+    .toggle input:checked + .toggle-track .toggle-thumb { transform: translateX(16px); background: #fff; }
+
+    /* ── Bottom nav ──────────────────────────────────────────── */
+    .bottom-nav { display: none; }
+
+    /* ── Drawer ──────────────────────────────────────────────── */
+    .drawer-backdrop {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(13,18,54,.3);
+      backdrop-filter: blur(4px);
+      z-index: 299;
+    }
+    .drawer-backdrop.open { display: block; }
+    .drawer {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--bg-2);
+      border-top: 1px solid var(--border);
+      border-radius: 20px 20px 0 0;
+      padding: 8px 16px calc(var(--bottom-h) + 8px);
+      z-index: 300;
+      transform: translateY(100%);
+      transition: transform .3s cubic-bezier(.32,0,.67,0);
+      max-height: 80svh;
+      overflow-y: auto;
+    }
+    .drawer.open { transform: translateY(0); transition: transform .35s cubic-bezier(.34,1.2,.64,1); }
+    .drawer-handle {
+      width: 36px; height: 4px;
+      background: var(--border-2);
+      border-radius: 99px;
+      margin: 0 auto 16px;
+    }
+    .drawer-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      padding-bottom: 8px;
+    }
+    .drawer-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 4px;
+      border-radius: 12px;
+      color: var(--text-2);
+      text-decoration: none;
+      font-size: 11px;
+      font-weight: 500;
+      transition: all var(--transition);
+      border: 1px solid transparent;
+      text-align: center;
+    }
+    .drawer-item:hover { background: var(--bg-3); }
+    .drawer-item.active {
+      background: var(--accent-bg);
+      color: var(--accent);
+      border-color: var(--accent-border);
+    }
+    .drawer-item svg { opacity: .6; }
+    .drawer-item.active svg { opacity: 1; }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 767px) {
+      .dash-nav { display: none !important; }
       .dash-shell {
-        display: grid;
-        grid-template-rows: var(--header-h) 1fr;
-        grid-template-columns: var(--nav-w) 1fr;
-        grid-template-areas:
-          "header header"
-          "nav    main";
-        min-height: 100vh;
+        grid-template-columns: 1fr;
+        grid-template-areas: "header" "main";
       }
+      .dash-main { padding: 16px 14px calc(var(--bottom-h) + 16px); max-width: 100%; }
+      .dash-user-email  { display: none; }
+      .dash-preview-link { display: none; }
+      .btn-logout-text { display: none; }
+      .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; }
+      .section-card { padding: 16px; }
+      .page-title { font-size: 18px; }
+      #toast { bottom: calc(var(--bottom-h) + 12px); right: 12px; }
 
-      /* ── Header ─────────────────────────────────────────────── */
-      .dash-header {
-        grid-area: header;
-        display: flex;
-        align-items: center;
-        padding: 0 20px;
-        background: var(--bg-2);
-        border-bottom: 1px solid var(--border);
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        gap: 12px;
-      }
-      .dash-logo {
-        font-size: 15px;
-        font-weight: 700;
-        color: var(--text-1);
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-shrink: 0;
-      }
-      .dash-logo-dot {
-        width: 8px; height: 8px;
-        border-radius: 50%;
-        background: var(--accent);
-        box-shadow: 0 0 8px var(--accent);
-      }
-      .dash-header-right {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-left: auto;
-      }
-      .dash-user-chip {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: var(--bg-3);
-        border: 1px solid var(--border);
-        border-radius: 99px;
-        padding: 4px 12px 4px 4px;
-        font-size: 13px;
-        color: var(--text-2);
-      }
-      .dash-avatar {
-        width: 26px; height: 26px;
-        border-radius: 50%;
-        background: var(--accent-bg);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 11px;
-        font-weight: 700;
-        color: var(--accent-2);
-        flex-shrink: 0;
-      }
-      .dash-preview-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 12px;
-        color: var(--text-2);
-        background: var(--bg-3);
-        border: 1px solid var(--border);
-        padding: 5px 10px;
-        border-radius: var(--radius);
-        text-decoration: none;
-        transition: all var(--transition);
-        white-space: nowrap;
-      }
-      .dash-preview-link:hover { color: var(--text-1); border-color: var(--border-2); }
-
-      /* ── Sidebar nav — solo desktop ─────────────────────────── */
-      .dash-nav {
-        grid-area: nav;
-        background: var(--bg-2);
-        border-right: 1px solid var(--border);
-        padding: 12px 8px;
-        overflow-y: auto;
-        position: sticky;
-        top: var(--header-h);
-        height: calc(100vh - var(--header-h));
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-      }
-      .nav-section-label {
-        font-size: 10px;
-        font-weight: 600;
-        letter-spacing: .1em;
-        text-transform: uppercase;
-        color: var(--text-3);
-        padding: 8px 10px 4px;
-        margin-top: 8px;
-      }
-      .nav-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 8px 10px;
-        border-radius: 8px;
-        color: var(--text-2);
-        text-decoration: none;
-        font-size: 13px;
-        font-weight: 500;
-        transition: all var(--transition);
-        cursor: pointer;
-        border: none;
-        background: transparent;
-        width: 100%;
-        text-align: left;
-      }
-      .nav-item svg { flex-shrink: 0; opacity: .7; }
-      .nav-item:hover { background: var(--bg-3); color: var(--text-1); }
-      .nav-item:hover svg { opacity: 1; }
-      .nav-item.active { background: var(--accent-bg); color: var(--accent-2); }
-      .nav-item.active svg { opacity: 1; }
-
-      /* ── Main content ───────────────────────────────────────── */
-      .dash-main {
-        grid-area: main;
-        padding: 28px 32px;
-        overflow-y: auto;
-        max-width: 860px;
-        /* Espacio inferior en mobile para que el bottom nav no tape contenido */
-        padding-bottom: 28px;
-      }
-
-      /* ── Page header ────────────────────────────────────────── */
-      .page-header   { margin-bottom: 24px; }
-      .page-title    { font-size: 22px; font-weight: 700; color: var(--text-1); line-height: 1.2; }
-      .page-desc     { font-size: 13px; color: var(--text-3); margin-top: 4px; }
-
-      /* ── Form helpers ───────────────────────────────────────── */
-      .form-grid   { display: grid; gap: 16px; }
-      .form-grid-2 { grid-template-columns: 1fr 1fr; }
-      .form-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
-      .form-group  { display: flex; flex-direction: column; }
-      .form-row    { display: flex; gap: 16px; align-items: flex-end; }
-      .form-hint   { font-size: 12px; color: var(--text-3); margin-top: 4px; }
-      .form-divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
-
-      /* ── Section card ───────────────────────────────────────── */
-      .section-card {
-        background: var(--bg-2);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        padding: 24px;
-        margin-bottom: 16px;
-      }
-      .section-card-title {
-        font-size: 15px;
-        font-weight: 600;
-        color: var(--text-1);
-        margin-bottom: 16px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      /* ── List items ─────────────────────────────────────────── */
-      .list-item {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        padding: 14px;
-        background: var(--bg-3);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        margin-bottom: 8px;
-        transition: border-color var(--transition);
-      }
-      .list-item:hover { border-color: var(--border-2); }
-      .list-item-body  { flex: 1; min-width: 0; }
-      .list-item-title { font-size: 14px; font-weight: 600; color: var(--text-1); }
-      .list-item-sub   { font-size: 12px; color: var(--text-3); margin-top: 2px; }
-      .list-item-actions { display: flex; gap: 4px; flex-shrink: 0; }
-      .icon-btn {
-        display: flex; align-items: center; justify-content: center;
-        width: 30px; height: 30px;
-        border-radius: 6px; border: none;
-        background: transparent; color: var(--text-3);
-        cursor: pointer; transition: all var(--transition);
-      }
-      .icon-btn:hover { background: var(--bg-4); color: var(--text-1); }
-      .icon-btn.danger:hover { background: rgba(239,68,68,.12); color: var(--danger); }
-
-      /* ── Modal ──────────────────────────────────────────────── */
-      .modal-backdrop {
-        position: fixed; inset: 0;
-        background: rgba(0,0,0,.6);
-        backdrop-filter: blur(4px);
-        z-index: 1000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 16px;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity .2s;
-      }
-      .modal-backdrop.open { opacity: 1; pointer-events: all; }
-      .modal {
-        background: var(--bg-2);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        padding: 24px;
-        width: 100%;
-        max-width: 520px;
-        max-height: 90vh;
-        overflow-y: auto;
-        transform: scale(.96);
-        transition: transform .2s;
-      }
-      .modal-backdrop.open .modal { transform: scale(1); }
-      .modal-header {
-        display: flex; align-items: center;
-        justify-content: space-between;
-        margin-bottom: 20px;
-      }
-      .modal-title { font-size: 16px; font-weight: 700; }
-      .modal-close {
-        width: 28px; height: 28px;
-        display: flex; align-items: center; justify-content: center;
-        border-radius: 6px; border: none;
-        background: var(--bg-3); color: var(--text-2);
-        cursor: pointer; font-size: 16px;
-        transition: all var(--transition);
-      }
-      .modal-close:hover { background: var(--bg-4); color: var(--text-1); }
-
-      /* ── Misc helpers ───────────────────────────────────────── */
-      .slug-preview {
-        font-family: var(--font-mono); font-size: 12px;
-        color: var(--accent-2); background: var(--accent-bg);
-        padding: 4px 10px; border-radius: 6px;
-        display: inline-flex; align-items: center; gap: 6px; margin-top: 6px;
-      }
-      .char-counter { font-size: 11px; color: var(--text-3); text-align: right; margin-top: 4px; }
-      .char-counter.warn { color: var(--warn); }
-      .char-counter.over { color: var(--danger); }
-
-      .toggle {
-        position: relative; display: inline-flex;
-        align-items: center; cursor: pointer;
-        gap: 10px; font-size: 13px; color: var(--text-2);
-      }
-      .toggle input { width: 0; height: 0; opacity: 0; position: absolute; }
-      .toggle-track {
-        width: 36px; height: 20px; background: var(--bg-4);
-        border-radius: 99px; border: 1px solid var(--border);
-        position: relative; transition: all var(--transition); flex-shrink: 0;
-      }
-      .toggle-thumb {
-        position: absolute; top: 2px; left: 2px;
-        width: 14px; height: 14px; background: var(--text-3);
-        border-radius: 50%; transition: all var(--transition);
-      }
-      .toggle input:checked + .toggle-track { background: var(--accent); border-color: var(--accent); }
-      .toggle input:checked + .toggle-track .toggle-thumb { transform: translateX(16px); background: #fff; }
-
-      /* ══════════════════════════════════════════════════════════
-         BOTTOM NAV — solo visible en mobile (< 768px)
-         Oculto en desktop con display:none
-      ══════════════════════════════════════════════════════════ */
       .bottom-nav {
-        display: none; /* oculto en desktop */
-      }
-
-      /* ══════════════════════════════════════════════════════════
-         DRAWER "MÁS" — slide-up desde abajo en mobile
-      ══════════════════════════════════════════════════════════ */
-      .drawer-backdrop {
-        display: none;
-        position: fixed; inset: 0;
-        background: rgba(0,0,0,.5);
-        backdrop-filter: blur(4px);
-        z-index: 299;
-      }
-      .drawer-backdrop.open { display: block; }
-      .drawer {
+        display: flex;
         position: fixed;
         bottom: 0; left: 0; right: 0;
+        height: var(--bottom-h);
         background: var(--bg-2);
         border-top: 1px solid var(--border);
-        border-radius: 20px 20px 0 0;
-        padding: 8px 16px calc(var(--bottom-h) + 8px);
-        z-index: 300;
-        transform: translateY(100%);
-        transition: transform .3s cubic-bezier(.32,0,.67,0);
-        max-height: 80svh;
-        overflow-y: auto;
+        z-index: 200;
+        align-items: center;
+        justify-content: space-around;
+        padding: 0 8px;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        box-shadow: 0 -2px 12px rgba(75,108,247,.06);
       }
-      .drawer.open {
-        transform: translateY(0);
-        transition: transform .35s cubic-bezier(.34,1.2,.64,1);
-      }
-      .drawer-handle {
-        width: 36px; height: 4px;
-        background: var(--border-2);
-        border-radius: 99px;
-        margin: 0 auto 16px;
-      }
-      .drawer-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 8px;
-        padding-bottom: 8px;
-      }
-      .drawer-item {
+      .bn-item {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 6px;
-        padding: 12px 4px;
-        border-radius: 12px;
-        color: var(--text-2);
+        justify-content: center;
+        gap: 3px;
+        flex: 1;
+        height: 100%;
+        color: var(--text-3);
         text-decoration: none;
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 500;
-        transition: all var(--transition);
-        border: 1px solid transparent;
-        text-align: center;
+        transition: color var(--transition);
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        position: relative;
+        padding: 8px 4px;
       }
-      .drawer-item:hover { background: var(--bg-3); }
-      .drawer-item.active {
-        background: var(--accent-bg);
-        color: var(--accent-2);
-        border-color: rgba(99,102,241,.2);
+      .bn-item svg { transition: transform var(--transition); }
+      .bn-item:hover { color: var(--text-2); }
+      .bn-item:hover svg { transform: translateY(-1px); }
+      .bn-item.active { color: var(--accent); }
+      .bn-item.active::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 50%;
+        transform: translateX(-50%);
+        width: 24px; height: 2px;
+        background: var(--accent);
+        border-radius: 0 0 99px 99px;
       }
-      .drawer-item svg { opacity: .7; }
-      .drawer-item.active svg { opacity: 1; }
-
-      /* ══════════════════════════════════════════════════════════
-         RESPONSIVE — mobile-first
-         Todo lo que está arriba es mobile/base.
-         A partir de 768px activamos el layout desktop.
-      ══════════════════════════════════════════════════════════ */
-
-      /* ── Mobile (< 768px) ────────────────────────────────────── */
-      @media (max-width: 767px) {
-
-        /* El sidebar desaparece — navegamos por bottom nav */
-        .dash-nav { display: none !important; }
-
-        /* Shell sin columna de nav */
-        .dash-shell {
-          grid-template-columns: 1fr;
-          grid-template-areas:
-            "header"
-            "main";
-        }
-
-        /* Main con padding inferior para que el bottom nav no tape contenido */
-        .dash-main {
-          padding: 16px 14px calc(var(--bottom-h) + 16px);
-          max-width: 100%;
-        }
-
-        /* Header compacto: ocultar email y "Ver tarjeta" en pantallas pequeñas */
-        .dash-user-email  { display: none; }
-        .dash-preview-link { display: none; }
-
-        /* El botón "Salir" se hace solo ícono en mobile */
-        .btn-logout-text { display: none; }
-
-        /* Formularios de una columna */
-        .form-grid-2,
-        .form-grid-3 { grid-template-columns: 1fr; }
-
-        /* Section cards con menos padding */
-        .section-card { padding: 16px; }
-
-        /* Títulos de página más pequeños */
-        .page-title { font-size: 18px; }
-
-        /* Toast encima del bottom nav */
-        #toast { bottom: calc(var(--bottom-h) + 12px); right: 12px; }
-
-        /* Bottom nav visible */
-        .bottom-nav {
-          display: flex;
-          position: fixed;
-          bottom: 0; left: 0; right: 0;
-          height: var(--bottom-h);
-          background: var(--bg-2);
-          border-top: 1px solid var(--border);
-          z-index: 200;
-          align-items: center;
-          justify-content: space-around;
-          padding: 0 8px;
-          /* Soporte para safe area en iPhone con home indicator */
-          padding-bottom: env(safe-area-inset-bottom, 0px);
-        }
-
-        .bn-item {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 3px;
-          flex: 1;
-          height: 100%;
-          color: var(--text-3);
-          text-decoration: none;
-          font-size: 10px;
-          font-weight: 500;
-          transition: color var(--transition);
-          border: none;
-          background: transparent;
-          cursor: pointer;
-          position: relative;
-          padding: 8px 4px;
-        }
-        .bn-item svg { transition: transform var(--transition); }
-        .bn-item:hover { color: var(--text-2); }
-        .bn-item:hover svg { transform: translateY(-1px); }
-
-        /* Tab activo en bottom nav */
-        .bn-item.active { color: var(--accent-2); }
-        .bn-item.active::before {
-          content: '';
-          position: absolute;
-          top: 0; left: 50%;
-          transform: translateX(-50%);
-          width: 24px; height: 2px;
-          background: var(--accent);
-          border-radius: 0 0 99px 99px;
-        }
-
-        /* Modal ocupa más espacio en mobile */
-        .modal {
-          max-width: 100%;
-          border-radius: 20px 20px 0 0;
-          position: fixed;
-          bottom: 0; left: 0; right: 0;
-          max-height: 92svh;
-        }
-        .modal-backdrop {
-          align-items: flex-end;
-          padding: 0;
-        }
+      .modal {
+        max-width: 100%;
+        border-radius: 20px 20px 0 0;
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        max-height: 92svh;
       }
+      .modal-backdrop { align-items: flex-end; padding: 0; }
+    }
 
-      /* ── Tablet (768px – 1023px) ─────────────────────────────── */
-      @media (min-width: 768px) and (max-width: 1023px) {
-        :root { --nav-w: 64px; } /* sidebar colapsado solo con íconos */
+    @media (min-width: 768px) and (max-width: 1023px) {
+      :root { --nav-w: 64px; }
+      .dash-nav { padding: 12px 8px; width: 64px; overflow: hidden; }
+      .nav-item { justify-content: center; padding: 10px; }
+      .nav-item span, .nav-section-label, .nav-footer-label { display: none; }
+      .nav-item svg { margin: 0; }
+      .dash-main { padding: 20px 24px; max-width: 100%; }
+      .form-grid-3 { grid-template-columns: 1fr 1fr; }
+      .dash-user-email { display: none; }
+      .section-card { padding: 20px; }
+    }
 
-        .dash-nav {
-          padding: 12px 8px;
-          width: 64px;
-          overflow: hidden;
-        }
-        /* Ocultar texto en sidebar tablet — solo íconos */
-        .nav-item { justify-content: center; padding: 10px; }
-        .nav-item span,
-        .nav-section-label,
-        .nav-footer-label { display: none; }
-        .nav-item svg { margin: 0; }
+    @media (min-width: 1024px) {
+      .bottom-nav { display: none !important; }
+      .drawer-backdrop { display: none !important; }
+      .drawer { display: none !important; }
+      #toast { bottom: 24px; right: 24px; }
+      .toast-item { max-width: 320px; }
+    }
+  </style>
+</head>
 
-        .dash-main {
-          padding: 20px 24px;
-          max-width: 100%;
-        }
+<body>
+  <div class="dash-shell">
 
-        /* En tablet los grids de 3 cols colapsan a 2 */
-        .form-grid-3 { grid-template-columns: 1fr 1fr; }
+    <header class="dash-header">
+      <!-- Logo con imagen -->
+      <a href="/dashboard" class="dash-logo">
+        <img
+          src="/CardVirtual.png"
+          alt="CardVirtual"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+        />
+        <span style="display:none;align-items:center;gap:6px">
+          <span style="width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)"></span>
+          CardVirtual
+        </span>
+      </a>
 
-        /* Ocultar el email en el header tablet */
-        .dash-user-email { display: none; }
-
-        /* Section cards con padding moderado */
-        .section-card { padding: 20px; }
-      }
-
-      /* ── Desktop (≥ 1024px) ─────────────────────────────────── */
-      @media (min-width: 1024px) {
-        /* Bottom nav NUNCA visible en desktop */
-        .bottom-nav { display: none !important; }
-        .drawer-backdrop { display: none !important; }
-        .drawer { display: none !important; }
-
-        /* Toast en posición desktop */
-        #toast { bottom: 24px; right: 24px; }
-        .toast-item { max-width: 320px; }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="dash-shell">
-
-      <!-- ── HEADER ────────────────────────────────────────────── -->
-      <header class="dash-header">
-
-        <!-- Logo -->
-        <a href="/dashboard" class="dash-logo">
-          <span class="dash-logo-dot"></span>
-          TarjetaDigital
-        </a>
-
-        <div class="dash-header-right">
-
-          <!-- Ver tarjeta — se oculta en mobile via CSS -->
-          <a
-            href={slug ? `/${slug}` : '#'}
-            target="_blank"
-            class="dash-preview-link"
-            id="preview-link"
-          >
-            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
-              <circle cx="12" cy="12" r="3"/>
-            </svg>
-            Ver tarjeta
-          </a>
-
-          <!-- Chip de usuario -->
-          <div class="dash-user-chip">
-            <div class="dash-avatar" id="user-avatar">?</div>
-            <!-- El email se oculta en mobile via CSS con la clase -->
-            <span
-              id="user-email-short"
-              class="dash-user-email"
-              style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
-            >
-              {user?.email ?? ''}
-            </span>
-          </div>
-
-          <!-- Logout -->
-          <button
-            class="btn btn-danger"
-            id="btn-logout"
-            style="padding:5px 12px;font-size:12px"
-          >
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/>
-            </svg>
-            <span class="btn-logout-text">Salir</span>
-          </button>
-        </div>
-      </header>
-
-      <!-- ── SIDEBAR NAV — desktop ─────────────────────────────── -->
-      <nav class="dash-nav" id="dash-nav" role="navigation" aria-label="Secciones del panel">
-        <span class="nav-section-label">Tu tarjeta</span>
-
-        {tabs.filter(t => !['temas','analytics','seguridad'].includes(t.id)).map(tab => (
-          <a
-            href={tab.href}
-            class={`nav-item ${tabActivo === tab.id ? 'active' : ''}`}
-            data-tab={tab.id}
-          >
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" set:html={iconSVG[tab.icon]} />
-            <span>{tab.label}</span>
-          </a>
-        ))}
-
-        <span class="nav-section-label">Personalizar</span>
-        <a href="/dashboard/temas" class={`nav-item ${tabActivo === 'temas' ? 'active' : ''}`} data-tab="temas">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" set:html={iconSVG['palette']} />
-          <span>Plantillas</span>
-        </a>
-
-        <span class="nav-section-label">Métricas</span>
-        <a href="/dashboard/analytics" class={`nav-item ${tabActivo === 'analytics' ? 'active' : ''}`} data-tab="analytics">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" set:html={iconSVG['chart']} />
-          <span>Analytics</span>
-        </a>
-
-        <span class="nav-section-label">Cuenta</span>
-        <a href="/dashboard/seguridad" class={`nav-item ${tabActivo === 'seguridad' ? 'active' : ''}`} data-tab="seguridad">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" set:html={iconSVG['lock']} />
-          <span>Seguridad</span>
-        </a>
-
-        <!-- Spacer + Plan badge -->
-        <div style="flex:1"></div>
-        <div class="nav-footer-label" style="padding:8px 10px;margin-top:8px;border-top:1px solid var(--border);padding-top:16px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-            <span style="font-size:12px;color:var(--text-3)">Plan actual</span>
-            <span class="badge badge-free" id="plan-badge">Free</span>
-          </div>
-          <a href="/dashboard/plan" class="btn btn-ghost" style="width:100%;justify-content:center;font-size:12px">
-            ✦ Mejorar plan
-          </a>
-        </div>
-      </nav>
-
-      <!-- ── MAIN CONTENT ───────────────────────────────────────── -->
-      <main class="dash-main" id="dash-main" role="main">
-        <slot />
-      </main>
-
-    </div><!-- /dash-shell -->
-
-    <!-- ── BOTTOM NAV — mobile ────────────────────────────────── -->
-    <!-- Solo visible en mobile via CSS. Los 4 tabs principales
-         más el botón "Más" que abre el drawer con el resto.      -->
-    <nav class="bottom-nav" id="bottom-nav" aria-label="Navegación principal">
-
-      {tabs.filter(t => BOTTOM_NAV.includes(t.id)).map(tab => (
+      <div class="dash-header-right">
         <a
-          href={tab.href}
-          class={`bn-item ${tabActivo === tab.id ? 'active' : ''}`}
-          aria-label={tab.label}
+          href={slug ? `/${slug}` : '#'}
+          target="_blank"
+          class="dash-preview-link"
+          id="preview-link"
         >
-          <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" set:html={iconSVG[tab.icon]} />
+          <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          Ver tarjeta
+        </a>
+
+        <div class="dash-user-chip">
+          <div class="dash-avatar" id="user-avatar">?</div>
+          <span
+            id="user-email-short"
+            class="dash-user-email"
+            style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+          >{user?.email ?? ''}</span>
+        </div>
+
+        <button class="btn btn-danger" id="btn-logout" style="padding:5px 12px;font-size:12px">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/>
+          </svg>
+          <span class="btn-logout-text">Salir</span>
+        </button>
+      </div>
+    </header>
+
+    <nav class="dash-nav" id="dash-nav" role="navigation">
+      <span class="nav-section-label">Tu tarjeta</span>
+      {tabs.filter(t => !['temas','analytics','seguridad'].includes(t.id)).map(tab => (
+        <a href={tab.href} class={`nav-item ${tabActivo === tab.id ? 'active' : ''}`} data-tab={tab.id}>
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" set:html={iconSVG[tab.icon]} />
           <span>{tab.label}</span>
         </a>
       ))}
 
-      <!-- Ver tarjeta — abre la tarjeta en nueva pestaña -->
-      <a  
-        href="#"
-        id="btn-ver-tarjeta"
-        class="bn-item"
-        target="_blank"
-        aria-label="Ver mi tarjeta"
-      >
-        <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
-          <circle cx="12" cy="12" r="3"/>
-        </svg>
-        <span>Ver</span>
+      <span class="nav-section-label">Personalizar</span>
+      <a href="/dashboard/temas" class={`nav-item ${tabActivo === 'temas' ? 'active' : ''}`} data-tab="temas">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" set:html={iconSVG['palette']} />
+        <span>Plantillas</span>
       </a>
 
-      <!-- Botón "Más" — abre el drawer -->
-      <button
-        class={`bn-item ${!BOTTOM_NAV.includes(tabActivo) ? 'active' : ''}`}
-        id="btn-mas"
-        aria-label="Más opciones"
-        aria-expanded="false"
-      >
-        <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
-        </svg>
-        <span>Más</span>
-      </button>
+      <span class="nav-section-label">Métricas</span>
+      <a href="/dashboard/analytics" class={`nav-item ${tabActivo === 'analytics' ? 'active' : ''}`} data-tab="analytics">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" set:html={iconSVG['chart']} />
+        <span>Analytics</span>
+      </a>
+
+      <span class="nav-section-label">Cuenta</span>
+      <a href="/dashboard/seguridad" class={`nav-item ${tabActivo === 'seguridad' ? 'active' : ''}`} data-tab="seguridad">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" set:html={iconSVG['lock']} />
+        <span>Seguridad</span>
+      </a>
+
+      <div style="flex:1"></div>
+      <div class="nav-footer-label" style="padding:8px 10px;margin-top:8px;border-top:1px solid var(--border);padding-top:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:12px;color:var(--text-3)">Plan actual</span>
+          <span class="badge badge-free" id="plan-badge">Free</span>
+        </div>
+        <a href="/dashboard/plan" class="btn btn-ghost" style="width:100%;justify-content:center;font-size:12px">
+          ✦ Mejorar plan
+        </a>
+      </div>
     </nav>
 
-    <!-- ── DRAWER "MÁS" ───────────────────────────────────────── -->
-    <div class="drawer-backdrop" id="drawer-backdrop" onclick="cerrarDrawer()"></div>
-    <div class="drawer" id="drawer" role="dialog" aria-label="Más secciones">
-      <div class="drawer-handle"></div>
-      <div class="drawer-grid">
-        {drawerTabs.map(tab => (
-          <a
-            href={tab.href}
-            class={`drawer-item ${tabActivo === tab.id ? 'active' : ''}`}
-            onclick="cerrarDrawer()"
-          >
-            <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" set:html={iconSVG[tab.icon]} />
-            <span>{tab.label}</span>
-          </a>
-        ))}
-      </div>
+    <main class="dash-main" id="dash-main" role="main">
+      <slot />
+    </main>
+  </div>
+
+  <!-- Bottom nav mobile -->
+  <nav class="bottom-nav" id="bottom-nav">
+    {tabs.filter(t => BOTTOM_NAV.includes(t.id)).map(tab => (
+      <a href={tab.href} class={`bn-item ${tabActivo === tab.id ? 'active' : ''}`} aria-label={tab.label}>
+        <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" set:html={iconSVG[tab.icon]} />
+        <span>{tab.label}</span>
+      </a>
+    ))}
+
+    <a href="#" id="btn-ver-tarjeta" class="bn-item" target="_blank" aria-label="Ver mi tarjeta">
+      <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+      <span>Ver</span>
+    </a>
+
+    <button class={`bn-item ${!BOTTOM_NAV.includes(tabActivo) ? 'active' : ''}`} id="btn-mas" aria-label="Más opciones">
+      <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
+      </svg>
+      <span>Más</span>
+    </button>
+  </nav>
+
+  <!-- Drawer -->
+  <div class="drawer-backdrop" id="drawer-backdrop" onclick="cerrarDrawer()"></div>
+  <div class="drawer" id="drawer" role="dialog">
+    <div class="drawer-handle"></div>
+    <div class="drawer-grid">
+      {drawerTabs.map(tab => (
+        <a href={tab.href} class={`drawer-item ${tabActivo === tab.id ? 'active' : ''}`} onclick="cerrarDrawer()">
+          <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" set:html={iconSVG[tab.icon]} />
+          <span>{tab.label}</span>
+        </a>
+      ))}
     </div>
+  </div>
 
-    <!-- Toast container -->
-    <div id="toast" aria-live="polite"></div>
+  <div id="toast" aria-live="polite"></div>
 
-    <script>
-      import { createBrowserClient } from '@supabase/ssr'
+  <script>
+    import { createBrowserClient } from '@supabase/ssr'
 
-      // ── Logout ───────────────────────────────────────────────
-      document.getElementById('btn-logout')?.addEventListener('click', async function() {
-        const btn = this as HTMLButtonElement
-        btn.disabled = true
-        const sb = createBrowserClient(
-          document.querySelector<HTMLMetaElement>('meta[name="supabase-url"]')!.content,
-          document.querySelector<HTMLMetaElement>('meta[name="supabase-anon"]')!.content,
-        )
-        await sb.auth.signOut()
-        window.location.href = '/auth/login'
-      })
+    document.getElementById('btn-logout')?.addEventListener('click', async function() {
+      const btn = this as HTMLButtonElement
+      btn.disabled = true
+      const sb = createBrowserClient(
+        document.querySelector<HTMLMetaElement>('meta[name="supabase-url"]')!.content,
+        document.querySelector<HTMLMetaElement>('meta[name="supabase-anon"]')!.content,
+      )
+      await sb.auth.signOut()
+      window.location.href = '/auth/login'
+    })
 
-      // ── Avatar inicial ───────────────────────────────────────
-      const emailEl  = document.getElementById('user-email-short')
-      const avatarEl = document.getElementById('user-avatar')
-      if (emailEl && avatarEl) {
-        avatarEl.textContent = (emailEl.textContent?.trim() ?? '?')[0].toUpperCase()
+    const emailEl  = document.getElementById('user-email-short')
+    const avatarEl = document.getElementById('user-avatar')
+    if (emailEl && avatarEl) {
+      avatarEl.textContent = (emailEl.textContent?.trim() ?? '?')[0].toUpperCase()
+    }
+
+    const previewLink   = document.getElementById('preview-link') as HTMLAnchorElement | null
+    const verTarjetaBtn = document.getElementById('btn-ver-tarjeta') as HTMLAnchorElement | null
+    if (previewLink && verTarjetaBtn) {
+      if (previewLink.href.endsWith('#')) {
+        verTarjetaBtn.style.opacity = '0.35'
+        verTarjetaBtn.style.pointerEvents = 'none'
+      } else {
+        verTarjetaBtn.href = previewLink.href
       }
+    }
 
-      // ── Ver tarjeta — inyectar slug dinámico ─────────────────
-      const previewLink    = document.getElementById('preview-link') as HTMLAnchorElement | null
-      const verTarjetaBtn  = document.getElementById('btn-ver-tarjeta') as HTMLAnchorElement | null
-      if (previewLink && verTarjetaBtn) {
-        if (previewLink.href.endsWith('#')) {
-          verTarjetaBtn.style.opacity = '0.35'
-          verTarjetaBtn.style.pointerEvents = 'none'
-        } else {
-          verTarjetaBtn.href = previewLink.href
-        }
+    const btnMas         = document.getElementById('btn-mas')!
+    const drawer         = document.getElementById('drawer')!
+    const drawerBackdrop = document.getElementById('drawer-backdrop')!
+
+    function abrirDrawer() {
+      drawer.classList.add('open')
+      drawerBackdrop.classList.add('open')
+      btnMas.setAttribute('aria-expanded', 'true')
+      document.body.style.overflow = 'hidden'
+    }
+    ;(window as any).cerrarDrawer = function() {
+      drawer.classList.remove('open')
+      drawerBackdrop.classList.remove('open')
+      btnMas.setAttribute('aria-expanded', 'false')
+      document.body.style.overflow = ''
+    }
+    btnMas.addEventListener('click', () => {
+      drawer.classList.contains('open') ? (window as any).cerrarDrawer() : abrirDrawer()
+    })
+
+    let touchStartY = 0
+    drawer.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY }, { passive: true })
+    drawer.addEventListener('touchend',   e => { if (e.changedTouches[0].clientY - touchStartY > 60) (window as any).cerrarDrawer() }, { passive: true })
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        ;(window as any).cerrarDrawer?.()
+        document.querySelectorAll('.modal-backdrop.open').forEach(m => m.classList.remove('open'))
       }
+    })
 
-      // ── Drawer "Más" ─────────────────────────────────────────
-      const btnMas          = document.getElementById('btn-mas')!
-      const drawer          = document.getElementById('drawer')!
-      const drawerBackdrop  = document.getElementById('drawer-backdrop')!
-
-      function abrirDrawer() {
-        drawer.classList.add('open')
-        drawerBackdrop.classList.add('open')
-        btnMas.setAttribute('aria-expanded', 'true')
-        document.body.style.overflow = 'hidden'
-      }
-
-      ;(window as any).cerrarDrawer = function() {
-        drawer.classList.remove('open')
-        drawerBackdrop.classList.remove('open')
-        btnMas.setAttribute('aria-expanded', 'false')
-        document.body.style.overflow = ''
-      }
-
-      btnMas.addEventListener('click', () => {
-        drawer.classList.contains('open') ? (window as any).cerrarDrawer() : abrirDrawer()
-      })
-
-      // Swipe down para cerrar drawer
-      let touchStartY = 0
-      drawer.addEventListener('touchstart', e => {
-        touchStartY = e.touches[0].clientY
-      }, { passive: true })
-      drawer.addEventListener('touchend', e => {
-        const delta = e.changedTouches[0].clientY - touchStartY
-        if (delta > 60) (window as any).cerrarDrawer()
-      }, { passive: true })
-
-      // ── Keyboard nav (Alt+1…4) ───────────────────────────────
-      const navLinks = document.querySelectorAll<HTMLAnchorElement>('.nav-item[data-tab]')
-      document.addEventListener('keydown', (e) => {
-        if (e.altKey && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
-          const n = parseInt(e.key)
-          if (n >= 1 && n <= navLinks.length) {
-            e.preventDefault()
-            navLinks[n - 1].click()
-          }
-        }
-        if (e.key === 'Escape') {
-          ;(window as any).cerrarDrawer?.()
-          document.querySelectorAll('.modal-backdrop.open').forEach(m =>
-            m.classList.remove('open')
-          )
-        }
-      })
-
-      // ── Toast global ─────────────────────────────────────────
-      ;(window as any).toast = (
-        msg: string,
-        type: 'success' | 'error' | 'warn' = 'success'
-      ) => {
-        const container = document.getElementById('toast')!
-        const el = document.createElement('div')
-        el.className = `toast-item ${type}`
-        const icons = { success: '✓', error: '✕', warn: '⚠' }
-        el.innerHTML = `<span style="font-weight:700">${icons[type]}</span> ${msg}`
-        container.appendChild(el)
-        setTimeout(() => {
-          el.style.cssText += 'opacity:0;transform:translateX(12px);transition:.3s'
-          setTimeout(() => el.remove(), 300)
-        }, 3500)
-      }
-    </script>
-  </body>
+    ;(window as any).toast = (msg: string, type: 'success'|'error'|'warn' = 'success') => {
+      const container = document.getElementById('toast')!
+      const el = document.createElement('div')
+      el.className = `toast-item ${type}`
+      const icons = { success: '✓', error: '✕', warn: '⚠' }
+      el.innerHTML = `<span style="font-weight:700">${icons[type]}</span> ${msg}`
+      container.appendChild(el)
+      setTimeout(() => {
+        el.style.cssText += 'opacity:0;transform:translateX(12px);transition:.3s'
+        setTimeout(() => el.remove(), 300)
+      }, 3500)
+    }
+  </script>
+</body>
 </html>

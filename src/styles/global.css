@@ -1,1 +1,85 @@
-@import "tailwindcss";
+/* ============================================================
+   src/styles/global.css
+   ÚNICA fuente de verdad para tokens de diseño.
+   Cambiar aquí afecta dashboard, admin, login y toda la app.
+   ============================================================ */
+
+   @import "tailwindcss";
+
+   /* ── Paleta CardVirtual ─────────────────────────────────────
+      Extraída del logo: azul #4B6CF7 + cian #00D4FF
+      Fondo claro, textos oscuros, acentos vibrantes.
+      ─────────────────────────────────────────────────────────── */
+   :root {
+     /* Fondos — blancos y grises azulados muy sutiles */
+     --bg:         #F5F7FF;   /* fondo base de la app */
+     --bg-2:       #FFFFFF;   /* tarjetas, sidebars, headers */
+     --bg-3:       #EEF1FB;   /* inputs, hover states */
+     --bg-4:       #E4E8F8;   /* hover más pronunciado */
+   
+     /* Bordes */
+     --border:     #DDE2F4;
+     --border-2:   #C8D0ED;
+   
+     /* Textos */
+     --text-1:     #0D1236;   /* títulos — casi negro azulado */
+     --text-2:     #3D4570;   /* body text */
+     --text-3:     #7B84AD;   /* placeholders, hints */
+   
+     /* Acento principal — azul del logo */
+     --accent:     #4B6CF7;
+     --accent-2:   #7B93FF;   /* hover / versión más clara */
+     --accent-bg:  rgba(75,108,247,.10);
+     --accent-border: rgba(75,108,247,.25);
+   
+     /* Acento secundario — cian del logo */
+     --cyan:       #00D4FF;
+     --cyan-2:     #00B8E0;
+     --cyan-bg:    rgba(0,212,255,.10);
+   
+     /* Semánticos */
+     --success:    #10B981;
+     --warn:       #F59E0B;
+     --danger:     #EF4444;
+   
+     /* Admin — cian para distinguir del dashboard sin romper la marca */
+     --admin:        var(--cyan);
+     --admin-2:      var(--cyan-2);
+     --admin-bg:     var(--cyan-bg);
+     --admin-border: rgba(0,212,255,.25);
+   
+     /* Estructura */
+     --radius:     10px;
+     --radius-lg:  16px;
+     --font:       'Geist', sans-serif;
+     --font-mono:  'Geist Mono', monospace;
+     --nav-w:      220px;
+     --header-h:   56px;
+     --bottom-h:   64px;
+     --transition: 150ms cubic-bezier(.4,0,.2,1);
+   }
+   
+   /* ── Reset mínimo ───────────────────────────────────────────── */
+   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+   html, body { height: 100%; }
+   
+   body {
+     font-family: var(--font);
+     background: var(--bg);
+     color: var(--text-1);
+     font-size: 14px;
+     line-height: 1.6;
+     -webkit-font-smoothing: antialiased;
+   }
+   
+   /* ── Scrollbar ──────────────────────────────────────────────── */
+   ::-webkit-scrollbar { width: 5px; height: 5px; }
+   ::-webkit-scrollbar-track { background: transparent; }
+   ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 99px; }
+   
+   /* ── Focus ──────────────────────────────────────────────────── */
+   :focus-visible {
+     outline: 2px solid var(--accent);
+     outline-offset: 2px;
+     border-radius: 6px;
+   }
