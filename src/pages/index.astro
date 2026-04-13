@@ -1,17 +1,121 @@
 ---
-
+// src/pages/index.astro
+// Landing Page de CardVirtual - Optimizada para conversión y Mobile-First
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CardVirtual | Tu Identidad Profesional Digital</title>
+    
+    <link rel="stylesheet" href="/src/styles/global.css" />
+  </head>
+  <body class="antialiased min-h-screen flex flex-col relative overflow-x-hidden" style="background-color: var(--bg); color: var(--text-2);">
+    
+    <div class="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full blur-[120px] opacity-40 pointer-events-none" style="background-color: var(--accent-bg);"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] rounded-full blur-[120px] opacity-40 pointer-events-none" style="background-color: var(--cyan-bg);"></div>
+
+    <header class="w-full fixed top-0 z-50 transition-all duration-300 backdrop-blur-md border-b" style="border-color: transparent; height: var(--header-h);" id="navbar">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
+        <a href="/" class="flex items-center gap-2 transition-transform hover:scale-105">
+          <img src="/CardVirtual.png" alt="CardVirtual Logo" class="h-8 w-auto" />
+        </a>
+        
+        <div class="flex items-center gap-3">
+          <a href="/auth/login" class="text-sm font-semibold hidden sm:block transition-colors" style="color: var(--text-2);">Iniciar Sesión</a>
+          <a href="/auth/register" class="text-sm font-bold px-4 py-2 rounded-full transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5" style="background-color: var(--accent); color: #fff;">
+            Crear Tarjeta
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-grow flex flex-col justify-center items-center px-4 pt-32 pb-20 relative z-10 text-center">
+      
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-8 animate-fade-in-up" style="background-color: var(--cyan-bg); color: var(--cyan-2); border: 1px solid var(--cyan-bg);">
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style="background-color: var(--cyan);"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2" style="background-color: var(--cyan);"></span>
+        </span>
+        La nueva era del networking
+      </div>
+
+      <h1 class="text-5xl md:text-7xl font-black tracking-tight mb-6 animate-fade-in-up" style="color: var(--text-1); animation-delay: 100ms; line-height: 1.1;">
+        Tu red profesional, <br class="hidden md:block" />
+        <span class="text-transparent bg-clip-text bg-gradient-to-r" style="background-image: linear-gradient(to right, var(--accent), var(--cyan));">
+          en un solo enlace.
+        </span>
+      </h1>
+
+      <p class="mt-4 text-lg md:text-xl max-w-2xl mx-auto mb-10 animate-fade-in-up" style="animation-delay: 200ms;">
+        Comparte tu currículum, portafolio y redes sociales al instante. Sin apps descargables, sin fricción. Solo tú, destacando.
+      </p>
+
+      <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto animate-fade-in-up" style="animation-delay: 300ms;">
+        <a href="/auth/register" class="w-full sm:w-auto text-center px-8 py-4 rounded-[var(--radius-lg)] font-bold text-lg transition-all shadow-[0_8px_30px_rgb(75,108,247,0.3)] hover:shadow-[0_8px_40px_rgb(75,108,247,0.5)] hover:-translate-y-1" style="background-color: var(--accent); color: #fff;">
+          Empezar Gratis
+        </a>
+        <a href="#demo" class="w-full sm:w-auto text-center px-8 py-4 rounded-[var(--radius-lg)] font-bold text-lg transition-all border-2 hover:bg-white" style="border-color: var(--border-2); color: var(--text-1);">
+          Ver un ejemplo
+        </a>
+      </div>
+
+      <div class="mt-16 relative w-full max-w-sm mx-auto animate-fade-in-up" style="animation-delay: 400ms;">
+        <div class="relative rounded-[2rem] p-2 bg-white shadow-2xl border" style="border-color: var(--border);">
+          <div class="aspect-[9/16] bg-gray-50 rounded-[1.5rem] overflow-hidden relative group">
+            <div class="absolute inset-0 bg-gradient-to-br from-[#EEF1FB] to-[#E4E8F8] flex flex-col items-center justify-center p-6">
+               <div class="w-24 h-24 rounded-full bg-white shadow-md mb-4 p-1">
+                 <div class="w-full h-full rounded-full bg-gray-200"></div>
+               </div>
+               <div class="w-32 h-4 bg-gray-300 rounded mb-2"></div>
+               <div class="w-24 h-3 bg-gray-200 rounded mb-8"></div>
+               
+               <div class="w-full h-12 bg-white rounded-xl mb-3 shadow-sm flex items-center px-4"></div>
+               <div class="w-full h-12 bg-white rounded-xl mb-3 shadow-sm flex items-center px-4"></div>
+               <div class="w-full h-12 bg-[var(--accent)] rounded-xl mb-3 shadow-sm"></div>
+            </div>
+            
+            <div class="absolute inset-0 bg-[var(--accent-bg)] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-sm">
+              <span class="bg-white text-[var(--accent)] font-bold px-4 py-2 rounded-full shadow-lg">Escanear QR</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="py-6 text-center border-t mt-auto relative z-10" style="border-color: var(--border); background-color: var(--bg-2);">
+      <p class="text-sm font-medium" style="color: var(--text-3);">
+        © {new Date().getFullYear()} CardVirtual. Todos los derechos reservados.
+      </p>
+    </footer>
+
+    <script>
+		const navbar = document.getElementById('navbar');
+		
+		if (navbar) {
+		  window.addEventListener('scroll', () => {
+			if (window.scrollY > 10) {
+			  navbar.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+			  navbar.style.borderBottomColor = 'var(--border)';
+			} else {
+			  navbar.style.backgroundColor = 'transparent';
+			  navbar.style.borderBottomColor = 'transparent';
+			}
+		  });
+		}
+	  </script>
+
+    <style>
+      @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-in-up {
+        animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        opacity: 0;
+      }
+    </style>
+  </body>
 </html>
