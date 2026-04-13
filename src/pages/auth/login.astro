@@ -1,543 +1,617 @@
 ---
-// src/pages/auth/login.astro
-export const prerender = false
-const redirectTo = Astro.url.searchParams.get('redirect') ?? '/dashboard'
-const errorParam = Astro.url.searchParams.get('error') ?? ''
+// src/pages/index.astro
+import '../styles/global.css';
 ---
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="supabase-url" content={import.meta.env.PUBLIC_SUPABASE_URL} />
-  <meta name="supabase-anon" content={import.meta.env.PUBLIC_SUPABASE_ANON_KEY} />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <title>Acceder — CardVirtual</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; }
-    body {
-      font-family: 'Geist', -apple-system, sans-serif;
-      background: #f8faff;
-      color: #0d1236;
-      -webkit-font-smoothing: antialiased;
-    }
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<title>CardVirtual | Tu Identidad Profesional Digital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --accent: #4B6CF7; --accent-2: #7B93FF; --cyan: #00D4FF; --cyan-2: #00B8E0;
+    --bg: #F5F7FF; --bg-2: #FFFFFF; --bg-3: #EEF1FB;
+    --text-1: #0D1236; --text-2: #3D4570; --text-3: #7B84AD; --border: #DDE2F4;
+  }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text-2); overflow-x: hidden; min-height: 100vh; }
 
-    .login-shell {
-      min-height: 100vh;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-    }
+  /* ── NAVBAR ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 0 1.25rem; height: 60px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(245,247,255,0.9); backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(221,226,244,0.6);
+  }
+  .nav-logo {
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem;
+    color: var(--text-1); display: flex; align-items: center; gap: 8px; text-decoration: none;
+  }
+  .nav-logo img { height: 32px; width: auto; object-fit: contain; }
+  .nav-right { display: flex; gap: 8px; align-items: center; }
+  .nav-link {
+    font-size: 0.82rem; font-weight: 500; color: var(--text-2);
+    text-decoration: none; padding: 6px 10px; border-radius: 8px;
+    transition: background 0.2s; display: none;
+  }
+  .nav-link:hover { background: var(--bg-3); }
+  .btn-nav {
+    font-size: 0.82rem; font-weight: 700; color: #fff; background: var(--accent);
+    padding: 7px 16px; border-radius: 50px; text-decoration: none; border: none;
+    cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 14px rgba(75,108,247,0.35); white-space: nowrap; display: inline-block;
+  }
+  .btn-nav:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(75,108,247,0.45); }
 
-    /* ── COLUMNA IZQUIERDA ─────────────────────────────────── */
-    .left-col {
-      position: relative;
-      overflow: hidden;
-      background: #0f172a;
-    }
-    .left-bg {
-      position: absolute;
-      inset: 0;
-      background-image: url('https://images.unsplash.com/photo-1600880292203-757bb62b4baf?q=80&w=1974&auto=format&fit=crop');
-      background-size: cover;
-      background-position: center;
-      opacity: 0.55;
-    }
-    .left-overlay {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to top, #0f172a 0%, rgba(15,23,42,.5) 50%, transparent 100%);
-    }
-    .left-content {
-      position: relative;
-      z-index: 10;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      height: 100%;
-      padding: 48px;
-    }
-    .logo-box {
-      width: 72px;
-      height: 72px;
-      background: rgba(255,255,255,.95);
-      border-radius: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 8px 32px rgba(0,0,0,.25);
-      overflow: hidden;
-    }
-    .logo-box img { width: 52px; height: 52px; object-fit: contain; }
-    .tagline { color: #fff; }
-    .tagline h2 {
-      font-size: 42px;
-      font-weight: 900;
-      line-height: 1.15;
-      margin-bottom: 16px;
-      letter-spacing: -.02em;
-    }
-    .tagline-accent { color: #7b93ff; }
-    .tagline p {
-      color: rgba(255,255,255,.65);
-      font-size: 16px;
-      margin-bottom: 28px;
-      line-height: 1.6;
-    }
-    .features { display: flex; flex-direction: column; gap: 10px; }
-    .feature-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: rgba(255,255,255,.75);
-      font-size: 14px;
-    }
-    .feature-check {
-      width: 20px; height: 20px;
-      background: rgba(75,108,247,.25);
-      border: 1px solid rgba(75,108,247,.5);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-    .feature-check svg { color: #7b93ff; }
+  /* ── HERO ── */
+  .hero {
+    min-height: 100svh; padding: 80px 1.25rem 60px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .orb1 {
+    position: absolute; top: -20%; left: -15%; width: 70vw; height: 70vw;
+    max-width: 500px; max-height: 500px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(75,108,247,0.16) 0%, transparent 70%); pointer-events: none;
+  }
+  .orb2 {
+    position: absolute; bottom: -20%; right: -15%; width: 65vw; height: 65vw;
+    max-width: 450px; max-height: 450px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,212,255,0.13) 0%, transparent 70%); pointer-events: none;
+  }
+  .hero-inner {
+    max-width: 1200px; width: 100%; position: relative; z-index: 1;
+    display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2.5rem;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.25);
+    color: var(--cyan-2); font-size: 0.75rem; font-weight: 600;
+    padding: 5px 12px; border-radius: 50px;
+  }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); flex-shrink: 0; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(0,212,255,0.4)} 50%{box-shadow:0 0 0 5px rgba(0,212,255,0)} }
+  .hero-title {
+    font-family: 'Syne', sans-serif; font-size: clamp(2.2rem, 8vw, 4.2rem);
+    font-weight: 800; line-height: 1.08; color: var(--text-1); margin: 1rem 0 1.2rem;
+  }
+  .gradient-text {
+    background: linear-gradient(90deg, var(--accent), var(--cyan));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .hero-sub { font-size: clamp(0.95rem, 3vw, 1.1rem); color: var(--text-2); line-height: 1.75; max-width: 520px; margin-bottom: 2rem; }
+  .hero-actions { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 320px; margin-bottom: 2rem; }
+  .btn-xl {
+    font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; color: #fff;
+    background: linear-gradient(135deg, var(--accent), #6B48FF);
+    padding: 15px 24px; border-radius: 50px; text-decoration: none;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 8px 28px rgba(75,108,247,0.4); transition: transform 0.2s, box-shadow 0.2s; width: 100%;
+  }
+  .btn-xl:hover { transform: translateY(-2px); box-shadow: 0 12px 36px rgba(75,108,247,0.5); }
+  .btn-xl-outline {
+    font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 600; color: var(--text-1);
+    background: transparent; border: 2px solid var(--border);
+    padding: 13px 24px; border-radius: 50px; text-decoration: none;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.2s, background 0.2s; width: 100%;
+  }
+  .btn-xl-outline:hover { border-color: var(--accent); background: rgba(75,108,247,0.05); }
+  .cta-box {
+    display: flex; align-items: center; gap: 12px;
+    background: #fff; border: 1.5px solid var(--border); border-radius: 16px;
+    padding: 14px 16px; width: 100%; max-width: 340px;
+    box-shadow: 0 4px 20px rgba(75,108,247,0.08); position: relative; overflow: hidden;
+  }
+  .cta-box::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--cyan));
+  }
+  .cta-icon {
+    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--accent), var(--cyan));
+    display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+  }
+  .cta-text-small { font-size: 0.7rem; color: var(--text-3); font-weight: 500; margin-bottom: 2px; }
+  .cta-text-main { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; color: var(--text-1); }
+  .cta-badge {
+    margin-left: auto; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25);
+    border-radius: 50px; padding: 4px 9px; font-size: 0.68rem; font-weight: 700;
+    color: #10B981; white-space: nowrap; flex-shrink: 0;
+  }
 
-    /* ── COLUMNA DERECHA ───────────────────────────────────── */
-    .right-col {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 48px 40px;
-      background: #f8faff;
-    }
-    .form-box {
-      width: 100%;
-      max-width: 400px;
-    }
+  /* ── PHONE MOCKUP ── */
+  .phone-wrap { position: relative; display: flex; justify-content: center; align-items: center; }
+  .phone-outer {
+    width: 220px; height: 440px; border-radius: 36px; background: #1a1a2e; padding: 7px;
+    box-shadow: 0 32px 64px rgba(13,18,54,0.3), 0 0 0 1px rgba(255,255,255,0.08);
+    animation: float 4s ease-in-out infinite;
+  }
+  @keyframes float { 0%,100%{transform:translateY(0) rotate(-2deg)} 50%{transform:translateY(-10px) rotate(-2deg)} }
+  .phone-screen {
+    width: 100%; height: 100%; border-radius: 30px;
+    background: linear-gradient(160deg, #EEF1FB, #DDEAFE); overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; padding: 16px 13px;
+  }
+  .phone-notch { width: 70px; height: 5px; border-radius: 3px; background: rgba(13,18,54,0.15); margin-bottom: 16px; flex-shrink: 0; }
+  .card-avatar {
+    width: 62px; height: 62px; border-radius: 50%; border: 3px solid white;
+    background: linear-gradient(135deg, var(--accent), var(--cyan));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800;
+    color: white; margin-bottom: 8px; flex-shrink: 0;
+    box-shadow: 0 4px 16px rgba(75,108,247,0.4);
+  }
+  .card-name { font-family: 'Syne', sans-serif; font-size: 0.88rem; font-weight: 700; color: var(--text-1); text-align: center; margin-bottom: 2px; }
+  .card-role { font-size: 0.65rem; color: var(--accent); font-weight: 600; text-align: center; margin-bottom: 3px; }
+  .card-co { font-size: 0.6rem; color: var(--text-3); text-align: center; margin-bottom: 12px; }
+  .card-links { width: 100%; display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+  .card-link-item {
+    display: flex; align-items: center; gap: 7px; background: white; border-radius: 9px;
+    padding: 7px 9px; font-size: 0.6rem; font-weight: 600; color: var(--text-1);
+    box-shadow: 0 2px 8px rgba(75,108,247,0.07);
+  }
+  .licon { width: 20px; height: 20px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 0.58rem; flex-shrink: 0; }
+  .licon.b { background: rgba(75,108,247,0.12); }
+  .licon.c { background: rgba(0,212,255,0.12); }
+  .licon.g { background: rgba(16,185,129,0.12); }
+  .card-qr { display: flex; align-items: center; justify-content: center; gap: 5px; background: var(--accent); border-radius: 9px; padding: 7px 12px; width: 100%; }
+  .card-qr span { font-size: 0.6rem; font-weight: 700; color: white; }
+  .phone-glow { position: absolute; bottom: -35px; left: 50%; transform: translateX(-50%); width: 150px; height: 35px; border-radius: 50%; background: rgba(75,108,247,0.2); filter: blur(18px); pointer-events: none; }
+  .fbadge {
+    position: absolute; background: white; border-radius: 10px; padding: 7px 10px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.1); font-size: 0.68rem; font-weight: 600; color: var(--text-1);
+    display: flex; align-items: center; gap: 5px; border: 1px solid var(--border);
+    animation: float2 3.5s ease-in-out infinite;
+  }
+  @keyframes float2 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+  .fbadge.tr { top: 30px; right: -20px; animation-delay: 0.5s; }
+  .fbadge.bl { bottom: 70px; left: -25px; animation-delay: 1s; }
+  .dot-g { width: 6px; height: 6px; border-radius: 50%; background: #10B981; flex-shrink: 0; }
+  .dot-b { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
 
-    /* Logo mobile */
-    .mobile-logo {
-      display: none;
-      justify-content: center;
-      margin-bottom: 32px;
-    }
-    .mobile-logo-box {
-      width: 64px; height: 64px;
-      background: #fff;
-      border-radius: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 20px rgba(75,108,247,.15);
-      border: 1px solid #dde2f4;
-      overflow: hidden;
-    }
-    .mobile-logo-box img { width: 46px; height: 46px; object-fit: contain; }
+  /* ── TRUST BAR ── */
+  .trust-bar {
+    background: white; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    padding: 16px 1.25rem; display: flex; align-items: center; justify-content: center;
+    gap: 1.5rem; flex-wrap: wrap;
+  }
+  .trust-item { display: flex; align-items: center; gap: 7px; font-size: 0.78rem; font-weight: 500; color: var(--text-2); }
 
-    .form-header { margin-bottom: 32px; }
-    .form-header h1 {
-      font-size: 30px;
-      font-weight: 800;
-      color: #0d1236;
-      letter-spacing: -.02em;
-      line-height: 1.2;
-    }
-    .form-header p {
-      margin-top: 8px;
-      color: #7b84ad;
-      font-size: 15px;
-    }
+  /* ── SECTIONS BASE ── */
+  section { padding: 60px 1.25rem; }
+  .section-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+  .section-title { font-family: 'Syne', sans-serif; font-size: clamp(1.8rem, 5vw, 2.8rem); font-weight: 800; color: var(--text-1); margin-bottom: 0.9rem; line-height: 1.15; }
+  .section-sub { font-size: 1rem; color: var(--text-2); max-width: 560px; line-height: 1.75; }
+  .centered { text-align: center; }
+  .centered .section-sub { margin: 0 auto; }
 
-    /* Error banner */
-    .error-banner {
-      display: none;
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      color: #dc2626;
-      padding: 12px 16px;
-      border-radius: 12px;
-      font-size: 13px;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 20px;
-    }
-    .error-banner.show { display: flex; }
+  /* ── HOW IT WORKS ── */
+  .how-section { background: white; }
+  .steps-grid { max-width: 960px; margin: 2.5rem auto 0; display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
+  .step-card {
+    padding: 1.5rem; border-radius: 18px; border: 1.5px solid var(--border); background: var(--bg);
+    position: relative; overflow: hidden; transition: transform 0.25s, box-shadow 0.25s;
+  }
+  .step-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(75,108,247,0.1); }
+  .step-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent), var(--cyan)); }
+  .step-number { font-family: 'Syne', sans-serif; font-size: 2.5rem; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 0.6rem; display: block; }
+  .step-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; color: var(--text-1); margin-bottom: 0.4rem; }
+  .step-desc { font-size: 0.87rem; color: var(--text-2); line-height: 1.7; }
 
-    /* Campos */
-    .field { margin-bottom: 20px; }
-    .field label {
-      display: block;
-      font-size: 13px;
-      font-weight: 600;
-      color: #3d4570;
-      margin-bottom: 8px;
-    }
-    .field input,
-    .field select {
-      width: 100%;
-      padding: 12px 14px;
-      font-family: 'Geist', sans-serif;
-      font-size: 14px;
-      color: #0d1236;
-      background: #fff;
-      border: 1.5px solid #dde2f4;
-      border-radius: 12px;
-      outline: none;
-      transition: border-color .15s, box-shadow .15s;
-      -webkit-appearance: none;
-    }
-    .field input:focus,
-    .field select:focus {
-      border-color: #4b6cf7;
-      box-shadow: 0 0 0 3px rgba(75,108,247,.12);
-    }
-    .field input::placeholder { color: #c8d0ed; }
-    /* Autofill override */
-    .field input:-webkit-autofill,
-    .field input:-webkit-autofill:hover,
-    .field input:-webkit-autofill:focus {
-      -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
-      -webkit-text-fill-color: #0d1236 !important;
-      border-color: #4b6cf7 !important;
-    }
-    .field-hint {
-      font-size: 12px;
-      color: #7b84ad;
-      margin-top: 5px;
-    }
+  /* ── FEATURES ── */
+  .features-section { background: var(--bg); }
+  .features-grid { max-width: 1100px; margin: 2.5rem auto 0; display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
+  .feature-card {
+    background: white; border-radius: 18px; border: 1.5px solid var(--border);
+    padding: 1.5rem; display: flex; gap: 1rem; align-items: flex-start;
+    transition: transform 0.25s, box-shadow 0.25s;
+  }
+  .feature-card:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(75,108,247,0.09); }
+  .ficon { width: 46px; height: 46px; border-radius: 13px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+  .fi-b { background: rgba(75,108,247,0.1); } .fi-c { background: rgba(0,212,255,0.1); } .fi-g { background: rgba(16,185,129,0.1); } .fi-a { background: rgba(245,158,11,0.1); }
+  .feature-title { font-family: 'Syne', sans-serif; font-size: 0.97rem; font-weight: 700; color: var(--text-1); margin-bottom: 0.35rem; }
+  .feature-desc { font-size: 0.85rem; color: var(--text-2); line-height: 1.7; }
 
-    /* Campo teléfono combinado */
-    .phone-field {
-      display: flex;
-      border: 1.5px solid #dde2f4;
-      border-radius: 12px;
-      overflow: hidden;
-      background: #fff;
-      transition: border-color .15s, box-shadow .15s;
-    }
-    .phone-field:focus-within {
-      border-color: #4b6cf7;
-      box-shadow: 0 0 0 3px rgba(75,108,247,.12);
-    }
-    .phone-field select {
-      border: none !important;
-      border-right: 1.5px solid #dde2f4 !important;
-      border-radius: 0 !important;
-      background: #f5f7ff !important;
-      padding: 12px 10px !important;
-      font-size: 13px !important;
-      color: #3d4570 !important;
-      width: auto !important;
-      flex-shrink: 0;
-      box-shadow: none !important;
-      outline: none !important;
-      cursor: pointer;
-    }
-    .phone-field select:focus { box-shadow: none !important; border-color: #dde2f4 !important; }
-    .phone-field input {
-      border: none !important;
-      border-radius: 0 !important;
-      background: #fff !important;
-      flex: 1;
-      box-shadow: none !important;
-      outline: none !important;
-      font-family: 'Geist', monospace;
-      letter-spacing: .05em;
-    }
-    .phone-field input:focus { box-shadow: none !important; }
+  /* ── DESIGNS CAROUSEL ── */
+  .designs-section { background: white; overflow: hidden; }
+  .designs-carousel { display: flex; gap: 1.25rem; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding: 1rem 1.25rem 1.5rem; margin-top: 2rem; }
+  .designs-carousel::-webkit-scrollbar { display: none; }
+  .design-card { flex-shrink: 0; width: 180px; height: 320px; border-radius: 20px; overflow: hidden; position: relative; scroll-snap-align: start; box-shadow: 0 8px 28px rgba(0,0,0,0.12); transition: transform 0.25s; cursor: pointer; }
+  .design-card:hover { transform: scale(1.03) translateY(-3px); }
+  .design-card img { width: 100%; height: 100%; object-fit: cover; }
+  .design-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(0deg, rgba(13,18,54,0.85) 0%, transparent 100%); padding: 16px 13px; }
+  .design-label { font-family: 'Syne', sans-serif; font-size: 0.8rem; font-weight: 700; color: white; margin-bottom: 2px; }
+  .design-sub { font-size: 0.65rem; color: rgba(255,255,255,0.7); }
 
-    /* Campo con ojo */
-    .pass-wrap { position: relative; }
-    .pass-wrap input { padding-right: 44px; }
-    .eye-btn {
-      position: absolute;
-      right: 14px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: #7b84ad;
-      padding: 4px;
-      display: flex;
-      transition: color .15s;
-    }
-    .eye-btn:hover { color: #4b6cf7; }
+  /* ── TESTIMONIALS ── */
+  .testimonials-section { background: var(--bg); }
+  .testimonials-grid { max-width: 1000px; margin: 2.5rem auto 0; display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
+  .t-card { background: white; border-radius: 18px; border: 1.5px solid var(--border); padding: 1.4rem; transition: transform 0.25s; }
+  .t-card:hover { transform: translateY(-2px); }
+  .t-stars { color: #F59E0B; font-size: 0.82rem; margin-bottom: 0.7rem; }
+  .t-text { font-size: 0.87rem; color: var(--text-2); line-height: 1.7; margin-bottom: 0.9rem; font-style: italic; }
+  .t-author { display: flex; align-items: center; gap: 9px; }
+  .t-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.75rem; color: white; flex-shrink: 0; }
+  .t-name { font-weight: 600; font-size: 0.82rem; color: var(--text-1); }
+  .t-role { font-size: 0.72rem; color: var(--text-3); }
 
-    /* Botón principal */
-    .btn-login {
-      width: 100%;
-      padding: 14px;
-      background: linear-gradient(135deg, #4b6cf7, #7b93ff);
-      color: #fff;
-      font-family: 'Geist', sans-serif;
-      font-size: 15px;
-      font-weight: 700;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: opacity .15s, transform .15s, box-shadow .15s;
-      box-shadow: 0 4px 16px rgba(75,108,247,.35);
-      margin-top: 8px;
-    }
-    .btn-login:hover { opacity: .92; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(75,108,247,.4); }
-    .btn-login:active { transform: translateY(0); }
-    .btn-login:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
+  /* ── PRICING ── */
+  .pricing-section { background: white; }
+  .pricing-card {
+    max-width: 520px; margin: 2.5rem auto 0;
+    background: linear-gradient(135deg, #0D1236, #1a1f4e);
+    border-radius: 24px; padding: 2.5rem 2rem; text-align: center;
+    position: relative; overflow: hidden; box-shadow: 0 20px 50px rgba(13,18,54,0.28);
+  }
+  .pricing-card::before { content: ''; position: absolute; top: -40%; left: -20%; width: 80%; height: 80%; border-radius: 50%; background: radial-gradient(circle, rgba(75,108,247,0.28) 0%, transparent 70%); pointer-events: none; }
+  .pricing-card::after { content: ''; position: absolute; bottom: -30%; right: -10%; width: 60%; height: 60%; border-radius: 50%; background: radial-gradient(circle, rgba(0,212,255,0.18) 0%, transparent 70%); pointer-events: none; }
+  .pricing-trial { display: inline-block; background: rgba(0,212,255,0.15); border: 1px solid rgba(0,212,255,0.3); color: var(--cyan); font-size: 0.75rem; font-weight: 700; padding: 5px 12px; border-radius: 50px; margin-bottom: 1.25rem; position: relative; z-index: 1; }
+  .pricing-price { font-family: 'Syne', sans-serif; font-size: 3.5rem; font-weight: 800; color: white; margin-bottom: 0.2rem; position: relative; z-index: 1; }
+  .pricing-sub { font-size: 0.87rem; color: rgba(255,255,255,0.55); margin-bottom: 1.75rem; position: relative; z-index: 1; }
+  .pricing-features { list-style: none; text-align: left; margin-bottom: 2rem; position: relative; z-index: 1; }
+  .pricing-features li { font-size: 0.88rem; color: rgba(255,255,255,0.82); padding: 7px 0; display: flex; align-items: center; gap: 9px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .pricing-features li:last-child { border-bottom: none; }
+  .check { color: var(--cyan); font-weight: 700; flex-shrink: 0; }
+  .pricing-btn {
+    width: 100%; padding: 15px; border-radius: 13px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, var(--accent), var(--cyan));
+    font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 800; color: white;
+    transition: opacity 0.2s, transform 0.2s; position: relative; z-index: 1;
+    box-shadow: 0 8px 28px rgba(75,108,247,0.45);
+  }
+  .pricing-btn:hover { opacity: 0.92; transform: translateY(-1px); }
+  .pricing-footnote { font-size: 0.72rem; color: rgba(255,255,255,0.38); margin-top: 0.9rem; position: relative; z-index: 1; }
 
-    /* Footer */
-    .form-footer {
-      margin-top: 28px;
-      text-align: center;
-    }
-    .form-footer p { font-size: 13px; color: #7b84ad; }
-    .admin-link {
-      display: inline-block;
-      margin-top: 8px;
-      font-size: 12px;
-      color: #c8d0ed;
-      text-decoration: none;
-      transition: color .15s;
-    }
-    .admin-link:hover { color: #7b84ad; }
+  /* ── FINAL CTA ── */
+  .final-cta { padding: 80px 1.25rem; background: linear-gradient(135deg, #0D1236, #1a1f4e); text-align: center; position: relative; overflow: hidden; }
+  .final-cta::before { content: ''; position: absolute; top: -30%; left: 20%; width: 60%; height: 80%; background: radial-gradient(circle, rgba(75,108,247,0.22) 0%, transparent 70%); pointer-events: none; }
+  .final-cta .section-title { color: white; position: relative; z-index: 1; }
+  .final-cta .section-sub { color: rgba(255,255,255,0.62); margin: 1rem auto 2rem; position: relative; z-index: 1; }
+  .cta-actions { display: flex; flex-direction: column; gap: 12px; align-items: center; position: relative; z-index: 1; }
+  .btn-white {
+    font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; color: var(--accent); background: white;
+    padding: 14px 32px; border-radius: 50px; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 8px; width: 100%; max-width: 280px; justify-content: center;
+    box-shadow: 0 8px 28px rgba(255,255,255,0.22); transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .btn-white:hover { transform: translateY(-2px); box-shadow: 0 12px 36px rgba(255,255,255,0.32); }
+  .btn-ghost-white {
+    font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 600; color: white; background: transparent;
+    border: 2px solid rgba(255,255,255,0.32); padding: 12px 32px; border-radius: 50px; text-decoration: none;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; max-width: 280px; transition: border-color 0.2s;
+  }
+  .btn-ghost-white:hover { border-color: rgba(255,255,255,0.65); }
 
-    /* Input error state */
-    .field input.error { border-color: #ef4444; }
+  /* ── FOOTER ── */
+  footer { background: #0D1236; border-top: 1px solid rgba(255,255,255,0.06); padding: 1.75rem 1.25rem; text-align: center; font-size: 0.8rem; color: rgba(255,255,255,0.32); }
+  .footer-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1rem; color: rgba(255,255,255,0.55); margin-bottom: 0.5rem; display: inline-flex; align-items: center; gap: 7px; }
+  .footer-logo img { height: 26px; width: auto; object-fit: contain; }
 
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25%       { transform: translateX(-4px); }
-      75%       { transform: translateX(4px); }
-    }
-    .shake { animation: shake .3s ease; }
+  /* ── ANIMATIONS ── */
+  .fade-up { opacity: 0; transform: translateY(22px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .fade-up.visible { opacity: 1; transform: translateY(0); }
 
-    /* Responsive */
-    @media (max-width: 768px) {
-      .login-shell { grid-template-columns: 1fr; }
-      .left-col { display: none; }
-      .right-col { padding: 40px 24px; align-items: flex-start; padding-top: 60px; }
-      .mobile-logo { display: flex; }
-    }
-  </style>
+  /* ── TABLET (≥640px) ── */
+  @media (min-width: 640px) {
+    nav { padding: 0 2rem; height: 64px; }
+    .nav-link { display: block; }
+    .hero { padding: 100px 2rem 70px; }
+    .hero-inner { flex-direction: row; text-align: left; align-items: center; gap: 4rem; }
+    .hero-sub { max-width: 100%; }
+    .hero-actions { max-width: 100%; flex-direction: row; flex-wrap: wrap; }
+    .btn-xl { width: auto; flex: 1; min-width: 180px; }
+    .btn-xl-outline { width: auto; flex: 1; min-width: 160px; }
+    .cta-box { max-width: 100%; }
+    .steps-grid { grid-template-columns: repeat(3, 1fr); }
+    .features-grid { grid-template-columns: repeat(2, 1fr); }
+    .testimonials-grid { grid-template-columns: repeat(2, 1fr); }
+    .cta-actions { flex-direction: row; justify-content: center; }
+    .btn-white, .btn-ghost-white { width: auto; }
+    section { padding: 80px 2rem; }
+    .design-card { width: 210px; height: 360px; }
+    .fbadge.tr { right: -30px; }
+    .fbadge.bl { left: -35px; }
+  }
+
+  /* ── DESKTOP (≥1024px) ── */
+  @media (min-width: 1024px) {
+    .hero-inner { gap: 5rem; }
+    .hero-title { font-size: 4.2rem; }
+    .steps-grid { gap: 2rem; }
+    .features-grid { gap: 1.5rem; }
+    .testimonials-grid { grid-template-columns: repeat(3, 1fr); }
+    section { padding: 90px 2rem; }
+    .phone-outer { width: 260px; height: 520px; }
+    .card-avatar { width: 72px; height: 72px; font-size: 1.5rem; }
+    .card-name { font-size: 1rem; }
+    .card-role { font-size: 0.72rem; }
+    .card-co { font-size: 0.68rem; }
+    .card-link-item { font-size: 0.68rem; padding: 8px 10px; }
+    .licon { width: 24px; height: 24px; font-size: 0.65rem; }
+  }
+</style>
 </head>
 <body>
-  <div class="login-shell">
 
-    <!-- ── IZQUIERDA ────────────────────────────────────────── -->
-    <div class="left-col">
-      <div class="left-bg"></div>
-      <div class="left-overlay"></div>
-      <div class="left-content">
+<!-- NAVBAR -->
+<nav>
+  <a href="/" class="nav-logo">
+    <img src="/CardVirtual.png" alt="CardVirtual"
+      onerror="this.style.display='none';this.nextElementSibling.style.display='inline'" />
+    <span style="display:none">CardVirtual</span>
+  </a>
+  <div class="nav-right">
+    <a href="/auth/login" class="nav-link">Iniciar Sesión</a>
+    <a href="/auth/login" class="btn-nav">Contacto</a>
+  </div>
+</nav>
 
-        <div class="logo-box">
-          <img src="/CardVirtual.png" alt="CardVirtual"
-            onerror="this.parentElement.innerHTML='<span style=\'font-size:32px\'>🪪</span>'" />
+<!-- HERO -->
+<section class="hero">
+  <div class="orb1"></div>
+  <div class="orb2"></div>
+  <div class="hero-inner">
+
+    <!-- Texto izquierda -->
+    <div style="flex:1;min-width:0;">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        La nueva era del networking profesional
+      </div>
+      <h1 class="hero-title">
+        Tu tarjeta de presentación.<br/>
+        <span class="gradient-text">Digital, moderna e inolvidable.</span>
+      </h1>
+      <p class="hero-sub">
+        Comparte tu perfil profesional completo con un solo QR. Tu empleador abre su celular y ve una tarjeta que <strong>impacta desde el primer segundo</strong>. Sin apps, sin complicaciones.
+      </p>
+      <div class="hero-actions">
+        <a href="/auth/login" class="btn-xl">📱 Contacto</a>
+        <a href="#como-funciona" class="btn-xl-outline">Ver cómo funciona</a>
+      </div>
+      <div class="cta-box">
+        <div class="cta-icon">📞</div>
+        <div>
+          <div class="cta-text-small">Activación inmediata · Sin tarjeta de crédito</div>
+          <div class="cta-text-main">Contáctanos ahora</div>
         </div>
-
-        <div class="tagline">
-          <h2>Tu tarjeta digital,<br/><span class="tagline-accent">siempre contigo.</span></h2>
-          <p>Comparte tu perfil profesional con un solo enlace. Sin papel, sin límites.</p>
-          <div class="features">
-            {['Sin papel ni impresión', 'Actualización instantánea', 'Siempre disponible'].map(f => (
-              <div class="feature-item">
-                <div class="feature-check">
-                  <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4.5 12.75l6 6 9-13.5"/>
-                  </svg>
-                </div>
-                {f}
-              </div>
-            ))}
-          </div>
-        </div>
-
+        <div class="cta-badge">5 días GRATIS</div>
       </div>
     </div>
 
-    <!-- ── DERECHA ──────────────────────────────────────────── -->
-    <div class="right-col">
-      <div class="form-box">
-
-        <!-- Logo mobile -->
-        <div class="mobile-logo">
-          <div class="mobile-logo-box">
-            <img src="/CardVirtual.png" alt="CardVirtual"
-              onerror="this.parentElement.innerHTML='<span style=\'font-size:28px\'>🪪</span>'" />
+    <!-- Phone mockup derecha -->
+    <div class="phone-wrap" style="flex-shrink:0;">
+      <div class="fbadge tr"><span class="dot-g"></span>Vista en vivo</div>
+      <div class="fbadge bl"><span class="dot-b"></span>QR único</div>
+      <div class="phone-outer">
+        <div class="phone-screen">
+          <div class="phone-notch"></div>
+          <div class="card-avatar">JM</div>
+          <div class="card-name">Jorge Martínez</div>
+          <div class="card-role">Director de Operaciones</div>
+          <div class="card-co">Grupo Empresarial del Perú</div>
+          <div class="card-links">
+            <div class="card-link-item"><div class="licon b">🌐</div>Portfolio & Proyectos</div>
+            <div class="card-link-item"><div class="licon c">💼</div>LinkedIn Profesional</div>
+            <div class="card-link-item"><div class="licon g">📄</div>Currículum Vitae PDF</div>
+          </div>
+          <div class="card-qr">
+            <span style="font-size:0.9rem;">⬛</span>
+            <span>Compartir mi tarjeta</span>
           </div>
         </div>
+        <div class="phone-glow"></div>
+      </div>
+    </div>
 
-        <div class="form-header">
-          <h1>Bienvenido</h1>
-          <p>Ingresa con tu número de WhatsApp.</p>
-        </div>
+  </div>
+</section>
 
-        <!-- Error URL param -->
-        {errorParam && (
-          <div class="error-banner show">
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
-            </svg>
-            {errorParam === 'forbidden'
-              ? 'No tienes permisos para acceder a esa sección.'
-              : 'Sesión expirada. Por favor ingresa de nuevo.'}
-          </div>
-        )}
+<!-- TRUST BAR -->
+<div class="trust-bar">
+  <div class="trust-item">⚡ Activación en minutos</div>
+  <div class="trust-item">📱 Sin descargar apps</div>
+  <div class="trust-item">✨ Diseños premium</div>
+  <div class="trust-item">🔒 Datos seguros</div>
+  <div class="trust-item">🇵🇪 Soporte en Perú</div>
+</div>
 
-        <!-- Error inline -->
-        <div class="error-banner" id="login-error">
-          <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20" style="flex-shrink:0">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-          </svg>
-          <span id="login-error-text"></span>
-        </div>
+<!-- HOW IT WORKS -->
+<section class="how-section" id="como-funciona">
+  <div class="centered">
+    <div class="section-label">Proceso</div>
+    <div class="section-title">3 pasos. Resultado impresionante.</div>
+    <div class="section-sub">Desde que nos contactas hasta que tienes tu tarjeta activa pasan menos de 10 minutos.</div>
+  </div>
+  <div class="steps-grid">
+    <div class="step-card fade-up">
+      <span class="step-number">01</span>
+      <div class="step-title">Contáctanos</div>
+      <div class="step-desc">Escríbenos o llámanos. Te registramos de inmediato y activas tu prueba gratuita de 5 días sin compromisos.</div>
+    </div>
+    <div class="step-card fade-up" style="transition-delay:.15s">
+      <span class="step-number">02</span>
+      <div class="step-title">Elige tu diseño</div>
+      <div class="step-desc">Selecciona entre múltiples plantillas premium. Subimos tu foto, datos, currículum, portafolio y redes sociales.</div>
+    </div>
+    <div class="step-card fade-up" style="transition-delay:.3s">
+      <span class="step-number">03</span>
+      <div class="step-title">Comparte tu QR</div>
+      <div class="step-desc">Tu empleador escanea el QR con su celular y en segundos ve tu tarjeta digital completa. Sin apps, sin fricción.</div>
+    </div>
+  </div>
+</section>
 
-        <!-- Número de WhatsApp -->
-        <div class="field">
-          <label for="movil">Número de WhatsApp</label>
-          <div class="phone-field" id="phone-field">
-            <select id="prefijo">
-              <option value="51">🇵🇪 +51</option>
-              <option value="52">🇲🇽 +52</option>
-              <option value="57">🇨🇴 +57</option>
-              <option value="56">🇨🇱 +56</option>
-              <option value="54">🇦🇷 +54</option>
-              <option value="34">🇪🇸 +34</option>
-              <option value="1">🇺🇸 +1</option>
-            </select>
-            <input type="tel" id="movil" inputmode="numeric" autocomplete="tel"
-              placeholder="987 654 321" maxlength="12" />
-          </div>
-          <div class="field-hint">El mismo número que usaste al activar tu cuenta</div>
-        </div>
+<!-- DESIGNS CAROUSEL -->
+<section class="designs-section">
+  <div class="centered" style="max-width:800px;margin:0 auto;">
+    <div class="section-label">Diseños</div>
+    <div class="section-title">Plantillas que impactan</div>
+    <div class="section-sub">Cada diseño es una declaración profesional. Elige el que mejor represente tu marca personal.</div>
+  </div>
+  <div class="designs-carousel">
+    <div class="design-card">
+      <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=700&fit=crop&auto=format" alt="Ejecutivo Pro" />
+      <div class="design-overlay"><div class="design-label">Ejecutivo Pro</div><div class="design-sub">Azul · Minimalista</div></div>
+    </div>
+    <div class="design-card">
+      <img src="https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400&h=700&fit=crop&auto=format" alt="Dark Premium" />
+      <div class="design-overlay"><div class="design-label">Dark Premium</div><div class="design-sub">Negro · Elegante</div></div>
+    </div>
+    <div class="design-card">
+      <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=700&fit=crop&auto=format" alt="Creative Hub" />
+      <div class="design-overlay"><div class="design-label">Creative Hub</div><div class="design-sub">Colorido · Dinámico</div></div>
+    </div>
+    <div class="design-card">
+      <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=700&fit=crop&auto=format" alt="Corporate Elite" />
+      <div class="design-overlay"><div class="design-label">Corporate Elite</div><div class="design-sub">Blanco · Formal</div></div>
+    </div>
+    <div class="design-card">
+      <img src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&h=700&fit=crop&auto=format" alt="Tech Innovator" />
+      <div class="design-overlay"><div class="design-label">Tech Innovator</div><div class="design-sub">Cian · Futurista</div></div>
+    </div>
+  </div>
+</section>
 
-        <!-- Contraseña -->
-        <div class="field">
-          <label for="password">Contraseña</label>
-          <div class="pass-wrap">
-            <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" />
-            <button type="button" class="eye-btn" id="toggle-password" tabindex="-1">
-              <svg id="eye-icon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-              </svg>
-            </button>
-          </div>
-        </div>
+<!-- FEATURES -->
+<section class="features-section">
+  <div class="centered">
+    <div class="section-label">Ventajas</div>
+    <div class="section-title">Todo lo que necesitas para destacar</div>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card fade-up">
+      <div class="ficon fi-b">📱</div>
+      <div><div class="feature-title">QR Único e Inteligente</div><div class="feature-desc">Genera un código QR personalizado que lleva a tu tarjeta digital. Funciona en cualquier celular sin instalar nada.</div></div>
+    </div>
+    <div class="feature-card fade-up" style="transition-delay:.1s">
+      <div class="ficon fi-c">🎨</div>
+      <div><div class="feature-title">Múltiples Diseños Premium</div><div class="feature-desc">Escoge entre decenas de plantillas diseñadas por profesionales. Desde el estilo ejecutivo hasta el creativo más audaz.</div></div>
+    </div>
+    <div class="feature-card fade-up" style="transition-delay:.2s">
+      <div class="ficon fi-g">📄</div>
+      <div><div class="feature-title">CV, Portafolio y Redes</div><div class="feature-desc">Integra tu currículum en PDF, proyectos, LinkedIn, correo y WhatsApp en un solo enlace profesional.</div></div>
+    </div>
+    <div class="feature-card fade-up" style="transition-delay:.3s">
+      <div class="ficon fi-a">⚡</div>
+      <div><div class="feature-title">Actualización Instantánea</div><div class="feature-desc">Cambia cualquier dato de tu tarjeta en segundos. El mismo QR siempre muestra la información más actualizada.</div></div>
+    </div>
+  </div>
+</section>
 
-        <button class="btn-login" id="btn-login" type="button">Ingresar</button>
-
-        <div class="form-footer">
-          <p>¿No tienes cuenta? Contacta al administrador.</p>
-          <a href="/admin/login" class="admin-link">Admin</a>
-        </div>
-
+<!-- TESTIMONIALS -->
+<section class="testimonials-section">
+  <div class="centered">
+    <div class="section-label">Testimonios</div>
+    <div class="section-title">Lo que dicen nuestros usuarios</div>
+  </div>
+  <div class="testimonials-grid">
+    <div class="t-card fade-up">
+      <div class="t-stars">★★★★★</div>
+      <div class="t-text">"En la entrevista mostré el QR y el reclutador quedó impresionado. Nunca había visto algo tan moderno. Me llamaron al día siguiente."</div>
+      <div class="t-author">
+        <div class="t-avatar" style="background:linear-gradient(135deg,var(--accent),var(--cyan))">AM</div>
+        <div><div class="t-name">Ana Morales</div><div class="t-role">Diseñadora Gráfica, Lima</div></div>
+      </div>
+    </div>
+    <div class="t-card fade-up" style="transition-delay:.1s">
+      <div class="t-stars">★★★★★</div>
+      <div class="t-text">"Ahora en vez de repartir papelitos, simplemente muestro mi QR en reuniones de negocios. Mucho más profesional."</div>
+      <div class="t-author">
+        <div class="t-avatar" style="background:linear-gradient(135deg,#10B981,#00D4FF)">CR</div>
+        <div><div class="t-name">Carlos Ríos</div><div class="t-role">Consultor de Ventas, Lima</div></div>
+      </div>
+    </div>
+    <div class="t-card fade-up" style="transition-delay:.2s">
+      <div class="t-stars">★★★★★</div>
+      <div class="t-text">"El diseño que elegí es tan bueno que varios clientes me preguntaron dónde lo hicieron. Es mi mejor inversión del año."</div>
+      <div class="t-author">
+        <div class="t-avatar" style="background:linear-gradient(135deg,#F59E0B,#EF4444)">LV</div>
+        <div><div class="t-name">Laura Vega</div><div class="t-role">Gerente Comercial, Miraflores</div></div>
       </div>
     </div>
   </div>
+</section>
 
-  <div id="app-config"
-    data-url={import.meta.env.PUBLIC_SUPABASE_URL}
-    data-anon={import.meta.env.PUBLIC_SUPABASE_ANON_KEY}
-    data-redirect={redirectTo}
-    style="display:none">
+<!-- PRICING -->
+<section class="pricing-section">
+  <div class="centered">
+    <div class="section-label">Prueba Gratis</div>
+    <div class="section-title">Sin riesgo. Sin tarjeta.</div>
+    <div class="section-sub">Activa tu tarjeta hoy mismo y tienes 5 días completamente gratis para ver el impacto en tu carrera.</div>
   </div>
+  <div class="pricing-card">
+    <div class="pricing-trial">✨ 5 días de prueba gratuita</div>
+    <div class="pricing-price">S/. 0</div>
+    <div class="pricing-sub">para empezar hoy · luego desde S/.29/mes</div>
+    <ul class="pricing-features">
+      <li><span class="check">✓</span>Tarjeta digital profesional activada</li>
+      <li><span class="check">✓</span>QR único e ilimitado</li>
+      <li><span class="check">✓</span>Diseño premium a tu elección</li>
+      <li><span class="check">✓</span>CV, portafolio y redes integradas</li>
+      <li><span class="check">✓</span>Actualizaciones instantáneas</li>
+      <li><span class="check">✓</span>Soporte personal en español</li>
+    </ul>
+    <button class="pricing-btn" onclick="window.location.href='/auth/login'">
+      📞 Contacto — Activar ahora
+    </button>
+    <div class="pricing-footnote">Sin compromisos. Sin tarjeta de crédito. Cancela cuando quieras.</div>
+  </div>
+</section>
 
-  <script>
-    import { createBrowserClient } from '@supabase/ssr'
+<!-- FINAL CTA -->
+<div class="final-cta">
+  <div style="position:relative;z-index:1;max-width:600px;margin:0 auto;">
+    <div class="section-label" style="color:var(--cyan)">Empieza hoy</div>
+    <div class="section-title">Tu próxima oportunidad laboral<br/>te está esperando.</div>
+    <div class="section-sub">Un QR puede cambiar tu carrera. Dale a tu empleador una primera impresión que nunca olvidará.</div>
+    <div class="cta-actions">
+      <a href="/auth/login" class="btn-white">📱 Contacto</a>
+      <a href="/auth/login" class="btn-ghost-white">💬 WhatsApp</a>
+    </div>
+    <div style="margin-top:1.5rem;font-size:0.78rem;color:rgba(255,255,255,0.38);">
+      Activación inmediata · 5 días gratis · Sin tarjeta requerida
+    </div>
+  </div>
+</div>
 
-    const cfg        = document.getElementById('app-config')!
-    const supabase   = createBrowserClient(cfg.dataset.url!, cfg.dataset.anon!)
-    const redirectTo = cfg.dataset.redirect!
+<!-- FOOTER -->
+<footer>
+  <div>
+    <div class="footer-logo">
+      <img src="/CardVirtual.png" alt="CardVirtual"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='inline'" />
+      <span style="display:none">CV</span>
+      CardVirtual
+    </div>
+  </div>
+  <div style="margin-top:0.5rem;">© {new Date().getFullYear()} CardVirtual. Todos los derechos reservados. · Tu identidad profesional digital.</div>
+</footer>
 
-    const prefijoEl  = document.getElementById('prefijo')        as HTMLSelectElement
-    const movilEl    = document.getElementById('movil')          as HTMLInputElement
-    const passwordEl = document.getElementById('password')       as HTMLInputElement
-    const btnLogin   = document.getElementById('btn-login')      as HTMLButtonElement
-    const errorEl    = document.getElementById('login-error')    as HTMLDivElement
-    const errorText  = document.getElementById('login-error-text') as HTMLSpanElement
-    const phoneField = document.getElementById('phone-field')    as HTMLDivElement
-    const toggleBtn  = document.getElementById('toggle-password') as HTMLButtonElement
+<script>
+  const obs = new IntersectionObserver(
+    entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible') }),
+    { threshold: 0.12 }
+  );
+  document.querySelectorAll('.fade-up').forEach(el => obs.observe(el));
 
-    function hideError() {
-      errorEl.classList.remove('show')
-      movilEl.classList.remove('error', 'shake')
-      passwordEl.classList.remove('error', 'shake')
-      phoneField.style.borderColor = ''
-    }
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const t = document.querySelector(a.getAttribute('href') ?? '');
+      if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth' }); }
+    });
+  });
+</script>
 
-    function showError(msg: string) {
-      errorText.textContent = msg
-      errorEl.classList.add('show')
-      phoneField.style.borderColor = '#ef4444'
-      passwordEl.classList.add('error', 'shake')
-      setTimeout(() => passwordEl.classList.remove('shake'), 300)
-    }
-
-    movilEl.addEventListener('input', () => {
-      movilEl.value = movilEl.value.replace(/\D/g, '')
-      hideError()
-    })
-    passwordEl.addEventListener('input', hideError)
-
-    toggleBtn.addEventListener('click', () => {
-      const show = passwordEl.type === 'password'
-      passwordEl.type = show ? 'text' : 'password'
-      document.getElementById('eye-icon')!.innerHTML = show
-        ? `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/>`
-        : `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>`
-    })
-
-    ;[movilEl, passwordEl].forEach(el =>
-      el.addEventListener('keydown', e => { if (e.key === 'Enter') btnLogin.click() })
-    )
-
-    btnLogin.addEventListener('click', async () => {
-      const prefijo  = prefijoEl.value.trim()
-      const movil    = movilEl.value.trim()
-      const password = passwordEl.value
-
-      if (!movil)         { showError('Ingresa tu número de móvil.'); movilEl.focus(); return }
-      if (movil.length < 7) { showError('El número parece muy corto.'); movilEl.focus(); return }
-      if (!password)      { showError('Ingresa tu contraseña.'); passwordEl.focus(); return }
-
-      const email = `${prefijo}${movil}@tarjetadigital.app`
-      btnLogin.disabled    = true
-      btnLogin.textContent = 'Verificando...'
-      hideError()
-
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-
-      if (error) {
-        const msg =
-          error.message.includes('Invalid login')     ? 'Número o contraseña incorrectos.' :
-          error.message.includes('Email not confirm') ? 'Cuenta no confirmada. Contacta al administrador.' :
-          error.message.includes('Too many requests') ? 'Demasiados intentos. Espera un momento.' :
-          'Error al ingresar. Intenta de nuevo.'
-        showError(msg)
-        btnLogin.disabled    = false
-        btnLogin.textContent = 'Ingresar'
-        passwordEl.value     = ''
-        passwordEl.focus()
-        return
-      }
-
-      btnLogin.textContent = '✓ Ingresando...'
-
-      const { data: perfil } = await supabase
-        .from('perfiles')
-        .select('debe_cambiar_password')
-        .eq('user_id', data.user.id)
-        .maybeSingle()
-
-      window.location.href = perfil?.debe_cambiar_password
-        ? '/dashboard/seguridad?primer-login=1'
-        : redirectTo
-    })
-  </script>
 </body>
 </html>
