@@ -1,57 +1,354 @@
 ---
 // src/pages/auth/login.astro
-// Login usuarios — dos columnas, imagen izquierda, formulario derecho.
-// Patrón idéntico al proyecto MenuHoy para garantizar que la imagen cargue.
-import Layout from '../../layouts/Layout.astro'
-
+export const prerender = false
 const redirectTo = Astro.url.searchParams.get('redirect') ?? '/dashboard'
 const errorParam = Astro.url.searchParams.get('error') ?? ''
 ---
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="supabase-url" content={import.meta.env.PUBLIC_SUPABASE_URL} />
+  <meta name="supabase-anon" content={import.meta.env.PUBLIC_SUPABASE_ANON_KEY} />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <title>Acceder — CardVirtual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Geist', -apple-system, sans-serif;
+      background: #f8faff;
+      color: #0d1236;
+      -webkit-font-smoothing: antialiased;
+    }
 
-<Layout title="Acceder — Tarjeta Digital">
-  <div class="min-h-screen flex bg-white">
+    .login-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
 
-    <!-- ── COLUMNA IZQUIERDA — imagen + branding ──────────────── -->
-    <div class="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-900">
+    /* ── COLUMNA IZQUIERDA ─────────────────────────────────── */
+    .left-col {
+      position: relative;
+      overflow: hidden;
+      background: #0f172a;
+    }
+    .left-bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('https://images.unsplash.com/photo-1600880292203-757bb62b4baf?q=80&w=1974&auto=format&fit=crop');
+      background-size: cover;
+      background-position: center;
+      opacity: 0.55;
+    }
+    .left-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, #0f172a 0%, rgba(15,23,42,.5) 50%, transparent 100%);
+    }
+    .left-content {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+      padding: 48px;
+    }
+    .logo-box {
+      width: 72px;
+      height: 72px;
+      background: rgba(255,255,255,.95);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,.25);
+      overflow: hidden;
+    }
+    .logo-box img { width: 52px; height: 52px; object-fit: contain; }
+    .tagline { color: #fff; }
+    .tagline h2 {
+      font-size: 42px;
+      font-weight: 900;
+      line-height: 1.15;
+      margin-bottom: 16px;
+      letter-spacing: -.02em;
+    }
+    .tagline-accent { color: #7b93ff; }
+    .tagline p {
+      color: rgba(255,255,255,.65);
+      font-size: 16px;
+      margin-bottom: 28px;
+      line-height: 1.6;
+    }
+    .features { display: flex; flex-direction: column; gap: 10px; }
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: rgba(255,255,255,.75);
+      font-size: 14px;
+    }
+    .feature-check {
+      width: 20px; height: 20px;
+      background: rgba(75,108,247,.25);
+      border: 1px solid rgba(75,108,247,.5);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .feature-check svg { color: #7b93ff; }
 
-      <!-- Imagen Unsplash — profesional con tarjetas de presentación -->
-      <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1600880292203-757bb62b4baf?q=80&w=1974&auto=format&fit=crop')] bg-cover bg-center opacity-60"></div>
+    /* ── COLUMNA DERECHA ───────────────────────────────────── */
+    .right-col {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 40px;
+      background: #f8faff;
+    }
+    .form-box {
+      width: 100%;
+      max-width: 400px;
+    }
 
-      <!-- Overlay degradado -->
-      <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+    /* Logo mobile */
+    .mobile-logo {
+      display: none;
+      justify-content: center;
+      margin-bottom: 32px;
+    }
+    .mobile-logo-box {
+      width: 64px; height: 64px;
+      background: #fff;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 20px rgba(75,108,247,.15);
+      border: 1px solid #dde2f4;
+      overflow: hidden;
+    }
+    .mobile-logo-box img { width: 46px; height: 46px; object-fit: contain; }
 
-      <!-- Contenido sobre la imagen -->
-      <div class="relative z-10 flex flex-col justify-between p-14 text-white h-full">
+    .form-header { margin-bottom: 32px; }
+    .form-header h1 {
+      font-size: 30px;
+      font-weight: 800;
+      color: #0d1236;
+      letter-spacing: -.02em;
+      line-height: 1.2;
+    }
+    .form-header p {
+      margin-top: 8px;
+      color: #7b84ad;
+      font-size: 15px;
+    }
 
-        <!-- Logo arriba -->
-        <div class="flex items-start">
-          <div class="w-28 h-28 bg-white rounded-[2rem] flex items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.2)] ring-4 ring-white/20 overflow-hidden transition-transform hover:scale-105 duration-300">
-            <img
-              src="/CardVirtual.png"
-              alt="Tarjeta Digital"
-              class="w-20 h-20 object-contain drop-shadow-sm"
-              onerror="this.parentElement.innerHTML='<span class=\'text-5xl\'>🪪</span>'"
-            />
-          </div>
+    /* Error banner */
+    .error-banner {
+      display: none;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .error-banner.show { display: flex; }
+
+    /* Campos */
+    .field { margin-bottom: 20px; }
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #3d4570;
+      margin-bottom: 8px;
+    }
+    .field input,
+    .field select {
+      width: 100%;
+      padding: 12px 14px;
+      font-family: 'Geist', sans-serif;
+      font-size: 14px;
+      color: #0d1236;
+      background: #fff;
+      border: 1.5px solid #dde2f4;
+      border-radius: 12px;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+      -webkit-appearance: none;
+    }
+    .field input:focus,
+    .field select:focus {
+      border-color: #4b6cf7;
+      box-shadow: 0 0 0 3px rgba(75,108,247,.12);
+    }
+    .field input::placeholder { color: #c8d0ed; }
+    /* Autofill override */
+    .field input:-webkit-autofill,
+    .field input:-webkit-autofill:hover,
+    .field input:-webkit-autofill:focus {
+      -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
+      -webkit-text-fill-color: #0d1236 !important;
+      border-color: #4b6cf7 !important;
+    }
+    .field-hint {
+      font-size: 12px;
+      color: #7b84ad;
+      margin-top: 5px;
+    }
+
+    /* Campo teléfono combinado */
+    .phone-field {
+      display: flex;
+      border: 1.5px solid #dde2f4;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fff;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .phone-field:focus-within {
+      border-color: #4b6cf7;
+      box-shadow: 0 0 0 3px rgba(75,108,247,.12);
+    }
+    .phone-field select {
+      border: none !important;
+      border-right: 1.5px solid #dde2f4 !important;
+      border-radius: 0 !important;
+      background: #f5f7ff !important;
+      padding: 12px 10px !important;
+      font-size: 13px !important;
+      color: #3d4570 !important;
+      width: auto !important;
+      flex-shrink: 0;
+      box-shadow: none !important;
+      outline: none !important;
+      cursor: pointer;
+    }
+    .phone-field select:focus { box-shadow: none !important; border-color: #dde2f4 !important; }
+    .phone-field input {
+      border: none !important;
+      border-radius: 0 !important;
+      background: #fff !important;
+      flex: 1;
+      box-shadow: none !important;
+      outline: none !important;
+      font-family: 'Geist', monospace;
+      letter-spacing: .05em;
+    }
+    .phone-field input:focus { box-shadow: none !important; }
+
+    /* Campo con ojo */
+    .pass-wrap { position: relative; }
+    .pass-wrap input { padding-right: 44px; }
+    .eye-btn {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #7b84ad;
+      padding: 4px;
+      display: flex;
+      transition: color .15s;
+    }
+    .eye-btn:hover { color: #4b6cf7; }
+
+    /* Botón principal */
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #4b6cf7, #7b93ff);
+      color: #fff;
+      font-family: 'Geist', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: opacity .15s, transform .15s, box-shadow .15s;
+      box-shadow: 0 4px 16px rgba(75,108,247,.35);
+      margin-top: 8px;
+    }
+    .btn-login:hover { opacity: .92; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(75,108,247,.4); }
+    .btn-login:active { transform: translateY(0); }
+    .btn-login:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* Footer */
+    .form-footer {
+      margin-top: 28px;
+      text-align: center;
+    }
+    .form-footer p { font-size: 13px; color: #7b84ad; }
+    .admin-link {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #c8d0ed;
+      text-decoration: none;
+      transition: color .15s;
+    }
+    .admin-link:hover { color: #7b84ad; }
+
+    /* Input error state */
+    .field input.error { border-color: #ef4444; }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25%       { transform: translateX(-4px); }
+      75%       { transform: translateX(4px); }
+    }
+    .shake { animation: shake .3s ease; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .login-shell { grid-template-columns: 1fr; }
+      .left-col { display: none; }
+      .right-col { padding: 40px 24px; align-items: flex-start; padding-top: 60px; }
+      .mobile-logo { display: flex; }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-shell">
+
+    <!-- ── IZQUIERDA ────────────────────────────────────────── -->
+    <div class="left-col">
+      <div class="left-bg"></div>
+      <div class="left-overlay"></div>
+      <div class="left-content">
+
+        <div class="logo-box">
+          <img src="/CardVirtual.png" alt="CardVirtual"
+            onerror="this.parentElement.innerHTML='<span style=\'font-size:32px\'>🪪</span>'" />
         </div>
 
-        <!-- Tagline abajo -->
-        <div>
-          <h2 class="text-5xl font-black mb-4 leading-tight">
-            Tu tarjeta digital,<br/>
-            <span class="text-indigo-400">siempre contigo.</span>
-          </h2>
-          <p class="text-white/70 text-lg mb-8">
-            Comparte tu perfil profesional con un solo enlace.
-          </p>
-
-          <!-- Features -->
-          <div class="flex flex-col gap-3">
+        <div class="tagline">
+          <h2>Tu tarjeta digital,<br/><span class="tagline-accent">siempre contigo.</span></h2>
+          <p>Comparte tu perfil profesional con un solo enlace. Sin papel, sin límites.</p>
+          <div class="features">
             {['Sin papel ni impresión', 'Actualización instantánea', 'Siempre disponible'].map(f => (
-              <div class="flex items-center gap-3 text-white/80 text-sm">
-                <svg class="w-4 h-4 text-indigo-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4.5 12.75l6 6 9-13.5"/>
-                </svg>
+              <div class="feature-item">
+                <div class="feature-check">
+                  <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4.5 12.75l6 6 9-13.5"/>
+                  </svg>
+                </div>
                 {f}
               </div>
             ))}
@@ -61,32 +358,27 @@ const errorParam = Astro.url.searchParams.get('error') ?? ''
       </div>
     </div>
 
-    <!-- ── COLUMNA DERECHA — formulario ──────────────────────── -->
-    <div class="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 bg-slate-50">
-      <div class="w-full max-w-[400px] space-y-8">
+    <!-- ── DERECHA ──────────────────────────────────────────── -->
+    <div class="right-col">
+      <div class="form-box">
 
-        <!-- Logo mobile — solo visible cuando la imagen está oculta -->
-        <div class="flex justify-center lg:hidden mb-2">
-          <div class="w-28 h-28 bg-white shadow-2xl rounded-[2rem] flex items-center justify-center ring-4 ring-indigo-50 overflow-hidden">
-            <img
-              src="/CardVirtual.png"
-              alt="Tarjeta Digital"
-              class="w-20 h-20 object-contain"
-              onerror="this.parentElement.innerHTML='<span class=\'text-5xl\'>🪪</span>'"
-            />
+        <!-- Logo mobile -->
+        <div class="mobile-logo">
+          <div class="mobile-logo-box">
+            <img src="/CardVirtual.png" alt="CardVirtual"
+              onerror="this.parentElement.innerHTML='<span style=\'font-size:28px\'>🪪</span>'" />
           </div>
         </div>
 
-        <!-- Header -->
-        <div>
-          <h1 class="text-3xl font-black text-slate-900">Bienvenido</h1>
-          <p class="mt-2 text-slate-500">Ingresa con tu número de WhatsApp.</p>
+        <div class="form-header">
+          <h1>Bienvenido</h1>
+          <p>Ingresa con tu número de WhatsApp.</p>
         </div>
 
-        <!-- Error de URL param -->
+        <!-- Error URL param -->
         {errorParam && (
-          <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
-            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="error-banner show">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
             </svg>
             {errorParam === 'forbidden'
@@ -95,218 +387,157 @@ const errorParam = Astro.url.searchParams.get('error') ?? ''
           </div>
         )}
 
-        <div class="space-y-5">
-
-          <!-- Campo WhatsApp -->
-          <div>
-            <label class="block text-sm font-bold text-slate-700 mb-2" for="movil">
-              Número de WhatsApp
-            </label>
-            <div class="flex">
-              <select
-                id="prefijo"
-                class="px-3 py-3 rounded-l-xl border border-r-0 border-slate-200 bg-slate-100 text-slate-600 text-sm font-medium outline-none focus:border-indigo-500 cursor-pointer"
-              >
-                <option value="51">🇵🇪 +51</option>
-                <option value="52">🇲🇽 +52</option>
-                <option value="57">🇨🇴 +57</option>
-                <option value="56">🇨🇱 +56</option>
-                <option value="54">🇦🇷 +54</option>
-                <option value="34">🇪🇸 +34</option>
-                <option value="1">🇺🇸 +1</option>
-              </select>
-              <input
-                type="tel"
-                id="movil"
-                inputmode="numeric"
-                autocomplete="tel"
-                placeholder="987654321"
-                maxlength="12"
-                class="flex-1 px-4 py-3 rounded-r-xl border border-slate-200 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none text-slate-900 font-mono text-base tracking-wide placeholder-slate-300"
-              />
-            </div>
-            <p class="text-xs text-slate-400 mt-1">El mismo número que usaste al activar tu cuenta</p>
-          </div>
-
-          <!-- Campo contraseña -->
-          <div>
-            <label class="block text-sm font-bold text-slate-700 mb-2" for="password">
-              Contraseña
-            </label>
-            <div class="relative">
-              <input
-                type="password"
-                id="password"
-                autocomplete="current-password"
-                placeholder="••••••••"
-                class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none text-slate-900 pr-11"
-              />
-              <button
-                type="button"
-                id="toggle-password"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                tabindex="-1"
-              >
-                <svg id="eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Error inline -->
-          <div id="login-error" class="hidden bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
-            <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-            </svg>
-            <span id="login-error-text"></span>
-          </div>
-
-          <!-- Botón ingresar -->
-          <button
-            id="btn-login"
-            type="button"
-            class="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 disabled:opacity-60 disabled:cursor-not-allowed text-base"
-          >
-            Ingresar
-          </button>
-
+        <!-- Error inline -->
+        <div class="error-banner" id="login-error">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20" style="flex-shrink:0">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+          </svg>
+          <span id="login-error-text"></span>
         </div>
 
-        <!-- Footer -->
-        <div class="text-center space-y-2">
-          <p class="text-sm text-slate-400">¿No tienes cuenta? Contacta al administrador.</p>
-          <!-- Link admin — muy discreto -->
-          <a
-            href="/admin/login"
-            class="text-xs text-slate-300 hover:text-slate-500 transition-colors block"
-          >
-            Admin
-          </a>
+        <!-- Número de WhatsApp -->
+        <div class="field">
+          <label for="movil">Número de WhatsApp</label>
+          <div class="phone-field" id="phone-field">
+            <select id="prefijo">
+              <option value="51">🇵🇪 +51</option>
+              <option value="52">🇲🇽 +52</option>
+              <option value="57">🇨🇴 +57</option>
+              <option value="56">🇨🇱 +56</option>
+              <option value="54">🇦🇷 +54</option>
+              <option value="34">🇪🇸 +34</option>
+              <option value="1">🇺🇸 +1</option>
+            </select>
+            <input type="tel" id="movil" inputmode="numeric" autocomplete="tel"
+              placeholder="987 654 321" maxlength="12" />
+          </div>
+          <div class="field-hint">El mismo número que usaste al activar tu cuenta</div>
+        </div>
+
+        <!-- Contraseña -->
+        <div class="field">
+          <label for="password">Contraseña</label>
+          <div class="pass-wrap">
+            <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" />
+            <button type="button" class="eye-btn" id="toggle-password" tabindex="-1">
+              <svg id="eye-icon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button class="btn-login" id="btn-login" type="button">Ingresar</button>
+
+        <div class="form-footer">
+          <p>¿No tienes cuenta? Contacta al administrador.</p>
+          <a href="/admin/login" class="admin-link">Admin</a>
         </div>
 
       </div>
     </div>
-
   </div>
 
-  <!-- Config -->
-  <div
-    id="app-config"
+  <div id="app-config"
     data-url={import.meta.env.PUBLIC_SUPABASE_URL}
     data-anon={import.meta.env.PUBLIC_SUPABASE_ANON_KEY}
     data-redirect={redirectTo}
-    style="display:none"
-  ></div>
-</Layout>
+    style="display:none">
+  </div>
 
-<style>
-  @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25%       { transform: translateX(-4px); }
-    75%       { transform: translateX(4px); }
-  }
-  .shake { animation: shake .3s ease; }
-</style>
+  <script>
+    import { createBrowserClient } from '@supabase/ssr'
 
-<script>
-  import { createBrowserClient } from '@supabase/ssr'
+    const cfg        = document.getElementById('app-config')!
+    const supabase   = createBrowserClient(cfg.dataset.url!, cfg.dataset.anon!)
+    const redirectTo = cfg.dataset.redirect!
 
-  const cfg        = document.getElementById('app-config')!
-  const supabase   = createBrowserClient(cfg.dataset.url!, cfg.dataset.anon!)
-  const redirectTo = cfg.dataset.redirect!
+    const prefijoEl  = document.getElementById('prefijo')        as HTMLSelectElement
+    const movilEl    = document.getElementById('movil')          as HTMLInputElement
+    const passwordEl = document.getElementById('password')       as HTMLInputElement
+    const btnLogin   = document.getElementById('btn-login')      as HTMLButtonElement
+    const errorEl    = document.getElementById('login-error')    as HTMLDivElement
+    const errorText  = document.getElementById('login-error-text') as HTMLSpanElement
+    const phoneField = document.getElementById('phone-field')    as HTMLDivElement
+    const toggleBtn  = document.getElementById('toggle-password') as HTMLButtonElement
 
-  const prefijoInput  = document.getElementById('prefijo')          as HTMLSelectElement
-  const movilInput    = document.getElementById('movil')            as HTMLInputElement
-  const passwordInput = document.getElementById('password')         as HTMLInputElement
-  const btnLogin      = document.getElementById('btn-login')        as HTMLButtonElement
-  const errorEl       = document.getElementById('login-error')      as HTMLDivElement
-  const errorText     = document.getElementById('login-error-text') as HTMLSpanElement
-  const toggleBtn     = document.getElementById('toggle-password')  as HTMLButtonElement
-
-  function ocultarError() {
-    errorEl.classList.add('hidden')
-    movilInput.classList.remove('border-red-400')
-    passwordInput.classList.remove('border-red-400')
-  }
-
-  function mostrarError(msg: string) {
-    errorText.textContent = msg
-    errorEl.classList.remove('hidden')
-    movilInput.classList.add('border-red-400', 'shake')
-    passwordInput.classList.add('border-red-400', 'shake')
-    setTimeout(() => {
-      movilInput.classList.remove('shake')
-      passwordInput.classList.remove('shake')
-    }, 300)
-  }
-
-  movilInput.addEventListener('input', () => {
-    movilInput.value = movilInput.value.replace(/\D/g, '')
-    ocultarError()
-  })
-  passwordInput.addEventListener('input', ocultarError)
-
-  // Toggle ojo
-  toggleBtn.addEventListener('click', () => {
-    const mostrar = passwordInput.type === 'password'
-    passwordInput.type = mostrar ? 'text' : 'password'
-    document.getElementById('eye-icon')!.innerHTML = mostrar
-      ? `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/>`
-      : `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>`
-  })
-
-  // Enter dispara login
-  ;[movilInput, passwordInput].forEach(el => {
-    el.addEventListener('keydown', (e) => { if (e.key === 'Enter') btnLogin.click() })
-  })
-
-  // Login
-  btnLogin.addEventListener('click', async () => {
-    const prefijo  = prefijoInput.value.trim()
-    const movil    = movilInput.value.trim()
-    const password = passwordInput.value
-
-    if (!movil) { mostrarError('Ingresa tu número de móvil.'); movilInput.focus(); return }
-    if (movil.length < 7) { mostrarError('El número parece muy corto.'); movilInput.focus(); return }
-    if (!password) { mostrarError('Ingresa tu contraseña.'); passwordInput.focus(); return }
-
-    const emailFicto = `${prefijo}${movil}@tarjetadigital.app`
-
-    btnLogin.disabled    = true
-    btnLogin.textContent = 'Verificando...'
-    ocultarError()
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: emailFicto, password,
-    })
-
-    if (error) {
-      const msg =
-        error.message.includes('Invalid login')    ? 'Número o contraseña incorrectos.' :
-        error.message.includes('Email not confirm') ? 'Cuenta no confirmada. Contacta al administrador.' :
-        error.message.includes('Too many requests') ? 'Demasiados intentos. Espera un momento.' :
-        'Error al ingresar. Intenta de nuevo.'
-      mostrarError(msg)
-      btnLogin.disabled    = false
-      btnLogin.textContent = 'Ingresar'
-      passwordInput.value  = ''
-      passwordInput.focus()
-      return
+    function hideError() {
+      errorEl.classList.remove('show')
+      movilEl.classList.remove('error', 'shake')
+      passwordEl.classList.remove('error', 'shake')
+      phoneField.style.borderColor = ''
     }
 
-    btnLogin.textContent = '✓ Ingresando...'
+    function showError(msg: string) {
+      errorText.textContent = msg
+      errorEl.classList.add('show')
+      phoneField.style.borderColor = '#ef4444'
+      passwordEl.classList.add('error', 'shake')
+      setTimeout(() => passwordEl.classList.remove('shake'), 300)
+    }
 
-    const { data: perfil } = await supabase
-      .from('perfiles')
-      .select('debe_cambiar_password')
-      .eq('user_id', data.user.id)
-      .maybeSingle()
+    movilEl.addEventListener('input', () => {
+      movilEl.value = movilEl.value.replace(/\D/g, '')
+      hideError()
+    })
+    passwordEl.addEventListener('input', hideError)
 
-    window.location.href = perfil?.debe_cambiar_password
-      ? '/dashboard/seguridad?primer-login=1'
-      : redirectTo
-  })
-</script>
+    toggleBtn.addEventListener('click', () => {
+      const show = passwordEl.type === 'password'
+      passwordEl.type = show ? 'text' : 'password'
+      document.getElementById('eye-icon')!.innerHTML = show
+        ? `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/>`
+        : `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>`
+    })
+
+    ;[movilEl, passwordEl].forEach(el =>
+      el.addEventListener('keydown', e => { if (e.key === 'Enter') btnLogin.click() })
+    )
+
+    btnLogin.addEventListener('click', async () => {
+      const prefijo  = prefijoEl.value.trim()
+      const movil    = movilEl.value.trim()
+      const password = passwordEl.value
+
+      if (!movil)         { showError('Ingresa tu número de móvil.'); movilEl.focus(); return }
+      if (movil.length < 7) { showError('El número parece muy corto.'); movilEl.focus(); return }
+      if (!password)      { showError('Ingresa tu contraseña.'); passwordEl.focus(); return }
+
+      const email = `${prefijo}${movil}@tarjetadigital.app`
+      btnLogin.disabled    = true
+      btnLogin.textContent = 'Verificando...'
+      hideError()
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+
+      if (error) {
+        const msg =
+          error.message.includes('Invalid login')     ? 'Número o contraseña incorrectos.' :
+          error.message.includes('Email not confirm') ? 'Cuenta no confirmada. Contacta al administrador.' :
+          error.message.includes('Too many requests') ? 'Demasiados intentos. Espera un momento.' :
+          'Error al ingresar. Intenta de nuevo.'
+        showError(msg)
+        btnLogin.disabled    = false
+        btnLogin.textContent = 'Ingresar'
+        passwordEl.value     = ''
+        passwordEl.focus()
+        return
+      }
+
+      btnLogin.textContent = '✓ Ingresando...'
+
+      const { data: perfil } = await supabase
+        .from('perfiles')
+        .select('debe_cambiar_password')
+        .eq('user_id', data.user.id)
+        .maybeSingle()
+
+      window.location.href = perfil?.debe_cambiar_password
+        ? '/dashboard/seguridad?primer-login=1'
+        : redirectTo
+    })
+  </script>
+</body>
+</html>
