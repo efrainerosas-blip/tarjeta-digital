@@ -301,5 +301,7 @@ const { data: items } = perfilId
     closeModal()
     setTimeout(() => window.location.reload(), 500)
   })
-  initDragAndDrop('lista-items', tabla, sb);
+  document.addEventListener('DOMContentLoaded', () => {
+    initDragAndDrop('lista-items', tabla, sb);
+  });
 </script>

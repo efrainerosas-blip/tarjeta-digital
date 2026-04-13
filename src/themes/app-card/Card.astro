@@ -1,8 +1,6 @@
 ---
 // src/themes/app-card/Card.astro
 // THEME: App Card — Cinematográfico
-// Prefijo CSS: ac-
-// SIN html/head/body — CardLayout los provee
 
 import type { CardProps } from '../types'
 
@@ -432,7 +430,7 @@ function icon(p: string) {
     {perfil.bio && <div class="ac-bio">{perfil.bio}</div>}
 
     {servicios.length > 0 && (
-      <details class="ac-acc" open>
+      <details class="ac-acc">
         <summary>
           <div class="ac-acc-left">
             <div class="ac-acc-emoji">⚡</div>
