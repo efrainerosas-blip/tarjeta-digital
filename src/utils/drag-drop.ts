@@ -29,40 +29,39 @@ export function initDragAndDrop(
       isSaving = true;
       sortableInstance.option('disabled', true);
       
-      const elToast = window.toast('Guardando nuevo orden...', 'info');
+      window.toast('Guardando nuevo orden...', 'info');
 
       try {
-        const updates = elementos
-          .map((el, index) => {
-            const id = (el as HTMLElement).dataset.id;
-            if (!id) return null;
-            return { id, orden: index + 1 };
-          })
-          .filter(Boolean);
+        const promesasUpdate = elementos.map((el, index) => {
+          const id = (el as HTMLElement).dataset.id;
+          if (!id) return null;
+          
+          return supabaseClient
+            .from(tabla)
+            .update({ orden: index + 1 })
+            .eq('id', id);
+        }).filter(Boolean);
 
-        const { error } = await supabaseClient.from(tabla).upsert(updates);
-
-        if (error) throw error;
+        const resultados = await Promise.all(promesasUpdate);
+        const algunError = resultados.find((r: any) => r && r.error);
+        if (algunError) throw algunError.error;
 
         window.toast('Orden actualizado correctamente', 'success');
 
       } catch (error: any) {
         window.toast('Error al reordenar: ' + error.message, 'error');
         
-        // 2. ROLLBACK: Si falla, devolvemos visualmente el elemento a donde estaba
         const itemMove = evt.item;
         const oldParent = evt.from;
         const referenceNode = oldParent.children[evt.oldIndex!];
         
-        // Lo insertamos de vuelta en su posición original
         if (referenceNode) {
           oldParent.insertBefore(itemMove, referenceNode);
         } else {
-          oldParent.appendChild(itemMove); // Si era el último
+          oldParent.appendChild(itemMove);
         }
         
       } finally {
-        // 3. Desbloqueamos la lista pase lo que pase
         isSaving = false;
         sortableInstance.option('disabled', false);
       }
