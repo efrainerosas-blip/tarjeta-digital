@@ -9,7 +9,7 @@ import type { CardProps } from '../types'
 
 const {
   perfil, experiencia, estudios, habilidades,
-  servicios, proyectos, redes, logros, capacitaciones,
+  servicios, proyectos, redes, logros, capacitaciones, referencias,
 } = Astro.props as CardProps
 
 const nombre = [perfil.nombre, perfil.apellidos].filter(Boolean).join(' ')
@@ -745,6 +745,37 @@ function redLabel(red: { plataforma: string; url: string }): string {
                     Ver certificado →
                   </a>
                 )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {referencias && referencias.length > 0 && (
+      <div class="card">
+        <div class="card-title">Referencias Profesionales</div>
+        <div class="caps">
+          {referencias.map(r => (
+            <div class="cap-item">
+              <div class="cap-dot" style="background: #10b981; margin-top: 6px;"></div> 
+              <div style="flex:1;">
+                <div class="cap-name">{r.nombre}</div>
+                {(r.cargo || r.empresa) && <div class="cap-inst">{r.cargo} {r.empresa ? `en ${r.empresa}` : ''}</div>}
+                {r.observaciones && <div class="tl-desc" style="font-style: italic;">"{r.observaciones}"</div>}
+                
+                <div style="display:flex; gap:12px; margin-top:8px; flex-wrap:wrap;">
+                  {r.telefono && (
+                    <a href={`tel:${r.telefono.replace(/\s/g, '')}`} class="cap-cert" style="color: #10b981;">
+                      📞 {r.telefono}
+                    </a>
+                  )}
+                  {r.email && (
+                    <a href={`mailto:${r.email}`} class="cap-cert" style="color: #6366f1;">
+                      ✉️ Correo
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
           ))}
