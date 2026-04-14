@@ -82,6 +82,16 @@ export interface Perfil {
     fecha?: string | null
     certificado_url?: string | null
   }
+
+  export interface Referencia {
+    id: string
+    nombre: string
+    empresa?: string | null
+    cargo?: string | null
+    telefono?: string | null
+    email?: string | null
+    observaciones?: string | null
+  }
   
   // Props que recibe CADA Card.astro de cada theme.
   // El slug/index.astro pasa exactamente esto — ni más ni menos.
@@ -95,4 +105,5 @@ export interface Perfil {
     redes: Red[]
     logros: Logro[]
     capacitaciones: Capacitacion[]
+    referencias: Referencia[]
   }

@@ -6,7 +6,7 @@ import type { CardProps } from '../types'
 
 const {
   perfil, experiencia, estudios, habilidades,
-  servicios, proyectos, redes, logros, capacitaciones,
+  servicios, proyectos, redes, logros, capacitaciones, referencias,
 } = Astro.props as CardProps
 
 const accent = perfil.color_primario ?? '#2563eb'
@@ -589,6 +589,45 @@ function icon(p: string) {
                   {c.institucion && <div class="ac-cap-inst">{c.institucion}</div>}
                   {c.fecha && <div class="ac-cap-fecha">{c.fecha}</div>}
                   {c.certificado_url && <a href={c.certificado_url} target="_blank" rel="noopener noreferrer" class="ac-cap-cert">Ver certificado →</a>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </details>
+    )}
+
+    {referencias && referencias.length > 0 && (
+      <details class="ac-acc">
+        <summary>
+          <div class="ac-acc-left">
+            <div class="ac-acc-emoji">🤝</div>
+            <div><div class="ac-acc-title">Referencias</div><div class="ac-acc-count">{referencias.length} {referencias.length === 1 ? 'contacto' : 'contactos'}</div></div>
+          </div>
+          <svg class="ac-chevron" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </summary>
+        <div class="ac-acc-body">
+          <div class="ac-caps">
+            {referencias.map(r => (
+              <div class="ac-cap">
+                <div class="ac-cap-dot" style="background:var(--cyan); box-shadow:0 0 5px var(--cyan);"></div>
+                <div style="flex:1;">
+                  <div class="ac-cap-name">{r.nombre}</div>
+                  {(r.cargo || r.empresa) && <div class="ac-cap-inst">{r.cargo} {r.empresa ? `en ${r.empresa}` : ''}</div>}
+                  {r.observaciones && <p style="font-size:12px; color:rgba(255,255,255,.48); margin-top:4px; font-style:italic;">"{r.observaciones}"</p>}
+                  
+                  <div style="display:flex; gap:12px; margin-top:8px; flex-wrap:wrap;">
+                    {r.telefono && (
+                      <a href={`tel:${r.telefono.replace(/\s/g, '')}`} style="display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; color:var(--accent); text-decoration:none;">
+                        📞 Contactar
+                      </a>
+                    )}
+                    {r.email && (
+                      <a href={`mailto:${r.email}`} style="display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; color:var(--cyan); text-decoration:none;">
+                        ✉️ Enviar correo
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
