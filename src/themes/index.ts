@@ -11,6 +11,7 @@ import AppCard    from './app-card/Card.astro'
 import ModernBlue from './modern-blue/Card.astro'
 import CleanWhite from './clean-white/Card.astro'
 import GeniusCard from './genius-card/Card.astro'
+import TealWave from './teal-wave/Card.astro'
 
 export interface ThemeMeta {
   id:             string
@@ -62,6 +63,16 @@ export const THEMES: ThemeMeta[] = [
     preview_accent: '#7C3AED',
     etiquetas:      ['oscuro', 'elegante', 'púrpura'],
     componente:     GeniusCard,
+    premium:        false,
+  },
+  {
+    id:             'teal-wave',
+    nombre:         'Teal Wave',
+    descripcion:    'Foto hero a pantalla completa, ola SVG curva teal, iconos de contacto circulares y barra de acción fija.',
+    preview_bg:     '#0A7075',
+    preview_accent: '#ffffff',
+    etiquetas:      ['teal', 'profesional', 'médico', 'ola'],
+    componente:     TealWave,
     premium:        false,
   },
 ]

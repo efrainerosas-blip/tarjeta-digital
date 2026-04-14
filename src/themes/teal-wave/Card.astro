@@ -1,0 +1,892 @@
+---
+// src/themes/teal-wave/Card.astro
+// THEME: Teal Wave — Foto hero con ola curva, iconos de contacto y secciones elegantes
+
+import type { CardProps } from '../types'
+
+const {
+  perfil, experiencia, estudios, habilidades,
+  servicios, proyectos, redes, logros, capacitaciones, referencias,
+} = Astro.props as CardProps
+
+const accent  = perfil.color_primario ?? '#0A7075'
+const nombre  = [perfil.nombre, perfil.apellidos].filter(Boolean).join(' ')
+const foto    = perfil.foto_url || null
+
+const ICONOS: Record<string, string> = {
+  LinkedIn:    `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>`,
+  GitHub:      `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>`,
+  'Twitter/X': `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`,
+  Instagram:   `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>`,
+  Facebook:    `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>`,
+  WhatsApp:    `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`,
+  Telegram:    `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>`,
+  YouTube:     `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>`,
+  TikTok:      `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>`,
+  Portfolio:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>`,
+  Behance:     `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.938 4.503c.702 0 1.34.06 1.92.188.577.13 1.07.33 1.485.61.41.28.733.65.96 1.12.225.47.34 1.05.34 1.73 0 .74-.17 1.36-.507 1.86-.338.5-.837.9-1.502 1.22.906.26 1.576.72 2.022 1.37.448.66.665 1.45.665 2.36 0 .75-.13 1.39-.41 1.93-.28.55-.67 1-1.16 1.35-.49.36-1.065.62-1.72.78-.655.16-1.35.25-2.065.25H0V4.51h6.938v-.007zM16.94 16.665c.44.428 1.073.643 1.894.643.59 0 1.1-.148 1.53-.447.424-.29.68-.61.78-.94h2.588c-.403 1.28-1.048 2.2-1.92 2.75-.878.57-1.94.85-3.18.85-1.48 0-2.7-.48-3.654-1.43-.96-.95-1.43-2.28-1.43-3.97 0-1.64.49-2.95 1.46-3.93.97-.97 2.2-1.45 3.68-1.45 1.5 0 2.69.55 3.597 1.64.9 1.09 1.35 2.49 1.35 4.2H16.34c.04.86.26 1.508.7 1.936l-.1.097zm-9.975-6.34h-4.03v2.93h4.01c.547 0 1.006-.12 1.37-.38.36-.25.54-.66.54-1.23 0-.59-.18-1.01-.54-1.25-.36-.24-.81-.07-1.35-.07zm.536-4.55H2.934v2.58h4.01c.458 0 .82-.1 1.096-.3.27-.2.407-.54.407-1.02 0-.48-.143-.82-.43-1.02-.285-.19-.655-.24-1.11-.24h.01zm8.965 3.81c-.45.426-.7 1.056-.75 1.89h4.38c-.1-.85-.38-1.49-.86-1.9-.47-.42-1.05-.63-1.73-.63-.73 0-1.3.21-1.74.64h.7z"/></svg>`,
+  Dribbble:    `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 24C5.385 24 0 18.615 0 12S5.385 0 12 0s12 5.385 12 12-5.385 12-12 12zm10.12-10.358c-.35-.11-3.17-.953-6.384-.438 1.34 3.684 1.887 6.684 1.992 7.308 2.3-1.555 3.936-4.02 4.395-6.87zm-6.115 7.808c-.153-.9-.75-4.032-2.19-7.77l-.066.02c-5.79 2.015-7.86 6.025-8.048 6.39 1.73 1.35 3.92 2.166 6.298 2.166 1.42 0 2.77-.29 4-.814zm-11.62-2.13c.232-.4 3.045-5.055 8.332-6.765.135-.045.27-.084.405-.12-.26-.585-.54-1.167-.832-1.74C7.17 11.775 2.206 11.71 1.756 11.7l-.004.312c0 2.633.998 5.037 2.634 6.855zm-2.42-8.955c.46.008 4.683.026 9.477-1.248-1.698-3.018-3.53-5.558-3.8-5.928-2.868 1.35-5.01 3.99-5.676 7.18zM9.6 2.052c.282.38 2.145 2.914 3.822 6 3.645-1.365 5.19-3.44 5.373-3.702-1.81-1.61-4.19-2.586-6.795-2.586-.825 0-1.63.1-2.4.285zm10.335 3.483c-.218.29-1.935 2.493-5.724 4.04.24.49.47.985.68 1.486.08.18.15.36.22.53 3.41-.43 6.8.26 7.14.33-.02-2.42-.88-4.64-2.31-6.386z"/></svg>`,
+}
+function icon(p: string) {
+  return ICONOS[p] ?? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>`
+}
+
+// Color derivados del accent para la ola y gradientes
+---
+
+<link rel="preconnect" href="https://fonts.googleapis.com" slot="head" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin slot="head" />
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" slot="head" />
+
+<style is:inline define:vars={{ accent }}>
+
+  /* ── RESET & BASE ──────────────────────────────────────────── */
+  .tw-page {
+    max-width: 420px;
+    margin: 0 auto;
+    min-height: 100vh;
+    font-family: 'Nunito', sans-serif;
+    background: #F0F4F8;
+    color: #1a2e35;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* ── HERO: zona teal con foto ──────────────────────────────── */
+  .tw-hero {
+    position: relative;
+    width: 100%;
+    background: var(--accent);
+    overflow: hidden;
+    /* Altura generosa para foto + datos */
+    padding-bottom: 0;
+  }
+
+  /* Ruido sutil sobre el teal */
+  .tw-hero::before {
+    content: '';
+    position: absolute; inset: 0; z-index: 1;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    background-size: 180px;
+    pointer-events: none;
+    opacity: .5;
+  }
+
+  /* Orbe de luz en esquina superior derecha */
+  .tw-hero::after {
+    content: '';
+    position: absolute; top: -60px; right: -60px; z-index: 0;
+    width: 240px; height: 240px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Foto hero — ocupa todo el ancho, centrada */
+  .tw-photo-wrap {
+    position: relative; z-index: 2;
+    width: 100%;
+    height: 340px;
+    overflow: hidden;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  .tw-photo {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    display: block;
+    /* Fade sutil en la parte inferior para que se mezcle con la ola */
+    mask-image: linear-gradient(to bottom, black 55%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 55%, transparent 100%);
+  }
+  /* Placeholder si no hay foto */
+  .tw-photo-placeholder {
+    width: 100%; height: 340px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 6rem; opacity: .25;
+    background: linear-gradient(160deg, rgba(255,255,255,0.08), transparent);
+    position: relative; z-index: 2;
+  }
+
+  /* Logo/icono circular superpuesto sobre la foto */
+  .tw-badge-icon {
+    position: absolute;
+    left: 20px; bottom: -22px;
+    z-index: 10;
+    width: 58px; height: 58px; border-radius: 50%;
+    background: #fff;
+    border: 3px solid var(--accent);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem;
+    animation: tw-popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.3s both;
+  }
+
+  /* ── OLA SVG ── */
+  .tw-wave-wrap {
+    position: relative; z-index: 3;
+    margin-top: -2px; /* evita gap blanco */
+    line-height: 0;
+  }
+  .tw-wave-wrap svg {
+    width: 100%; height: auto; display: block;
+  }
+
+  /* ── DATOS DEL PERFIL (sobre la ola, fondo teal) ─────────── */
+  .tw-identity {
+    position: relative; z-index: 5;
+    /* Fondo teal continúa debajo de la ola */
+    background: var(--accent);
+    padding: 28px 20px 0 20px;
+    margin-top: -120px; /* sube el bloque de texto debajo de la foto */
+    padding-top: 16px;
+  }
+  .tw-name {
+    font-size: clamp(1.8rem, 7vw, 2.2rem);
+    font-weight: 900;
+    color: #fff;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.2);
+    animation: tw-fadeUp 0.5s ease-out 0.1s both;
+  }
+  .tw-role {
+    font-size: 13px; font-weight: 600;
+    color: rgba(255,255,255,0.75);
+    margin-top: 4px;
+    animation: tw-fadeUp 0.5s ease-out 0.16s both;
+  }
+  .tw-company {
+    font-size: 12px; font-weight: 500;
+    color: rgba(255,255,255,0.5);
+    margin-top: 2px;
+    display: flex; align-items: center; gap: 4px;
+    animation: tw-fadeUp 0.5s ease-out 0.2s both;
+  }
+  .tw-company svg { width: 11px; height: 11px; flex-shrink: 0; }
+
+  /* Fila de contacto rápido (iconos circulares blancos) */
+  .tw-contacts {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    padding-bottom: 24px;
+    animation: tw-fadeUp 0.5s ease-out 0.26s both;
+  }
+  .tw-contact-btn {
+    width: 46px; height: 46px; border-radius: 50%;
+    background: rgba(255,255,255,0.95);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent);
+    text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+    flex-shrink: 0;
+  }
+  .tw-contact-btn svg { width: 20px; height: 20px; }
+  .tw-contact-btn:hover {
+    transform: translateY(-3px) scale(1.08);
+    box-shadow: 0 8px 22px rgba(0,0,0,0.22);
+    background: #fff;
+  }
+
+  /* ── OLA INFERIOR — transición a blanco ─────────────────── */
+  .tw-wave-bottom {
+    position: relative; z-index: 4;
+    background: var(--accent);
+    line-height: 0;
+    margin-bottom: -1px;
+  }
+  .tw-wave-bottom svg { width: 100%; height: auto; display: block; }
+
+  /* ── CONTENIDO (zona blanca/gris claro) ─────────────────── */
+  .tw-content {
+    background: #F0F4F8;
+    padding: 20px 16px 60px;
+    display: flex; flex-direction: column; gap: 12px;
+    position: relative; z-index: 5;
+  }
+
+  /* Bio */
+  .tw-bio {
+    background: #fff;
+    border-radius: 18px;
+    padding: 18px 20px;
+    font-size: 14px;
+    color: #3d5a5f;
+    line-height: 1.8;
+    box-shadow: 0 2px 16px rgba(10,112,117,0.07);
+    border-left: 4px solid var(--accent);
+  }
+
+  /* Card de sección genérica */
+  .tw-card {
+    background: #fff;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 2px 16px rgba(10,112,117,0.07);
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .tw-card:hover {
+    box-shadow: 0 8px 30px rgba(10,112,117,0.14);
+    transform: translateY(-1px);
+  }
+
+  /* Header de card (acordeón) */
+  .tw-card summary {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 18px;
+    cursor: pointer; list-style: none; user-select: none;
+    transition: background 0.15s;
+  }
+  .tw-card summary:hover { background: rgba(10,112,117,0.04); }
+  .tw-card summary::-webkit-details-marker { display: none; }
+
+  .tw-card-left { display: flex; align-items: center; gap: 14px; }
+  .tw-card-icon {
+    width: 42px; height: 42px; border-radius: 13px;
+    background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #00c896));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(10,112,117,0.3);
+  }
+  .tw-card-title { font-size: 15px; font-weight: 800; color: #1a2e35; }
+  .tw-card-count { font-size: 11px; font-weight: 600; color: #8faab0; margin-top: 1px; }
+
+  .tw-chevron {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: #F0F4F8;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent); flex-shrink: 0;
+    transition: transform 0.22s, background 0.15s;
+  }
+  details.tw-card[open] .tw-chevron {
+    transform: rotate(180deg);
+    background: var(--accent);
+    color: #fff;
+  }
+  .tw-chevron svg { width: 14px; height: 14px; }
+
+  .tw-card-body {
+    padding: 0 16px 16px;
+    border-top: 1px solid rgba(10,112,117,0.08);
+  }
+
+  /* Timeline */
+  .tw-timeline { display: flex; flex-direction: column; }
+  .tw-tl {
+    padding: 14px 0 14px 20px;
+    border-left: 2px solid rgba(10,112,117,0.2);
+    position: relative;
+    margin-left: 4px;
+  }
+  .tw-tl::before {
+    content: '';
+    position: absolute; left: -6px; top: 20px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #fff;
+    border: 2.5px solid var(--accent);
+    box-shadow: 0 0 0 3px rgba(10,112,117,0.12);
+  }
+  .tw-tl-title  { font-size: 13px; font-weight: 800; color: #1a2e35; }
+  .tw-tl-sub    { font-size: 12px; font-weight: 600; color: #8faab0; margin-top: 2px; }
+  .tw-tl-period {
+    display: inline-flex; font-size: 10px; font-weight: 700;
+    color: var(--accent);
+    background: rgba(10,112,117,0.08);
+    padding: 2px 9px; border-radius: 99px; margin-top: 5px;
+  }
+  .tw-tl-badge {
+    display: inline-flex; font-size: 9px; font-weight: 800;
+    padding: 2px 9px; border-radius: 99px; margin-top: 4px;
+    background: rgba(10,112,117,0.12); color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .tw-tl-desc { font-size: 12px; color: #6a8a90; margin-top: 5px; line-height: 1.6; }
+
+  /* Skills */
+  .tw-skills { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 14px; }
+  .tw-skill {
+    font-size: 12px; font-weight: 700;
+    padding: 6px 14px; border-radius: 99px;
+    background: rgba(10,112,117,0.08);
+    color: var(--accent);
+    border: 1.5px solid rgba(10,112,117,0.18);
+    transition: all 0.15s;
+  }
+  .tw-skill:hover {
+    background: var(--accent); color: #fff;
+    transform: scale(1.05);
+  }
+
+  /* Servicios */
+  .tw-services { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; }
+  .tw-service {
+    display: flex; gap: 13px; align-items: flex-start;
+    padding: 14px 15px;
+    background: #F8FBFC;
+    border: 1.5px solid rgba(10,112,117,0.1);
+    border-radius: 14px;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .tw-service:hover { border-color: var(--accent); transform: translateX(3px); }
+  .tw-service-ico  { font-size: 26px; flex-shrink: 0; line-height: 1; }
+  .tw-service-name { font-size: 13px; font-weight: 800; color: #1a2e35; }
+  .tw-service-desc { font-size: 12px; color: #6a8a90; margin-top: 3px; line-height: 1.5; }
+  .tw-service-price{
+    display: inline-flex; font-size: 12px; font-weight: 800;
+    color: #fff; background: var(--accent);
+    padding: 2px 10px; border-radius: 99px; margin-top: 6px;
+  }
+
+  /* Proyectos */
+  .tw-projects { display: flex; flex-direction: column; gap: 12px; padding-top: 14px; }
+  .tw-project {
+    border-radius: 14px; overflow: hidden;
+    border: 1.5px solid rgba(10,112,117,0.1);
+    background: #F8FBFC;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .tw-project:hover { border-color: var(--accent); box-shadow: 0 4px 16px rgba(10,112,117,0.12); }
+  .tw-project-img  { width: 100%; height: 152px; object-fit: cover; display: block; }
+  .tw-project-body { padding: 13px 14px; }
+  .tw-project-title{ font-size: 13px; font-weight: 800; color: #1a2e35; }
+  .tw-project-desc { font-size: 12px; color: #6a8a90; margin-top: 3px; line-height: 1.5; }
+  .tw-project-link {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 800; color: var(--accent);
+    text-decoration: none; margin-top: 8px;
+    padding: 4px 12px; border-radius: 99px;
+    background: rgba(10,112,117,0.08);
+    transition: background 0.15s;
+  }
+  .tw-project-link:hover { background: var(--accent); color: #fff; }
+
+  /* Logros */
+  .tw-logros { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; }
+  .tw-logro {
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 14px 15px;
+    background: #F8FBFC;
+    border: 1.5px solid rgba(10,112,117,0.1);
+    border-radius: 14px;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .tw-logro:hover { border-color: var(--accent); transform: translateX(3px); }
+  .tw-logro-num {
+    font-size: 2rem; font-weight: 900; line-height: 1;
+    color: rgba(10,112,117,0.2); min-width: 28px; flex-shrink: 0;
+  }
+  .tw-logro-title { font-size: 13px; font-weight: 800; color: #1a2e35; }
+  .tw-logro-desc  { font-size: 12px; color: #6a8a90; margin-top: 3px; line-height: 1.5; }
+  .tw-logro-fecha { font-size: 10px; color: #8faab0; margin-top: 3px; }
+
+  /* Capacitaciones */
+  .tw-caps { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; }
+  .tw-cap {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 13px 15px;
+    background: #F8FBFC;
+    border: 1.5px solid rgba(10,112,117,0.1);
+    border-radius: 14px;
+    transition: border-color 0.15s;
+  }
+  .tw-cap:hover { border-color: var(--accent); }
+  .tw-cap-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--accent); flex-shrink: 0; margin-top: 4px;
+    box-shadow: 0 0 0 3px rgba(10,112,117,0.15);
+  }
+  .tw-cap-name  { font-size: 13px; font-weight: 800; color: #1a2e35; }
+  .tw-cap-inst  { font-size: 12px; color: #6a8a90; margin-top: 2px; }
+  .tw-cap-fecha { font-size: 10px; color: #8faab0; margin-top: 3px; }
+  .tw-cap-cert  {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 700; color: var(--accent);
+    text-decoration: none; margin-top: 5px;
+    padding: 3px 10px; border-radius: 99px;
+    background: rgba(10,112,117,0.08);
+  }
+
+  /* Referencias */
+  .tw-refs { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; }
+  .tw-ref {
+    padding: 14px 15px;
+    background: #F8FBFC;
+    border: 1.5px solid rgba(10,112,117,0.1);
+    border-radius: 14px;
+    transition: border-color 0.15s;
+  }
+  .tw-ref:hover { border-color: var(--accent); }
+  .tw-ref-name  { font-size: 13px; font-weight: 800; color: #1a2e35; }
+  .tw-ref-cargo { font-size: 12px; color: #6a8a90; margin-top: 2px; }
+  .tw-ref-obs   { font-size: 12px; color: #8faab0; margin-top: 5px; font-style: italic; line-height: 1.5; }
+  .tw-ref-links { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .tw-ref-link  {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 700; color: var(--accent);
+    text-decoration: none; padding: 4px 10px; border-radius: 99px;
+    background: rgba(10,112,117,0.08);
+  }
+
+  /* ── BARRA INFERIOR FIJA ────────────────────────────────── */
+  .tw-bottom-bar {
+    position: fixed; bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 100%; max-width: 420px;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(10,112,117,0.12);
+    padding: 12px 20px 20px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    z-index: 100;
+    box-shadow: 0 -4px 24px rgba(10,112,117,0.1);
+  }
+  .tw-bar-btn {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 12px 10px;
+    border-radius: 13px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px; font-weight: 800;
+    text-decoration: none; border: none; cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+  }
+  .tw-bar-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .tw-bar-btn-ghost {
+    background: #F0F4F8;
+    color: var(--accent);
+    border: 1.5px solid rgba(10,112,117,0.15);
+  }
+  .tw-bar-btn-ghost:hover { background: rgba(10,112,117,0.08); transform: translateY(-1px); }
+  .tw-bar-btn-solid {
+    background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #00a878));
+    color: #fff;
+    box-shadow: 0 6px 20px rgba(10,112,117,0.4);
+  }
+  .tw-bar-btn-solid:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 8px 26px rgba(10,112,117,0.5); }
+
+  /* Footer */
+  .tw-footer {
+    text-align: center; padding: 16px 24px 90px;
+    font-size: 11px; color: #8faab0; letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+  .tw-footer a { color: var(--accent); text-decoration: none; font-weight: 800; }
+
+  /* Desktop */
+  @media (min-width: 480px) {
+    body { padding: 32px 0 56px; background: #d8e8ea !important; }
+    .tw-page {
+      border-radius: 40px;
+      overflow: hidden;
+      box-shadow: 0 40px 100px rgba(10,112,117,0.25), 0 0 0 1px rgba(10,112,117,0.1);
+    }
+    .tw-bottom-bar { border-radius: 0 0 40px 40px; }
+  }
+
+  /* Animaciones */
+  @keyframes tw-fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes tw-popIn {
+    from { opacity: 0; transform: scale(0.5); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+</style>
+
+<div class="tw-page">
+
+  <!-- ── HERO TEAL ─────────────────────────────────────────── -->
+  <div class="tw-hero">
+    <!-- Foto de perfil (ocupa todo el ancho) -->
+    <div class="tw-photo-wrap">
+      {foto
+        ? <img src={foto} alt={nombre} class="tw-photo" />
+        : <div class="tw-photo-placeholder">👤</div>
+      }
+    </div>
+
+    <!-- Badge/icono circular sobre la foto -->
+    <div class="tw-badge-icon">
+      {perfil.icono_profesion ?? '⭐'}
+    </div>
+  </div>
+
+  <!-- Ola SVG: teal → datos de identidad -->
+  <div class="tw-wave-wrap" style="background:#F0F4F8;">
+    <svg viewBox="0 0 420 80" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0,0 L420,0 L420,40 Q330,80 210,60 Q90,40 0,70 Z" fill="var(--accent)"/>
+    </svg>
+  </div>
+
+  <!-- Datos de identidad: nombre, rol, empresa, contactos -->
+  <!-- Este bloque va ANTES de la ola visualmente, pegado al teal -->
+  <div style="background:var(--accent); margin-top:-82px; position:relative; z-index:3; padding: 0 20px 28px 20px;">
+
+    <!-- Nombre y datos -->
+    <div style="padding-top: 10px;">
+      <h1 class="tw-name">{nombre}</h1>
+      {perfil.titulo_profesional && <p class="tw-role">{perfil.titulo_profesional}</p>}
+      {perfil.empresa && (
+        <p class="tw-company">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          </svg>
+          {perfil.empresa}
+        </p>
+      )}
+      {perfil.ubicacion && (
+        <p class="tw-company" style="margin-top:3px;">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+          </svg>
+          {perfil.ubicacion}
+        </p>
+      )}
+    </div>
+
+    <!-- Iconos de contacto / redes (círculos blancos) -->
+    <div class="tw-contacts">
+      {perfil.email && (
+        <a href={`mailto:${perfil.email}`} class="tw-contact-btn" title="Email">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+        </a>
+      )}
+      {perfil.telefono && (
+        <a href={`tel:${perfil.telefono.replace(/\s/g,'')}`} class="tw-contact-btn" title="Teléfono">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.948V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+          </svg>
+        </a>
+      )}
+      {redes.map(red => (
+        <a href={red.url} target="_blank" rel="noopener noreferrer"
+           class="tw-contact-btn track-red" data-plataforma={red.plataforma} title={red.plataforma}>
+          <Fragment set:html={icon(red.plataforma)} />
+        </a>
+      ))}
+    </div>
+  </div>
+
+  <!-- Segunda ola: teal → fondo gris claro del contenido -->
+  <div class="tw-wave-bottom">
+    <svg viewBox="0 0 420 70" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0,0 Q105,70 210,40 Q315,10 420,50 L420,70 L0,70 Z" fill="#F0F4F8"/>
+    </svg>
+  </div>
+
+  <!-- ── CONTENIDO (zona clara) ────────────────────────────── -->
+  <div class="tw-content">
+
+    {perfil.bio && <div class="tw-bio">{perfil.bio}</div>}
+
+    {servicios.length > 0 && (
+      <details class="tw-card">
+        <summary>
+          <div class="tw-card-left">
+            <div class="tw-card-icon">⚡</div>
+            <div>
+              <div class="tw-card-title">Servicios</div>
+              <div class="tw-card-count">{servicios.length} {servicios.length===1?'servicio':'servicios'}</div>
+            </div>
+          </div>
+          <div class="tw-chevron">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </div>
+        </summary>
+        <div class="tw-card-body">
+          <div class="tw-services">
+            {servicios.map(s => (
+              <div class="tw-service">
+                {s.icono && <div class="tw-service-ico">{s.icono}</div>}
+                <div>
+                  <div class="tw-service-name">{s.nombre}</div>
+                  {s.descripcion && <p class="tw-service-desc">{s.descripcion}</p>}
+                  {s.precio_referencial && <div class="tw-service-price">{s.precio_referencial}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </details>
+    )}
+
+    {experiencia.length > 0 && (
+      <details class="tw-card">
+        <summary>
+          <div class="tw-card-left">
+            <div class="tw-card-icon">💼</div>
+            <div>
+              <div class="tw-card-title">Experiencia</div>
+              <div class="tw-card-count">{experiencia.length} {experiencia.length===1?'posición':'posiciones'}</div>
+            </div>
+          </div>
+          <div class="tw-chevron">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </div>
+        </summary>
+        <div class="tw-card-body">
+          <div class="tw-timeline">
+            {experiencia.map(exp => (
+              <div class="tw-tl">
+                <div class="tw-tl-title">{exp.cargo}</div>
+                <div class="tw-tl-sub">{exp.empresa}</div>
+                {exp.periodo && <div class="tw-tl-period">{exp.periodo}</div>}
+                {exp.es_trabajo_actual && <div class="tw-tl-badge">Actual</div>}
+                {exp.descripcion && <p class="tw-tl-desc">{exp.descripcion}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      </details>
+    )}
+
+    {estudios.length > 0 && (
+      <details class="tw-card">
+        <summary>
+          <div class="tw-card-left">
+            <div class="tw-card-icon">🎓</div>
+            <div>
+              <div class="tw-card-title">Educación</div>
+              <div class="tw-card-count">{estudios.length} {estudios.length===1?'estudio':'estudios'}</div>
+            </div>
+          </div>
+          <div class="tw-chevron">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </div>
+        </summary>
+        <div class="tw-card-body">
+          <div class="tw-timeline">
+            {estudios.map(e => (
+              <div class="tw-tl">
+                <div class="tw-tl-title">{e.titulo_obtenido ?? e.nivel}</div>
+                <div class="tw-tl-sub">{e.institucion}</div>
+                {(e.fecha_inicio || e.fecha_fin) && (
+                  <div class="tw-tl-period">{e.fecha_inicio ?? ''}{e.fecha_fin ? ` — ${e.fecha_fin}` : ''}</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </details>
+    )}
+
+    {habilidades.length > 0 && (
+      <details class="tw-card">
+        <summary>
+          <div class="tw-card-left">
+            <div class="tw-card-icon">🧠</div>
+            <div>
+              <div class="tw-card-title">Habilidades</div>
+              <div class="tw-card-count">{habilidades.length} habilidades</div>
+            </div>
+          </div>
+          <div class="tw-chevron">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </div>
+        </summary>
+        <div class="tw-card-body">
+          <div class="tw-skills">
+            {habilidades.map(h => <span class="tw-skill">{h.nombre}</span>)}
+          </div>
+        </div>
+      </details>
+    )}
+
+    {proyectos.length > 0 && (
+      <details class="tw-card">
+        <summary>
+          <div class="tw-card-left">
+            <div class="tw-card-icon">🗂</div>
+            <div>
+              <div class="tw-card-title">Proyectos</div>
+              <div class="tw-card-count">{proyectos.length} {proyectos.length===1?'proyecto':'proyectos'}</div>
+            </div>
+          </div>
+          <div class="tw-chevron">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </div>
+        </summary>
+        <div class="tw-card-body">
+          <div class="tw-projects">
+            {proyectos.map(p => (
+              <div class="tw-project">
+                {p.imagen_url && <img src={p.imagen_url} alt={p.titulo} class="tw-project-img" loading="lazy"/>}
+                <div class="tw-project-body">
+                  <div class="tw-project-title">{p.titulo}</div>
+                  {p.descripcion && <p class="tw-project-desc">{p.descripcion}</p>}
+                  {p.enlace_url && (
+                    <a href={p.enlace_url} target="_blank" rel="noopener noreferrer"
+                       class="tw-project-link track-proyecto" data-titulo={p.titulo}>
+                      Ver proyecto →
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </details>
+    )}
+
+    {logros.length > 0 && (
+      <details class="tw-card">
+        <summary>
+          <div class="tw-card-left">
+            <div class="tw-card-icon">🏆</div>
+            <div>
+              <div class="tw-card-title">Logros</div>
+              <div class="tw-card-count">{logros.length} {logros.length===1?'logro':'logros'}</div>
+            </div>
+          </div>
+          <div class="tw-chevron">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </div>
+        </summary>
+        <div class="tw-card-body">
+          <div class="tw-logros">
+            {logros.map((l, i) => (
+              <div class="tw-logro">
+                <div class="tw-logro-num">0{i+1}</div>
+                <div>
+                  <div class="tw-logro-title">{l.titulo}</div>
+                  {l.descripcion && <p class="tw-logro-desc">{l.descripcion}</p>}
+                  {l.fecha && <div class="tw-logro-fecha">{l.fecha}</div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </details>
+    )}
+
+    {capacitaciones.length > 0 && (
+      <details class="tw-card">
+        <summary>
+          <div class="tw-card-left">
+            <div class="tw-card-icon">📚</div>
+            <div>
+              <div class="tw-card-title">Cursos</div>
+              <div class="tw-card-count">{capacitaciones.length} cursos</div>
+            </div>
+          </div>
+          <div class="tw-chevron">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </div>
+        </summary>
+        <div class="tw-card-body">
+          <div class="tw-caps">
+            {capacitaciones.map(c => (
+              <div class="tw-cap">
+                <div class="tw-cap-dot"></div>
+                <div>
+                  <div class="tw-cap-name">{c.nombre}</div>
+                  {c.institucion && <div class="tw-cap-inst">{c.institucion}</div>}
+                  {c.fecha && <div class="tw-cap-fecha">{c.fecha}</div>}
+                  {c.certificado_url && (
+                    <a href={c.certificado_url} target="_blank" rel="noopener noreferrer" class="tw-cap-cert">
+                      Ver certificado →
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </details>
+    )}
+
+    {referencias && referencias.length > 0 && (
+      <details class="tw-card">
+        <summary>
+          <div class="tw-card-left">
+            <div class="tw-card-icon">🤝</div>
+            <div>
+              <div class="tw-card-title">Referencias</div>
+              <div class="tw-card-count">{referencias.length} {referencias.length===1?'contacto':'contactos'}</div>
+            </div>
+          </div>
+          <div class="tw-chevron">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </div>
+        </summary>
+        <div class="tw-card-body">
+          <div class="tw-refs">
+            {referencias.map(r => (
+              <div class="tw-ref">
+                <div class="tw-ref-name">{r.nombre}</div>
+                {(r.cargo || r.empresa) && (
+                  <div class="tw-ref-cargo">{r.cargo}{r.empresa ? ` · ${r.empresa}` : ''}</div>
+                )}
+                {r.observaciones && <p class="tw-ref-obs">"{r.observaciones}"</p>}
+                <div class="tw-ref-links">
+                  {r.telefono && (
+                    <a href={`tel:${r.telefono.replace(/\s/g,'')}`} class="tw-ref-link">📞 Llamar</a>
+                  )}
+                  {r.email && (
+                    <a href={`mailto:${r.email}`} class="tw-ref-link">✉️ Email</a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </details>
+    )}
+
+  </div>
+
+  <footer class="tw-footer">
+    Creado con <a href="/">CardVirtual</a>
+  </footer>
+
+  <!-- ── BARRA INFERIOR FIJA ─────────────────────────────── -->
+  <div class="tw-bottom-bar">
+    {perfil.cv_pdf_url && (
+      <a href={perfil.cv_pdf_url} target="_blank" rel="noopener noreferrer"
+         class="tw-bar-btn tw-bar-btn-ghost track-cv">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Descargar CV
+      </a>
+    )}
+    {perfil.email && (
+      <a href={`mailto:${perfil.email}`} class="tw-bar-btn tw-bar-btn-solid">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+        Contactar
+      </a>
+    )}
+    {!perfil.email && perfil.telefono && (
+      <a href={`tel:${perfil.telefono.replace(/\s/g,'')}`} class="tw-bar-btn tw-bar-btn-solid">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.948V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+        </svg>
+        Llamar
+      </a>
+    )}
+  </div>
+
+</div>
