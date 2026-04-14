@@ -32,6 +32,7 @@ const [
   { data: proyectos },
   { data: redes },
   { data: logros },
+  { data: referencias },
 ] = await Promise.all([
   supabase.from('experiencia_laboral').select('*').eq('perfil_id', perfil.id).order('orden'),
   supabase.from('estudios').select('*').eq('perfil_id', perfil.id).order('orden'),
@@ -41,6 +42,7 @@ const [
   supabase.from('proyectos').select('*').eq('perfil_id', perfil.id).order('orden'),
   supabase.from('redes_sociales').select('*').eq('perfil_id', perfil.id).order('orden').limit(3),
   supabase.from('logros').select('*').eq('perfil_id', perfil.id).order('orden'),
+  supabase.from('referencias').select('*').eq('perfil_id', perfil.id).order('orden'),
 ])
 
 const theme = getTheme(perfil.template_id ?? THEMES[0].id)
@@ -57,6 +59,7 @@ const cardProps = {
   redes:          redes          ?? [],
   logros:         logros         ?? [],
   capacitaciones: capacitaciones ?? [],
+  referencias:    referencias    ?? [],
 }
 ---
 
