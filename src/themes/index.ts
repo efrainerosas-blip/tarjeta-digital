@@ -10,6 +10,7 @@ import type { AstroComponentFactory } from 'astro/runtime/server/index.js'
 import AppCard    from './app-card/Card.astro'
 import ModernBlue from './modern-blue/Card.astro'
 import CleanWhite from './clean-white/Card.astro'
+import GeniusCard from './genius-card/Card.astro'
 
 export interface ThemeMeta {
   id:             string
@@ -51,6 +52,16 @@ export const THEMES: ThemeMeta[] = [
     preview_accent: '#4f46e5',
     etiquetas:      ['limpio', 'blanco', 'moderno'],
     componente:     CleanWhite,
+    premium:        false,
+  },
+  {
+    id:             'genius-card',
+    nombre:         'Genius Card',
+    descripcion:    'Tarjeta oscura elegante con gradiente púrpura, avatar circular con glow y secciones colapsables.',
+    preview_bg:     '#0E0B14',
+    preview_accent: '#7C3AED',
+    etiquetas:      ['oscuro', 'elegante', 'púrpura'],
+    componente:     GeniusCard,
     premium:        false,
   },
 ]
