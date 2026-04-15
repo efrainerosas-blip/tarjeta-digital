@@ -4,6 +4,7 @@ export const prerender = false
 import DashboardLayout from '../../layouts/DashboardLayout.astro'
 import { createServerClient } from '@supabase/ssr'
 import FotoEditorModal from '../../components/perfil/FotoEditorModal.astro'
+import QRCard from '../../components/QRCard.astro'
 
 const supabase = createServerClient(
   import.meta.env.PUBLIC_SUPABASE_URL,
@@ -24,6 +25,10 @@ const { data: perfil } = await supabase
   .select('*')
   .eq('user_id', user.id)
   .single()
+
+const cardUrl = perfil?.slug
+  ? `${Astro.url.origin}/${perfil.slug}`
+  : null
 ---
 
 <DashboardLayout title="Perfil" tabActivo="perfil" user={{ email: user.email!, id: user.id }} slug={perfil?.slug}>
@@ -32,6 +37,24 @@ const { data: perfil } = await supabase
     <h1 class="page-title">Tu perfil</h1>
     <p class="page-desc">Esta información aparece en tu tarjeta digital pública.</p>
   </div>
+
+  {perfil?.slug && cardUrl && (
+    <QRCard
+      url={cardUrl}
+      accent={perfil?.color_primario ?? '#4B6CF7'}
+      slug={perfil.slug}
+    />
+  )}
+ 
+  {!perfil?.slug && (
+    <div style="background:var(--bg-3);border:1px dashed var(--border-2);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px">
+      <span style="font-size:20px">🔗</span>
+      <div>
+        <div style="font-weight:600;font-size:14px;color:var(--text-1)">Tu QR aparecerá aquí</div>
+        <div style="font-size:13px;color:var(--text-3);margin-top:2px">Guarda tu perfil con una URL para generar el código QR.</div>
+      </div>
+    </div>
+  )}
 
   {!perfil && (
     <div style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px">

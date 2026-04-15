@@ -1,0 +1,624 @@
+---
+// src/components/QRCard.astro
+// QR inline para el dashboard — muestra el QR directamente en la sección
+// con botones de compartir/descargar y opción de abrir en fullscreen.
+
+interface Props {
+  url:    string   // URL completa de la tarjeta
+  accent: string   // color_primario del perfil
+  slug:   string   // slug del perfil (para mostrar en la UI)
+}
+const { url, accent, slug } = Astro.props
+---
+
+<!-- CDN qrcode.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" is:inline></script>
+
+<div class="section-card" id="qr-dashboard-card">
+  <div class="section-card-title">
+    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <rect x="3"  y="3"  width="7" height="7" rx="1" stroke-width="1.5"/>
+      <rect x="14" y="3"  width="7" height="7" rx="1" stroke-width="1.5"/>
+      <rect x="3"  y="14" width="7" height="7" rx="1" stroke-width="1.5"/>
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M14 14h2v2h-2zM18 14h3M14 18v3M18 18h3v3h-3z"/>
+    </svg>
+    Tu código QR
+    <span id="qr-status-dot" style="width:8px;height:8px;border-radius:50%;background:#10b981;margin-left:auto;box-shadow:0 0 5px #10b981" title="QR activo"></span>
+  </div>
+
+  <!-- Layout: QR a la izquierda, info + acciones a la derecha -->
+  <div id="qr-dash-layout">
+
+    <!-- QR generado inline -->
+    <div id="qr-dash-wrap">
+      <div id="qr-dash-canvas"></div>
+      <!-- Loader -->
+      <div id="qr-dash-loader">
+        <div id="qr-dash-spinner"></div>
+      </div>
+    </div>
+
+    <!-- Info + acciones -->
+    <div id="qr-dash-info">
+      <div id="qr-dash-url-row">
+        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/>
+        </svg>
+        <span id="qr-dash-url-text">{url}</span>
+      </div>
+
+      <p id="qr-dash-hint">
+        Muestra este QR a empleadores o clientes para que accedan a tu tarjeta digital al instante.
+      </p>
+
+      <!-- Botones de acción -->
+      <div id="qr-dash-actions">
+        <button id="qr-dash-share" class="btn btn-primary" style="font-size:12px;padding:8px 14px">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/>
+          </svg>
+          Compartir
+        </button>
+
+        <button id="qr-dash-download" class="btn btn-ghost" style="font-size:12px;padding:8px 14px">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+          </svg>
+          Descargar PNG
+        </button>
+
+        <button id="qr-dash-fullscreen" class="btn btn-ghost" style="font-size:12px;padding:8px 14px" title="Ver QR en pantalla completa">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+          </svg>
+          Pantalla completa
+        </button>
+      </div>
+
+      <!-- Tip de uso -->
+      <div id="qr-dash-tip">
+        <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+        </svg>
+        El QR apunta siempre a tu tarjeta actualizada. Comparte el PNG o captura pantalla.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal fullscreen (mismo estilo que QRWidget) -->
+<div id="qr-dash-modal" role="dialog" aria-modal="true" aria-label="Código QR">
+  <div id="qr-dash-backdrop"></div>
+  <div id="qr-dash-sheet">
+    <div id="qr-dash-handle"></div>
+    <div id="qr-dash-modal-header">
+      <div>
+        <div id="qr-dash-modal-title">Código QR</div>
+        <div id="qr-dash-modal-url">{url}</div>
+      </div>
+      <button id="qr-dash-close" aria-label="Cerrar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div id="qr-dash-modal-canvas-wrap">
+      <div id="qr-dash-modal-canvas"></div>
+    </div>
+    <p id="qr-dash-modal-hint">Apunta la cámara de tu móvil para abrir esta tarjeta</p>
+    <div id="qr-dash-modal-actions">
+      <button id="qr-dash-modal-share" class="qr-dash-btn qr-dash-btn-primary">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/>
+        </svg>
+        Compartir
+      </button>
+      <button id="qr-dash-modal-download" class="qr-dash-btn qr-dash-btn-secondary">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+        </svg>
+        Descargar
+      </button>
+      <button id="qr-dash-modal-copy" class="qr-dash-btn qr-dash-btn-ghost">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="9" y="9" width="13" height="13" rx="2"/>
+          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+        </svg>
+        Copiar enlace
+      </button>
+    </div>
+    <div id="qr-dash-wakelock-row">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="5"/>
+        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+      </svg>
+      <span>Pantalla activa para facilitar escaneo</span>
+      <div id="qr-dash-wakelock-dot"></div>
+    </div>
+    <div id="qr-dash-modal-toast"></div>
+  </div>
+</div>
+
+<style define:vars={{ accent }}>
+  /* ── Card layout ──────────────────────────────────────────── */
+  #qr-dash-layout {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+  }
+
+  /* QR inline */
+  #qr-dash-wrap {
+    position: relative;
+    flex-shrink: 0;
+    width: 160px;
+    height: 160px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow:
+      0 0 0 6px #fff,
+      0 0 0 8px color-mix(in srgb, var(--accent) 15%, transparent),
+      0 4px 16px rgba(0,0,0,.08);
+  }
+  #qr-dash-canvas {
+    width: 160px;
+    height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #qr-dash-canvas canvas,
+  #qr-dash-canvas img {
+    display: block;
+    width: 160px !important;
+    height: 160px !important;
+    border-radius: 8px;
+  }
+  #qr-dash-loader {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,.9);
+    transition: opacity .2s;
+  }
+  #qr-dash-loader.hidden { opacity: 0; pointer-events: none; }
+  #qr-dash-spinner {
+    width: 24px; height: 24px;
+    border: 2.5px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: qr-spin .7s linear infinite;
+  }
+  @keyframes qr-spin { to { transform: rotate(360deg); } }
+
+  /* Info */
+  #qr-dash-info { flex: 1; min-width: 0; }
+
+  #qr-dash-url-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--accent);
+    font-family: var(--font-mono, monospace);
+    background: var(--accent-bg, rgba(75,108,247,.1));
+    border: 1px solid var(--accent-border, rgba(75,108,247,.2));
+    padding: 6px 10px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  #qr-dash-url-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+
+  #qr-dash-hint {
+    font-size: 13px;
+    color: var(--text-3);
+    line-height: 1.6;
+    margin-bottom: 14px;
+  }
+
+  #qr-dash-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  #qr-dash-tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-3);
+    line-height: 1.5;
+    padding: 8px 10px;
+    background: var(--bg-3);
+    border-radius: 8px;
+  }
+  #qr-dash-tip svg { flex-shrink: 0; margin-top: 1px; color: var(--accent); }
+
+  /* ── Modal fullscreen ────────────────────────────────────── */
+  #qr-dash-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .2s;
+  }
+  #qr-dash-modal.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+  #qr-dash-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  #qr-dash-sheet {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 400px;
+    background: var(--bg-2, #fff);
+    border-radius: 24px 24px 0 0;
+    padding: 0 0 env(safe-area-inset-bottom, 16px);
+    transform: translateY(100%);
+    transition: transform .35s cubic-bezier(.34,1.2,.64,1);
+    overflow: hidden;
+    box-shadow: 0 -8px 48px rgba(0,0,0,.15);
+  }
+  #qr-dash-modal.open #qr-dash-sheet { transform: translateY(0); }
+
+  #qr-dash-handle {
+    width: 40px; height: 4px;
+    background: var(--border);
+    border-radius: 99px;
+    margin: 12px auto 0;
+  }
+
+  #qr-dash-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 12px;
+  }
+  #qr-dash-modal-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-1);
+    letter-spacing: -.02em;
+  }
+  #qr-dash-modal-url {
+    font-size: 11px;
+    color: var(--text-3);
+    margin-top: 2px;
+    font-family: monospace;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 220px;
+  }
+  #qr-dash-close {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    background: var(--bg-3);
+    border: none; cursor: pointer;
+    color: var(--text-2);
+    flex-shrink: 0;
+    transition: background .15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #qr-dash-close:hover { background: var(--bg-4); }
+
+  #qr-dash-modal-canvas-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 24px 12px;
+  }
+  #qr-dash-modal-canvas {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 8px var(--bg-2, #fff),
+      0 0 0 10px color-mix(in srgb, var(--accent) 15%, transparent),
+      0 8px 32px rgba(0,0,0,.08);
+  }
+  #qr-dash-modal-canvas canvas,
+  #qr-dash-modal-canvas img {
+    display: block;
+    border-radius: 12px;
+  }
+
+  #qr-dash-modal-hint {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-3);
+    padding: 0 24px 16px;
+    line-height: 1.5;
+  }
+
+  #qr-dash-modal-actions {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 12px;
+  }
+  .qr-dash-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 11px 8px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--font, sans-serif);
+    border: none;
+    cursor: pointer;
+    transition: opacity .15s, transform .1s;
+    -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
+  }
+  .qr-dash-btn:active { transform: scale(.97); }
+  .qr-dash-btn-primary {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+  .qr-dash-btn-primary:hover { opacity: .9; }
+  .qr-dash-btn-secondary {
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent);
+  }
+  .qr-dash-btn-ghost {
+    background: var(--bg-3);
+    color: var(--text-2);
+  }
+
+  #qr-dash-wakelock-row {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 20px 14px;
+    font-size: 11px;
+    color: var(--text-3);
+  }
+  #qr-dash-wakelock-row.visible { display: flex; }
+  #qr-dash-wakelock-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text-3);
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+  #qr-dash-wakelock-dot.active {
+    background: #10b981;
+    box-shadow: 0 0 5px #10b981;
+  }
+
+  #qr-dash-modal-toast {
+    position: absolute;
+    bottom: 80px; left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: var(--text-1);
+    color: var(--bg-2, #fff);
+    font-size: 12px; font-weight: 600;
+    padding: 8px 16px; border-radius: 99px;
+    white-space: nowrap; pointer-events: none;
+    opacity: 0; transition: opacity .2s, transform .2s; z-index: 10;
+  }
+  #qr-dash-modal-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Desktop: modal centrado */
+  @media (min-width: 768px) {
+    #qr-dash-modal { align-items: center; }
+    #qr-dash-sheet {
+      border-radius: 24px;
+      max-width: 360px;
+      transform: scale(.92);
+      transition: transform .25s cubic-bezier(.34,1.2,.64,1), opacity .2s;
+    }
+    #qr-dash-modal.open #qr-dash-sheet { transform: scale(1); }
+    #qr-dash-handle { display: none; }
+  }
+
+  /* Mobile: layout vertical */
+  @media (max-width: 560px) {
+    #qr-dash-layout { flex-direction: column; align-items: center; }
+    #qr-dash-wrap { width: 180px; height: 180px; }
+    #qr-dash-canvas canvas, #qr-dash-canvas img {
+      width: 180px !important;
+      height: 180px !important;
+    }
+    #qr-dash-info { width: 100%; }
+    #qr-dash-actions { justify-content: center; }
+  }
+</style>
+
+<script define:vars={{ url, accent }}>
+  let modalQrGenerado = false
+  let wakeLock        = null
+  let touchStartY     = 0
+
+  const modal       = document.getElementById('qr-dash-modal')
+  const backdrop    = document.getElementById('qr-dash-backdrop')
+  const sheet       = document.getElementById('qr-dash-sheet')
+  const closeBtn    = document.getElementById('qr-dash-close')
+  const modalCanvas = document.getElementById('qr-dash-modal-canvas')
+  const wakeRow     = document.getElementById('qr-dash-wakelock-row')
+  const wakeDot     = document.getElementById('qr-dash-wakelock-dot')
+  const toastEl     = document.getElementById('qr-dash-modal-toast')
+
+  // ── Toast ──────────────────────────────────────────────────
+  function showToast(msg) {
+    toastEl.textContent = msg
+    toastEl.classList.add('show')
+    setTimeout(() => toastEl.classList.remove('show'), 2000)
+  }
+
+  // ── Generar QR inline (160×160) al cargar ──────────────────
+  window.addEventListener('load', () => {
+    if (typeof QRCode === 'undefined') return
+
+    const inlineCanvas = document.getElementById('qr-dash-canvas')
+    const inlineLoader = document.getElementById('qr-dash-loader')
+
+    new QRCode(inlineCanvas, {
+      text:         url,
+      width:        160,
+      height:       160,
+      colorDark:    accent,
+      colorLight:   '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H,
+    })
+
+    requestAnimationFrame(() => {
+      if (inlineLoader) inlineLoader.classList.add('hidden')
+    })
+  })
+
+  // ── Generar QR en modal (240×240, solo primera vez) ────────
+  function generarModalQR() {
+    if (modalQrGenerado || typeof QRCode === 'undefined') return
+    modalQrGenerado = true
+
+    new QRCode(modalCanvas, {
+      text:         url,
+      width:        240,
+      height:       240,
+      colorDark:    accent,
+      colorLight:   '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H,
+    })
+  }
+
+  // ── WakeLock ───────────────────────────────────────────────
+  async function pedirWakeLock() {
+    if (!('wakeLock' in navigator)) return
+    try {
+      wakeLock = await navigator.wakeLock.request('screen')
+      wakeRow.classList.add('visible')
+      wakeDot.classList.add('active')
+      wakeLock.addEventListener('release', () => wakeDot.classList.remove('active'))
+    } catch {}
+  }
+  async function liberarWakeLock() {
+    if (wakeLock) { await wakeLock.release(); wakeLock = null }
+    wakeDot.classList.remove('active')
+  }
+
+  // ── Modal ──────────────────────────────────────────────────
+  function abrirModal() {
+    modal.classList.add('open')
+    document.body.style.overflow = 'hidden'
+    generarModalQR()
+    pedirWakeLock()
+    setTimeout(() => closeBtn.focus(), 300)
+  }
+  function cerrarModal() {
+    modal.classList.remove('open')
+    document.body.style.overflow = ''
+    liberarWakeLock()
+  }
+
+  // ── Compartir ──────────────────────────────────────────────
+  async function compartir() {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: document.title, text: 'Mira mi tarjeta digital', url })
+        return
+      } catch (e) { if (e.name === 'AbortError') return }
+    }
+    await copiarEnlace()
+  }
+
+  // ── Copiar enlace ──────────────────────────────────────────
+  async function copiarEnlace() {
+    try {
+      await navigator.clipboard.writeText(url)
+    } catch {
+      const el = document.createElement('textarea')
+      el.value = url
+      el.style.cssText = 'position:fixed;opacity:0'
+      document.body.appendChild(el)
+      el.select()
+      document.execCommand('copy')
+      document.body.removeChild(el)
+    }
+    ;window['toast']?.('✓ Enlace copiado', 'success')
+    showToast('✓ Enlace copiado')
+  }
+
+  // ── Descargar QR ───────────────────────────────────────────
+  function descargarQR(sourceId) {
+    const wrap  = document.getElementById(sourceId)
+    const canvas = wrap?.querySelector('canvas')
+    const imgEl  = wrap?.querySelector('img')
+
+    const doDownload = (dataUrl) => {
+      const link    = document.createElement('a')
+      link.download = 'qr-cardvirtual.png'
+      link.href     = dataUrl
+      link.click()
+      ;window.toast?.('✓ Enlace copiado', 'success')
+    }
+
+    if (canvas) {
+      doDownload(canvas.toDataURL('image/png'))
+      return
+    }
+    if (imgEl) {
+      const c = document.createElement('canvas')
+      c.width = imgEl.naturalWidth || 240
+      c.height = imgEl.naturalHeight || 240
+      c.getContext('2d').drawImage(imgEl, 0, 0)
+      doDownload(c.toDataURL('image/png'))
+    }
+  }
+
+  // ── Swipe down en modal ────────────────────────────────────
+  sheet.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY }, { passive: true })
+  sheet.addEventListener('touchend',   e => { if (e.changedTouches[0].clientY - touchStartY > 72) cerrarModal() }, { passive: true })
+
+  // ── Eventos botones inline ─────────────────────────────────
+  document.getElementById('qr-dash-share')?.addEventListener('click',      compartir)
+  document.getElementById('qr-dash-download')?.addEventListener('click',   () => descargarQR('qr-dash-canvas'))
+  document.getElementById('qr-dash-fullscreen')?.addEventListener('click', abrirModal)
+
+  // ── Eventos modal ──────────────────────────────────────────
+  closeBtn?.addEventListener('click',   cerrarModal)
+  backdrop?.addEventListener('click',   cerrarModal)
+  document.getElementById('qr-dash-modal-share')?.addEventListener('click',    compartir)
+  document.getElementById('qr-dash-modal-download')?.addEventListener('click', () => descargarQR('qr-dash-modal-canvas'))
+  document.getElementById('qr-dash-modal-copy')?.addEventListener('click',     copiarEnlace)
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && modal.classList.contains('open')) cerrarModal()
+  })
+
+  // Re-solicitar wakeLock si la página vuelve al primer plano
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible' && modal.classList.contains('open') && !wakeLock) {
+      await pedirWakeLock()
+    }
+  })
+</script>
