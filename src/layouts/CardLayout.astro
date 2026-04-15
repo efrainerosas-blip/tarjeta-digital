@@ -1,24 +1,27 @@
 ---
 // src/layouts/CardLayout.astro
-// Layout base para TODAS las tarjetas públicas.
-// NO importa Tailwind ni ningún CSS global de la app.
-// Cada theme inyecta sus propios estilos via <style is:inline>.
+import QRWidget from '../components/QRWidget.astro'
 
 interface Props {
   title:        string
   description?: string
   ogImage?:     string
   bgColor?:     string
+  cardUrl?:     string
+  accentColor?: string
 }
 
 const {
   title,
   description = 'Tarjeta digital profesional',
   ogImage,
-  bgColor = '#ffffff',
+  bgColor      = '#ffffff',
+  cardUrl,
+  accentColor  = '#4B6CF7',
 } = Astro.props
----
 
+const qrUrl = cardUrl ?? Astro.url.href
+---
 <!doctype html>
 <html lang="es">
 <head>
@@ -40,5 +43,6 @@ const {
 </head>
 <body style={`background:${bgColor}`}>
   <slot />
+  <QRWidget url={qrUrl} accent={accentColor} />
 </body>
 </html>

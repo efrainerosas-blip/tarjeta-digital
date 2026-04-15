@@ -68,7 +68,10 @@ const cardProps = {
   description={perfil.bio ?? `Tarjeta digital de ${nombre}`}
   ogImage={perfil.foto_url ?? undefined}
   bgColor={theme.preview_bg}
+  cardUrl={`${Astro.url.origin}/${slug}`}
+  accentColor={perfil.color_primario ?? '#4B6CF7'}
 >
+
   <Card {...cardProps} />
 </CardLayout>
 

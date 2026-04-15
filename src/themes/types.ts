@@ -7,6 +7,8 @@ export interface Perfil {
     nombre: string
     apellidos?: string | null
     titulo_profesional?: string | null
+    empresa?: string | null
+    icono_profesion?: string | null
     bio?: string | null
     foto_url?: string | null
     ubicacion?: string | null
