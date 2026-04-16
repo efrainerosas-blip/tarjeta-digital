@@ -8,16 +8,16 @@ interface Props {
   ogImage?:     string
   bgColor?:     string
   cardUrl?:     string
-  accentColor?: string
+  fotoUrl?:     string | null
 }
 
 const {
   title,
   description = 'Tarjeta digital profesional',
   ogImage,
-  bgColor      = '#ffffff',
+  bgColor  = '#ffffff',
   cardUrl,
-  accentColor  = '#4B6CF7',
+  fotoUrl,
 } = Astro.props
 
 const qrUrl = cardUrl ?? Astro.url.href
@@ -43,6 +43,6 @@ const qrUrl = cardUrl ?? Astro.url.href
 </head>
 <body style={`background:${bgColor}`}>
   <slot />
-  <QRWidget url={qrUrl} accent={accentColor} />
+  <QRWidget url={qrUrl} fotoUrl={fotoUrl} />
 </body>
 </html>

@@ -1,14 +1,17 @@
 ---
 // src/components/QRCard.astro
-// QR inline para el dashboard — muestra el QR directamente en la sección
 // con botones de compartir/descargar y opción de abrir en fullscreen.
 
 interface Props {
-  url:    string   // URL completa de la tarjeta
-  accent: string   // color_primario del perfil
-  slug:   string   // slug del perfil (para mostrar en la UI)
+  url:      string          // URL completa de la tarjeta
+  slug:     string          // slug del perfil
+  fotoUrl?: string | null   // foto del usuario para centrar en el QR
 }
-const { url, accent, slug } = Astro.props
+const { url, slug, fotoUrl } = Astro.props
+// Color corporativo fijo — negro para máximo contraste y escaneo en cualquier luz
+const QR_COLOR = '#000000'
+// Color del FAB y acentos — paleta CardVirtual
+const ACCENT   = '#4B6CF7'
 ---
 
 <!-- CDN qrcode.js -->
@@ -139,7 +142,7 @@ const { url, accent, slug } = Astro.props
   </div>
 </div>
 
-<style define:vars={{ accent }}>
+<style define:vars={{ accent: ACCENT, qrColor: QR_COLOR }}>
   /* ── Card layout ──────────────────────────────────────────── */
   #qr-dash-layout {
     display: flex;
@@ -454,7 +457,7 @@ const { url, accent, slug } = Astro.props
   }
 </style>
 
-<script define:vars={{ url, accent }}>
+<script define:vars={{ url, fotoUrl, QR_COLOR, ACCENT }}>
   let modalQrGenerado = false
   let wakeLock        = null
   let touchStartY     = 0
@@ -475,6 +478,54 @@ const { url, accent, slug } = Astro.props
     setTimeout(() => toastEl.classList.remove('show'), 2000)
   }
 
+  // ── Superponer foto de perfil centrada en el QR ─────────────
+  function superponerLogo(canvasEl, size) {
+    if (!fotoUrl) return
+
+    // Esperar a que qrcode.js haya creado el canvas/img interno
+    setTimeout(() => {
+      const qrCanvas = canvasEl.querySelector('canvas')
+      if (!qrCanvas) return
+
+      const ctx       = qrCanvas.getContext('2d')
+      const logoSize  = Math.round(size * 0.22)   // 22% del QR
+      const logoX     = (size - logoSize) / 2
+      const logoY     = (size - logoSize) / 2
+      const radius    = logoSize / 2
+      const padding   = 4
+
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = () => {
+        // Fondo blanco circular con padding
+        ctx.beginPath()
+        ctx.arc(logoX + radius, logoY + radius, radius + padding, 0, Math.PI * 2)
+        ctx.fillStyle = '#ffffff'
+        ctx.fill()
+
+        // Clip circular para la foto
+        ctx.save()
+        ctx.beginPath()
+        ctx.arc(logoX + radius, logoY + radius, radius, 0, Math.PI * 2)
+        ctx.clip()
+        ctx.drawImage(img, logoX, logoY, logoSize, logoSize)
+        ctx.restore()
+      }
+      img.onerror = () => {
+        // Si falla la imagen, dibujar iniciales o ícono CV
+        ctx.beginPath()
+        ctx.arc(logoX + radius, logoY + radius, radius + padding, 0, Math.PI * 2)
+        ctx.fillStyle = '#ffffff'
+        ctx.fill()
+        ctx.beginPath()
+        ctx.arc(logoX + radius, logoY + radius, radius, 0, Math.PI * 2)
+        ctx.fillStyle = '#4B6CF7'
+        ctx.fill()
+      }
+      img.src = fotoUrl
+    }, 120)
+  }
+
   // ── Generar QR inline (160×160) al cargar ──────────────────
   window.addEventListener('load', () => {
     if (typeof QRCode === 'undefined') return
@@ -486,13 +537,14 @@ const { url, accent, slug } = Astro.props
       text:         url,
       width:        160,
       height:       160,
-      colorDark:    accent,
+      colorDark:    QR_COLOR,   // negro — máximo contraste
       colorLight:   '#ffffff',
       correctLevel: QRCode.CorrectLevel.H,
     })
 
     requestAnimationFrame(() => {
       if (inlineLoader) inlineLoader.classList.add('hidden')
+      superponerLogo(inlineCanvas, 160)
     })
   })
 
@@ -505,10 +557,12 @@ const { url, accent, slug } = Astro.props
       text:         url,
       width:        240,
       height:       240,
-      colorDark:    accent,
+      colorDark:    QR_COLOR,   // negro
       colorLight:   '#ffffff',
       correctLevel: QRCode.CorrectLevel.H,
     })
+
+    setTimeout(() => superponerLogo(modalCanvas, 240), 120)
   }
 
   // ── WakeLock ───────────────────────────────────────────────
@@ -564,7 +618,8 @@ const { url, accent, slug } = Astro.props
       document.execCommand('copy')
       document.body.removeChild(el)
     }
-    ;window['toast']?.('✓ Enlace copiado', 'success')
+    // Toast en el dashboard (usa el sistema global del DashboardLayout)
+    window['toast']?.('✓ Enlace copiado', 'success')
     showToast('✓ Enlace copiado')
   }
 
@@ -579,7 +634,7 @@ const { url, accent, slug } = Astro.props
       link.download = 'qr-cardvirtual.png'
       link.href     = dataUrl
       link.click()
-      ;window.toast?.('✓ Enlace copiado', 'success')
+      window['toast']?.('✓ QR descargado', 'success')
     }
 
     if (canvas) {

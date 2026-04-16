@@ -1,12 +1,14 @@
 ---
 // src/components/QRWidget.astro
-// Props: url (URL a codificar), accent (color primario del perfil)
+// QR flotante para tarjetas públicas — funciona en todos los themes.
 
 interface Props {
-  url:    string
-  accent: string
+  url:      string
+  fotoUrl?: string | null
 }
-const { url, accent } = Astro.props
+const { url, fotoUrl } = Astro.props
+const QR_COLOR = '#000000'   // negro — máximo contraste en cualquier luz
+const ACCENT   = '#4B6CF7'   // azul CardVirtual para el FAB
 ---
 
 <!-- CDN qrcode.js — ~42 KB, sin dependencias -->
@@ -100,7 +102,7 @@ const { url, accent } = Astro.props
   </div>
 </div>
 
-<style define:vars={{ accent }}>
+<style define:vars={{ accent: ACCENT }}>
   /* ── FAB ─────────────────────────────────────────────────── */
   #qr-fab {
     position: fixed;
@@ -384,7 +386,7 @@ const { url, accent } = Astro.props
   }
 </style>
 
-<script define:vars={{ url, accent }}>
+<script define:vars={{ url, fotoUrl, QR_COLOR, ACCENT }}>
   // ── Estado ─────────────────────────────────────────────────
   let qrGenerado    = false
   let wakeLock      = null
@@ -411,24 +413,62 @@ const { url, accent } = Astro.props
     setTimeout(() => toastEl.classList.remove('show'), 2000)
   }
 
+  // ── Superponer foto centrada en el QR ───────────────────────
+  function superponerLogo(canvasEl, size) {
+    if (!fotoUrl) return
+    setTimeout(() => {
+      const qrCanvas = canvasEl.querySelector('canvas')
+      if (!qrCanvas) return
+      const ctx      = qrCanvas.getContext('2d')
+      const logoSize = Math.round(size * 0.22)
+      const logoX    = (size - logoSize) / 2
+      const logoY    = (size - logoSize) / 2
+      const radius   = logoSize / 2
+      const img      = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = () => {
+        ctx.beginPath()
+        ctx.arc(logoX + radius, logoY + radius, radius + 4, 0, Math.PI * 2)
+        ctx.fillStyle = '#ffffff'
+        ctx.fill()
+        ctx.save()
+        ctx.beginPath()
+        ctx.arc(logoX + radius, logoY + radius, radius, 0, Math.PI * 2)
+        ctx.clip()
+        ctx.drawImage(img, logoX, logoY, logoSize, logoSize)
+        ctx.restore()
+      }
+      img.onerror = () => {
+        ctx.beginPath()
+        ctx.arc(logoX + radius, logoY + radius, radius + 4, 0, Math.PI * 2)
+        ctx.fillStyle = '#ffffff'
+        ctx.fill()
+        ctx.beginPath()
+        ctx.arc(logoX + radius, logoY + radius, radius, 0, Math.PI * 2)
+        ctx.fillStyle = ACCENT
+        ctx.fill()
+      }
+      img.src = fotoUrl
+    }, 120)
+  }
+
   // ── Generar QR (solo la primera vez) ────────────────────────
   function generarQR() {
     if (qrGenerado) return
     qrGenerado = true
 
-    // Color del QR: usa el accent del perfil para el foreground
     new QRCode(canvasWrap, {
-      text:           url,
-      width:          240,
-      height:         240,
-      colorDark:      accent,
-      colorLight:     '#ffffff',
-      correctLevel:   QRCode.CorrectLevel.H,  // nivel alto = más robusto
+      text:         url,
+      width:        240,
+      height:       240,
+      colorDark:    QR_COLOR,   // negro — máximo contraste
+      colorLight:   '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H,
     })
 
-    // Ocultar loader cuando el canvas/img esté listo
     requestAnimationFrame(() => {
       loader.classList.add('hidden')
+      superponerLogo(canvasWrap, 240)
     })
   }
 

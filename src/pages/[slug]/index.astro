@@ -69,7 +69,7 @@ const cardProps = {
   ogImage={perfil.foto_url ?? undefined}
   bgColor={theme.preview_bg}
   cardUrl={`${Astro.url.origin}/${slug}`}
-  accentColor={perfil.color_primario ?? '#4B6CF7'}
+  fotoUrl={perfil.foto_url ?? null}
 >
 
   <Card {...cardProps} />

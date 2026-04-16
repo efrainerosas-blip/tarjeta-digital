@@ -40,9 +40,9 @@ const cardUrl = perfil?.slug
 
   {perfil?.slug && cardUrl && (
     <QRCard
-      url={cardUrl}
-      accent={perfil?.color_primario ?? '#4B6CF7'}
-      slug={perfil.slug}
+    url={cardUrl}
+    slug={perfil.slug}
+    fotoUrl={perfil?.foto_url ?? null}
     />
   )}
  
