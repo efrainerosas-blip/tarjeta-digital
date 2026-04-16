@@ -414,42 +414,57 @@ const ACCENT   = '#4B6CF7'   // azul CardVirtual para el FAB
   }
 
   // ── Superponer foto centrada en el QR ───────────────────────
-  function superponerLogo(canvasEl, size) {
+  async function superponerLogo(canvasEl, size) {
     if (!fotoUrl) return
-    setTimeout(() => {
-      const qrCanvas = canvasEl.querySelector('canvas')
-      if (!qrCanvas) return
-      const ctx      = qrCanvas.getContext('2d')
-      const logoSize = Math.round(size * 0.22)
-      const logoX    = (size - logoSize) / 2
-      const logoY    = (size - logoSize) / 2
-      const radius   = logoSize / 2
-      const img      = new Image()
-      img.crossOrigin = 'anonymous'
-      img.onload = () => {
-        ctx.beginPath()
-        ctx.arc(logoX + radius, logoY + radius, radius + 4, 0, Math.PI * 2)
-        ctx.fillStyle = '#ffffff'
-        ctx.fill()
-        ctx.save()
-        ctx.beginPath()
-        ctx.arc(logoX + radius, logoY + radius, radius, 0, Math.PI * 2)
-        ctx.clip()
-        ctx.drawImage(img, logoX, logoY, logoSize, logoSize)
-        ctx.restore()
-      }
-      img.onerror = () => {
-        ctx.beginPath()
-        ctx.arc(logoX + radius, logoY + radius, radius + 4, 0, Math.PI * 2)
-        ctx.fillStyle = '#ffffff'
-        ctx.fill()
-        ctx.beginPath()
-        ctx.arc(logoX + radius, logoY + radius, radius, 0, Math.PI * 2)
-        ctx.fillStyle = ACCENT
-        ctx.fill()
-      }
-      img.src = fotoUrl
-    }, 120)
+
+    // Esperar a que qrcode.js haya pintado el canvas interno
+    await new Promise(r => setTimeout(r, 150))
+
+    const qrCanvas = canvasEl.querySelector('canvas')
+    if (!qrCanvas) return
+
+    const ctx      = qrCanvas.getContext('2d')
+    const logoSize = Math.round(size * 0.22)
+    const logoX    = (size - logoSize) / 2
+    const logoY    = (size - logoSize) / 2
+    const radius   = logoSize / 2
+
+    // Dibujar fondo blanco circular (siempre, como placeholder)
+    ctx.beginPath()
+    ctx.arc(logoX + radius, logoY + radius, radius + 4, 0, Math.PI * 2)
+    ctx.fillStyle = '#ffffff'
+    ctx.fill()
+
+    try {
+      // Descargar la imagen como blob para evitar restricciones CORS
+      const resp = await fetch(fotoUrl)
+      if (!resp.ok) throw new Error('fetch failed')
+      const blob = await resp.blob()
+      const blobUrl = URL.createObjectURL(blob)
+
+      await new Promise((resolve, reject) => {
+        const img = new Image()
+        img.onload = () => {
+          // Clip circular + dibujar foto
+          ctx.save()
+          ctx.beginPath()
+          ctx.arc(logoX + radius, logoY + radius, radius, 0, Math.PI * 2)
+          ctx.clip()
+          ctx.drawImage(img, logoX, logoY, logoSize, logoSize)
+          ctx.restore()
+          URL.revokeObjectURL(blobUrl)
+          resolve()
+        }
+        img.onerror = reject
+        img.src = blobUrl
+      })
+    } catch {
+      // Fallback: círculo azul CardVirtual si la foto no carga
+      ctx.beginPath()
+      ctx.arc(logoX + radius, logoY + radius, radius, 0, Math.PI * 2)
+      ctx.fillStyle = '#4B6CF7'
+      ctx.fill()
+    }
   }
 
   // ── Generar QR (solo la primera vez) ────────────────────────
@@ -466,10 +481,8 @@ const ACCENT   = '#4B6CF7'   // azul CardVirtual para el FAB
       correctLevel: QRCode.CorrectLevel.H,
     })
 
-    requestAnimationFrame(() => {
-      loader.classList.add('hidden')
-      superponerLogo(canvasWrap, 240)
-    })
+    loader.classList.add('hidden')
+    superponerLogo(canvasWrap, 240)
   }
 
   // ── WakeLock — mantiene pantalla activa (Android/Chrome) ────

@@ -479,51 +479,56 @@ const ACCENT   = '#4B6CF7'
   }
 
   // ── Superponer foto de perfil centrada en el QR ─────────────
-  function superponerLogo(canvasEl, size) {
+  async function superponerLogo(canvasEl, size) {
     if (!fotoUrl) return
 
-    // Esperar a que qrcode.js haya creado el canvas/img interno
-    setTimeout(() => {
-      const qrCanvas = canvasEl.querySelector('canvas')
-      if (!qrCanvas) return
+    // Esperar a que qrcode.js haya pintado el canvas interno
+    await new Promise(r => setTimeout(r, 150))
 
-      const ctx       = qrCanvas.getContext('2d')
-      const logoSize  = Math.round(size * 0.22)   // 22% del QR
-      const logoX     = (size - logoSize) / 2
-      const logoY     = (size - logoSize) / 2
-      const radius    = logoSize / 2
-      const padding   = 4
+    const qrCanvas = canvasEl.querySelector('canvas')
+    if (!qrCanvas) return
 
-      const img = new Image()
-      img.crossOrigin = 'anonymous'
-      img.onload = () => {
-        // Fondo blanco circular con padding
-        ctx.beginPath()
-        ctx.arc(logoX + radius, logoY + radius, radius + padding, 0, Math.PI * 2)
-        ctx.fillStyle = '#ffffff'
-        ctx.fill()
+    const ctx      = qrCanvas.getContext('2d')
+    const logoSize = Math.round(size * 0.22)
+    const logoX    = (size - logoSize) / 2
+    const logoY    = (size - logoSize) / 2
+    const radius   = logoSize / 2
 
-        // Clip circular para la foto
-        ctx.save()
-        ctx.beginPath()
-        ctx.arc(logoX + radius, logoY + radius, radius, 0, Math.PI * 2)
-        ctx.clip()
-        ctx.drawImage(img, logoX, logoY, logoSize, logoSize)
-        ctx.restore()
-      }
-      img.onerror = () => {
-        // Si falla la imagen, dibujar iniciales o ícono CV
-        ctx.beginPath()
-        ctx.arc(logoX + radius, logoY + radius, radius + padding, 0, Math.PI * 2)
-        ctx.fillStyle = '#ffffff'
-        ctx.fill()
-        ctx.beginPath()
-        ctx.arc(logoX + radius, logoY + radius, radius, 0, Math.PI * 2)
-        ctx.fillStyle = '#4B6CF7'
-        ctx.fill()
-      }
-      img.src = fotoUrl
-    }, 120)
+    // Dibujar fondo blanco circular (siempre, como placeholder)
+    ctx.beginPath()
+    ctx.arc(logoX + radius, logoY + radius, radius + 4, 0, Math.PI * 2)
+    ctx.fillStyle = '#ffffff'
+    ctx.fill()
+
+    try {
+      // Descargar la imagen como blob para evitar restricciones CORS
+      const resp = await fetch(fotoUrl)
+      if (!resp.ok) throw new Error('fetch failed')
+      const blob = await resp.blob()
+      const blobUrl = URL.createObjectURL(blob)
+
+      await new Promise((resolve, reject) => {
+        const img = new Image()
+        img.onload = () => {
+          // Clip circular + dibujar foto
+          ctx.save()
+          ctx.beginPath()
+          ctx.arc(logoX + radius, logoY + radius, radius, 0, Math.PI * 2)
+          ctx.clip()
+          ctx.drawImage(img, logoX, logoY, logoSize, logoSize)
+          ctx.restore()
+          URL.revokeObjectURL(blobUrl)
+          resolve()
+        }
+        img.onerror = reject
+        img.src = blobUrl
+      })
+    } catch {
+      ctx.beginPath()
+      ctx.arc(logoX + radius, logoY + radius, radius, 0, Math.PI * 2)
+      ctx.fillStyle = '#4B6CF7'
+      ctx.fill()
+    }
   }
 
   // ── Generar QR inline (160×160) al cargar ──────────────────
@@ -542,10 +547,8 @@ const ACCENT   = '#4B6CF7'
       correctLevel: QRCode.CorrectLevel.H,
     })
 
-    requestAnimationFrame(() => {
-      if (inlineLoader) inlineLoader.classList.add('hidden')
-      superponerLogo(inlineCanvas, 160)
-    })
+    if (inlineLoader) inlineLoader.classList.add('hidden')
+    superponerLogo(inlineCanvas, 160)
   })
 
   // ── Generar QR en modal (240×240, solo primera vez) ────────
@@ -562,7 +565,7 @@ const ACCENT   = '#4B6CF7'
       correctLevel: QRCode.CorrectLevel.H,
     })
 
-    setTimeout(() => superponerLogo(modalCanvas, 240), 120)
+    superponerLogo(modalCanvas, 240)
   }
 
   // ── WakeLock ───────────────────────────────────────────────
