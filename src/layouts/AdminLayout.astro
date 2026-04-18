@@ -27,7 +27,15 @@ const NAV = [
     id: 'analytics', label: 'Analytics', href: '/admin/analytics',
     icon: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>`,
   },
+  {
+    id: 'crear-usuario', label: 'Crear', href: '/admin/crear-usuario',
+    icon: `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z"/>`,
+  },
 ]
+
+// Bottom nav mobile: 4 tabs principales
+const BOTTOM_NAV = ['overview', 'usuarios', 'analytics', 'crear-usuario']
+const drawerTabs = NAV.filter(t => !BOTTOM_NAV.includes(t.id))
 ---
 
 <!doctype html>
@@ -44,7 +52,8 @@ const NAV = [
 
   <style is:global>
     body { background: var(--bg); color: var(--text-1); }
-    /* Inputs */
+
+    /* ── Inputs ──────────────────────────────────────────────── */
     input, textarea, select {
       font-family: var(--font);
       font-size: 14px;
@@ -65,7 +74,7 @@ const NAV = [
     input::placeholder, textarea::placeholder { color: var(--text-3); }
     label { display: block; font-size: 13px; font-weight: 500; color: var(--text-2); margin-bottom: 6px; }
 
-    /* Botones */
+    /* ── Botones ─────────────────────────────────────────────── */
     .btn {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 8px 16px; border-radius: var(--radius);
@@ -75,8 +84,7 @@ const NAV = [
     }
     .btn-primary {
       background: linear-gradient(135deg, var(--accent), var(--cyan));
-      color: #fff;
-      box-shadow: 0 2px 8px var(--accent-bg);
+      color: #fff; box-shadow: 0 2px 8px var(--accent-bg);
     }
     .btn-primary:hover { opacity: .9; transform: translateY(-1px); }
     .btn-primary:active { transform: translateY(0); }
@@ -90,7 +98,7 @@ const NAV = [
     .btn-success:hover { background: rgba(16,185,129,.15); }
     .btn:disabled { opacity: .45; cursor: not-allowed; transform: none !important; }
 
-    /* Badges */
+    /* ── Badges ──────────────────────────────────────────────── */
     .badge {
       display: inline-flex; align-items: center;
       padding: 2px 8px; border-radius: 99px;
@@ -103,7 +111,7 @@ const NAV = [
     .badge-warn    { background: rgba(245,158,11,.1); color: var(--warn); }
     .badge-danger  { background: rgba(239,68,68,.1); color: var(--danger); }
 
-    /* Cards */
+    /* ── Cards ───────────────────────────────────────────────── */
     .card { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
 
     .stat-card {
@@ -119,21 +127,53 @@ const NAV = [
     .stat-delta.up   { color: var(--success); }
     .stat-delta.down { color: var(--danger); }
 
-    /* Tabla */
+    /* ── Tabla admin ─────────────────────────────────────────── */
     .admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .admin-table th {
       text-align: left; padding: 10px 14px;
       font-size: 11px; font-weight: 600; text-transform: uppercase;
       letter-spacing: .06em; color: var(--text-3);
       border-bottom: 1px solid var(--border); white-space: nowrap;
+      background: var(--bg-3);
     }
     .admin-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); color: var(--text-2); vertical-align: middle; }
     .admin-table tr:last-child td { border-bottom: none; }
     .admin-table tbody tr { transition: background var(--transition); }
     .admin-table tbody tr:hover { background: var(--bg-3); }
 
-    /* Toast */
-    #toast { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+    /* ── Form helpers ────────────────────────────────────────── */
+    .form-grid   { display: grid; gap: 16px; }
+    .form-grid-2 { grid-template-columns: 1fr 1fr; }
+    .form-group  { display: flex; flex-direction: column; }
+    .form-hint   { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+
+    /* ── Section card ────────────────────────────────────────── */
+    .section-card {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 24px; margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(75,108,247,.04);
+    }
+    .section-card-title {
+      font-size: 15px; font-weight: 600; color: var(--text-1);
+      margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+    }
+
+    /* Icon button */
+    .icon-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 30px; height: 30px; border-radius: 6px; border: none;
+      background: transparent; color: var(--text-3);
+      cursor: pointer; transition: all var(--transition);
+    }
+    .icon-btn:hover { background: var(--bg-4); color: var(--text-1); }
+    .icon-btn.danger:hover { background: rgba(239,68,68,.1); color: var(--danger); }
+
+    /* ── Toast ───────────────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px;
+      z-index: 9999; display: flex; flex-direction: column;
+      gap: 8px; pointer-events: none;
+    }
     .toast-item {
       background: var(--bg-2); border: 1px solid var(--border);
       border-radius: var(--radius); padding: 10px 16px;
@@ -147,7 +187,7 @@ const NAV = [
     .toast-item.warn    { border-left: 3px solid var(--warn); }
     @keyframes slideIn { from { opacity:0;transform:translateX(16px); } to { opacity:1;transform:translateX(0); } }
 
-    /* Modal */
+    /* ── Modal ───────────────────────────────────────────────── */
     .modal-backdrop {
       position: fixed; inset: 0;
       background: rgba(13,18,54,.4); backdrop-filter: blur(4px);
@@ -164,24 +204,16 @@ const NAV = [
     }
     .modal-backdrop.open .modal { transform: scale(1); }
     .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-    .modal-title { font-size: 16px; font-weight: 700; color: var(--text-1); }
-    .modal-close {
+    .modal-title  { font-size: 16px; font-weight: 700; color: var(--text-1); }
+    .modal-close  {
       width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
       border-radius: 6px; border: none; background: var(--bg-3); color: var(--text-2);
       cursor: pointer; font-size: 16px; transition: all var(--transition);
     }
-    .modal-close:hover { background: var(--bg-4); color: var(--text-1); }
+    .modal-close:hover { background: var(--bg-4); }
 
-    /* Form helpers */
-    .form-grid   { display: grid; gap: 16px; }
-    .form-grid-2 { grid-template-columns: 1fr 1fr; }
-    .form-group  { display: flex; flex-direction: column; }
-    .form-hint   { font-size: 12px; color: var(--text-3); margin-top: 4px; }
-    .section-card { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 16px; }
-    .section-card-title { font-size: 15px; font-weight: 600; color: var(--text-1); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-
-    /* Layout */
-    .dash-shell {
+    /* ── Layout shell ────────────────────────────────────────── */
+    .admin-shell {
       display: grid;
       grid-template-rows: var(--header-h) 1fr;
       grid-template-columns: var(--nav-w) 1fr;
@@ -189,41 +221,77 @@ const NAV = [
       min-height: 100vh;
     }
 
-    /* Header con borde cian sutil */
-    .dash-header {
+    /* ── Header ──────────────────────────────────────────────── */
+    .admin-header {
       grid-area: header;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
       background: var(--bg-2);
       border-bottom: 2px solid var(--admin);
-      position: sticky; top: 0; z-index: 100; gap: 16px;
+      position: sticky; top: 0; z-index: 100; gap: 10px;
       box-shadow: 0 2px 16px var(--admin-bg);
     }
-    .dash-logo {
-      font-size: 15px; font-weight: 700; color: var(--text-1);
-      text-decoration: none; display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+
+    /* Hamburguesa — solo visible en mobile */
+    .admin-hamburger {
+      display: none;
+      align-items: center; justify-content: center;
+      width: 36px; height: 36px;
+      border: none; background: transparent;
+      color: var(--text-2); cursor: pointer;
+      border-radius: 8px; flex-shrink: 0;
+      transition: background var(--transition);
+      -webkit-tap-highlight-color: transparent;
     }
-    .dash-logo img { height: 28px; width: auto; object-fit: contain; }
-    .dash-header-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
-    .dash-user-chip {
+    .admin-hamburger:hover { background: var(--bg-3); }
+
+    /* Logo */
+    .admin-logo {
+      text-decoration: none;
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+    }
+    .admin-logo img {
+      height: 30px; width: auto; object-fit: contain;
+    }
+    .admin-logo-fallback {
+      display: none; align-items: center; gap: 6px;
+      font-size: 15px; font-weight: 700; color: var(--text-1);
+    }
+    .admin-logo-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--cyan); box-shadow: 0 0 8px var(--cyan);
+    }
+
+    /* Badge SUPER ADMIN — se oculta en mobile muy pequeño */
+    .admin-badge-header {
+      font-size: 10px; letter-spacing: .08em;
+      flex-shrink: 0;
+    }
+
+    .admin-header-right {
+      display: flex; align-items: center; gap: 8px; margin-left: auto;
+    }
+    .admin-user-chip {
       display: flex; align-items: center; gap: 8px;
       background: var(--bg-3); border: 1px solid var(--border);
       border-radius: 99px; padding: 4px 12px 4px 4px;
       font-size: 13px; color: var(--text-2);
     }
-    .dash-avatar {
+    .admin-avatar {
       width: 26px; height: 26px; border-radius: 50%;
       background: var(--admin-bg);
       display: flex; align-items: center; justify-content: center;
       font-size: 11px; font-weight: 700; color: var(--admin-2); flex-shrink: 0;
     }
 
-    /* Sidebar con borde cian */
-    .dash-nav {
+    /* ── Sidebar nav ─────────────────────────────────────────── */
+    .admin-nav {
       grid-area: nav;
       background: var(--bg-2);
       border-right: 1px solid var(--admin-border);
-      padding: 12px 8px; overflow-y: auto;
+      padding: 12px 8px;
+      overflow-y: auto;
       position: sticky; top: var(--header-h);
       height: calc(100vh - var(--header-h));
       display: flex; flex-direction: column; gap: 2px;
@@ -241,6 +309,7 @@ const NAV = [
       transition: all var(--transition);
       cursor: pointer; border: none; background: transparent;
       width: 100%; text-align: left;
+      -webkit-tap-highlight-color: transparent;
     }
     .nav-item svg { flex-shrink: 0; opacity: .6; }
     .nav-item:hover { background: var(--bg-3); color: var(--text-1); }
@@ -249,82 +318,269 @@ const NAV = [
     .nav-item.active svg { opacity: 1; }
     .nav-divider { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
 
-    .dash-main { grid-area: main; padding: 28px 32px; overflow-y: auto; }
+    /* ── Main content ────────────────────────────────────────── */
+    .admin-main {
+      grid-area: main;
+      padding: 28px 32px;
+      overflow-y: auto;
+    }
     .page-header { margin-bottom: 24px; }
     .page-title  { font-size: 22px; font-weight: 700; color: var(--text-1); line-height: 1.2; }
     .page-desc   { font-size: 13px; color: var(--text-3); margin-top: 4px; }
 
-    /* Responsive */
-    @media (max-width: 768px) {
-      :root { --nav-w: 0px; }
-      .dash-shell { grid-template-columns: 1fr; grid-template-areas: "header" "main"; }
-      .dash-nav {
-        display: none; position: fixed;
-        left: 0; top: var(--header-h); width: 240px;
-        height: calc(100vh - var(--header-h)); z-index: 200;
-        box-shadow: 4px 0 32px rgba(0,212,255,.1);
+    /* ── Bottom nav mobile ───────────────────────────────────── */
+    .admin-bottom-nav { display: none; }
+
+    /* ── Drawer mobile ───────────────────────────────────────── */
+    .admin-drawer-backdrop {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(13,18,54,.3);
+      backdrop-filter: blur(4px);
+      z-index: 299;
+    }
+    .admin-drawer-backdrop.open { display: block; }
+    .admin-drawer {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--bg-2);
+      border-top: 1px solid var(--border);
+      border-radius: 20px 20px 0 0;
+      padding: 8px 16px calc(var(--bottom-h) + 8px);
+      z-index: 300;
+      transform: translateY(100%);
+      transition: transform .3s cubic-bezier(.32,0,.67,0);
+      max-height: 70svh;
+      overflow-y: auto;
+    }
+    .admin-drawer.open {
+      transform: translateY(0);
+      transition: transform .35s cubic-bezier(.34,1.2,.64,1);
+    }
+    .admin-drawer-handle {
+      width: 36px; height: 4px;
+      background: var(--border-2);
+      border-radius: 99px;
+      margin: 0 auto 16px;
+    }
+    .admin-drawer-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px; padding-bottom: 8px;
+    }
+    .admin-drawer-item {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 6px;
+      padding: 12px 4px; border-radius: 12px;
+      color: var(--text-2); text-decoration: none;
+      font-size: 11px; font-weight: 500;
+      transition: all var(--transition);
+      border: 1px solid transparent; text-align: center;
+    }
+    .admin-drawer-item:hover { background: var(--bg-3); }
+    .admin-drawer-item.active {
+      background: var(--admin-bg); color: var(--admin-2);
+      border-color: var(--admin-border);
+    }
+    .admin-drawer-item svg { opacity: .6; }
+    .admin-drawer-item.active svg { opacity: 1; }
+
+    /* ══════════════════════════════════════════════════
+       RESPONSIVE — mobile first
+    ══════════════════════════════════════════════════ */
+
+    /* ── Mobile (< 768px) ────────────────────────────── */
+    @media (max-width: 767px) {
+
+      /* Ocultar sidebar */
+      .admin-nav { display: none !important; }
+
+      /* Shell de una columna */
+      .admin-shell {
+        grid-template-columns: 1fr;
+        grid-template-areas: "header" "main";
       }
-      .dash-nav.mobile-open { display: flex; }
-      .dash-main { padding: 16px; }
-      .form-grid-2 { grid-template-columns: 1fr; }
-      .admin-table { display: block; overflow-x: auto; }
+
+      /* Main con padding inferior para bottom nav */
+      .admin-main {
+        padding: 16px 14px calc(var(--bottom-h) + 20px);
+      }
+
+      /* Header compacto */
+      .admin-hamburger { display: flex; }
+      .admin-badge-header { display: none; }
+      .admin-user-email  { display: none; }
+      .btn-dashboard-text { display: none; }
+
+      /* Botón salir solo ícono en mobile */
+      .btn-logout-text { display: none; }
+
+      /* Grids de formularios */
+      .form-grid-2 { grid-template-columns: 1fr !important; }
+
+      /* Tablas con scroll horizontal */
+      .admin-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .admin-table { min-width: 560px; }
+
+      /* Section cards con menos padding */
+      .section-card { padding: 16px; }
+      .page-title { font-size: 18px; }
+
+      /* Toast sobre el bottom nav */
+      #toast { bottom: calc(var(--bottom-h) + 12px); right: 12px; }
+      .toast-item { max-width: 260px; }
+
+      /* Modal full bottom-sheet en mobile */
+      .modal {
+        max-width: 100%;
+        border-radius: 20px 20px 0 0;
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        max-height: 92svh;
+      }
+      .modal-backdrop { align-items: flex-end; padding: 0; }
+
+      /* Bottom nav visible */
+      .admin-bottom-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        height: var(--bottom-h);
+        background: var(--bg-2);
+        border-top: 2px solid var(--admin);
+        z-index: 200;
+        align-items: center;
+        justify-content: space-around;
+        padding: 0 8px;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        box-shadow: 0 -2px 16px var(--admin-bg);
+      }
+
+      .abn-item {
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        gap: 3px; flex: 1; height: 100%;
+        color: var(--text-3); text-decoration: none;
+        font-size: 10px; font-weight: 500;
+        transition: color var(--transition);
+        border: none; background: transparent;
+        cursor: pointer; position: relative; padding: 8px 4px;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .abn-item svg { transition: transform var(--transition); }
+      .abn-item:hover { color: var(--text-2); }
+      .abn-item:hover svg { transform: translateY(-1px); }
+      .abn-item.active { color: var(--admin-2); }
+      .abn-item.active::before {
+        content: '';
+        position: absolute; top: 0; left: 50%;
+        transform: translateX(-50%);
+        width: 24px; height: 2px;
+        background: var(--admin);
+        border-radius: 0 0 99px 99px;
+      }
+    }
+
+    /* ── Tablet (768px – 1023px) ─────────────────────── */
+    @media (min-width: 768px) and (max-width: 1023px) {
+      :root { --nav-w: 64px; }
+
+      .admin-nav { padding: 12px 8px; width: 64px; overflow: hidden; }
+      .nav-item { justify-content: center; padding: 10px; }
+      .nav-item span, .nav-section-label { display: none; }
+      .nav-item svg { margin: 0; }
+
+      .admin-main { padding: 20px 24px; }
+      .form-grid-2 { grid-template-columns: 1fr 1fr; }
+      .admin-user-email { display: none; }
+      .section-card { padding: 20px; }
+      .admin-badge-header { display: none; }
+    }
+
+    /* ── Desktop (≥ 1024px) ──────────────────────────── */
+    @media (min-width: 1024px) {
+      .admin-bottom-nav  { display: none !important; }
+      .admin-drawer-backdrop { display: none !important; }
+      .admin-drawer      { display: none !important; }
+      #toast { bottom: 24px; right: 24px; }
     }
   </style>
 </head>
 
 <body>
-  <div class="dash-shell">
+  <div class="admin-shell">
 
-    <header class="dash-header">
-      <button
-        id="mobile-menu-btn"
-        style="width:36px;padding:6px;display:none;align-items:center;justify-content:center;border:none;background:transparent;color:var(--text-2);cursor:pointer;border-radius:8px"
-        aria-label="Menú"
-      >
+    <!-- ── HEADER ─────────────────────────────────────────────── -->
+    <header class="admin-header">
+
+      <!-- Hamburguesa mobile -->
+      <button class="admin-hamburger" id="admin-hamburger" aria-label="Abrir menú">
         <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
       </button>
 
-      <!-- Logo con imagen -->
-      <a href="/admin" class="dash-logo">
+      <!-- Logo -->
+      <a href="/admin" class="admin-logo">
         <img
           src="/CardVirtual.png"
           alt="CardVirtual"
           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
         />
-        <span style="display:none;align-items:center;gap:6px">
-          <span style="width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan)"></span>
+        <span class="admin-logo-fallback">
+          <span class="admin-logo-dot"></span>
           CardVirtual
         </span>
       </a>
 
-      <!-- Badge Admin con cian -->
-      <span class="badge badge-admin" style="font-size:10px;letter-spacing:.08em">
+      <!-- Badge admin — solo desktop/tablet -->
+      <span class="badge badge-admin admin-badge-header">
         ⚙ SUPER ADMIN
       </span>
 
-      <div class="dash-header-right">
+      <div class="admin-header-right">
+
+        <!-- Volver al dashboard — solo desktop -->
         <a href="/dashboard" class="btn btn-ghost" style="font-size:12px;padding:5px 12px">
-          ← Mi dashboard
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"/>
+          </svg>
+          <span class="btn-dashboard-text">Mi dashboard</span>
         </a>
-        <div class="dash-user-chip">
-          <div class="dash-avatar" id="user-avatar">?</div>
-          <span id="user-email-short" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">
-            {user.email}
-          </span>
+
+        <!-- Chip usuario -->
+        <div class="admin-user-chip">
+          <div class="admin-avatar" id="user-avatar">?</div>
+          <span
+            id="user-email-short"
+            class="admin-user-email"
+            style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px"
+          >{user.email}</span>
         </div>
-        <button class="btn btn-danger" id="btn-logout" style="padding:5px 12px;font-size:12px">Salir</button>
+
+        <!-- Salir -->
+        <button class="btn btn-danger" id="btn-logout" style="padding:5px 12px;font-size:12px">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"/>
+          </svg>
+          <span class="btn-logout-text">Salir</span>
+        </button>
       </div>
     </header>
 
-    <nav class="dash-nav" id="dash-nav" role="navigation">
+    <!-- ── SIDEBAR — solo desktop/tablet ─────────────────────── -->
+    <nav class="admin-nav" id="admin-nav" role="navigation" aria-label="Panel de administración">
+
       <span class="nav-section-label">Administración</span>
 
-      {NAV.map(item => (
-        <a href={item.href} class={`nav-item ${tabActivo === item.id ? 'active' : ''}`} data-tab={item.id}>
+      {NAV.filter(t => t.id !== 'crear-usuario').map(item => (
+        <a
+          href={item.href}
+          class={`nav-item ${tabActivo === item.id ? 'active' : ''}`}
+          data-tab={item.id}
+        >
           <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" set:html={item.icon} />
-          {item.label}
+          <span>{item.label}</span>
         </a>
       ))}
 
@@ -336,7 +592,7 @@ const NAV = [
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z"/>
         </svg>
-        Crear usuario
+        <span>Crear usuario</span>
       </a>
 
       <hr class="nav-divider" style="margin-top:auto" />
@@ -344,21 +600,140 @@ const NAV = [
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"/>
         </svg>
-        Volver al dashboard
+        <span>Mi dashboard</span>
       </a>
     </nav>
 
-    <main class="dash-main" id="dash-main" role="main">
+    <!-- ── MAIN CONTENT ────────────────────────────────────────── -->
+    <main class="admin-main" id="admin-main" role="main">
       <slot />
     </main>
-  </div>
 
+  </div><!-- /admin-shell -->
+
+  <!-- ── BOTTOM NAV MOBILE ──────────────────────────────────── -->
+  <nav class="admin-bottom-nav" aria-label="Navegación admin">
+    {NAV.filter(t => BOTTOM_NAV.includes(t.id)).map(item => (
+      <a
+        href={item.href}
+        class={`abn-item ${tabActivo === item.id ? 'active' : ''}`}
+        aria-label={item.label}
+      >
+        <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" set:html={item.icon} />
+        <span>{item.label}</span>
+      </a>
+    ))}
+
+    <!-- Botón "Más" para tabs que no caben -->
+    {drawerTabs.length > 0 && (
+      <button
+        class={`abn-item ${drawerTabs.some(t => t.id === tabActivo) ? 'active' : ''}`}
+        id="admin-btn-mas"
+        aria-label="Más opciones"
+      >
+        <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
+        </svg>
+        <span>Más</span>
+      </button>
+    )}
+  </nav>
+
+  <!-- ── DRAWER "MÁS" ────────────────────────────────────────── -->
+  {drawerTabs.length > 0 && (
+    <>
+      <div class="admin-drawer-backdrop" id="admin-drawer-backdrop" onclick="cerrarAdminDrawer()"></div>
+      <div class="admin-drawer" id="admin-drawer" role="dialog" aria-label="Más secciones">
+        <div class="admin-drawer-handle"></div>
+        <div class="admin-drawer-grid">
+          {drawerTabs.map(tab => (
+            <a
+              href={tab.href}
+              class={`admin-drawer-item ${tabActivo === tab.id ? 'active' : ''}`}
+              onclick="cerrarAdminDrawer()"
+            >
+              <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" set:html={tab.icon} />
+              <span>{tab.label}</span>
+            </a>
+          ))}
+          <!-- Acceso a dashboard desde el drawer -->
+          <a href="/dashboard" class="admin-drawer-item">
+            <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"/>
+            </svg>
+            <span>Dashboard</span>
+          </a>
+        </div>
+      </div>
+    </>
+  )}
+
+  <!-- ── SIDEBAR MOBILE (slide desde izquierda) ─────────────── -->
+  <div id="admin-mobile-overlay" style="display:none;position:fixed;inset:0;background:rgba(13,18,54,.3);backdrop-filter:blur(4px);z-index:199" onclick="cerrarAdminNav()"></div>
+
+  <!-- Sidebar mobile clonado como off-canvas -->
+  <nav
+    id="admin-nav-mobile"
+    style="
+      position:fixed;left:0;top:0;bottom:0;width:280px;
+      background:var(--bg-2);border-right:2px solid var(--admin);
+      padding:0;z-index:200;
+      transform:translateX(-100%);
+      transition:transform .3s cubic-bezier(.32,0,.67,0);
+      display:flex;flex-direction:column;overflow-y:auto;
+      box-shadow:4px 0 32px var(--admin-bg);
+    "
+    role="dialog"
+    aria-label="Menú de administración"
+  >
+    <!-- Header del nav mobile con logo -->
+    <div style="display:flex;align-items:center;gap:10px;padding:16px;border-bottom:1px solid var(--border);background:var(--bg-2);position:sticky;top:0;z-index:1">
+      <img src="/CardVirtual.png" alt="CardVirtual" style="height:28px;width:auto;object-fit:contain"
+        onerror="this.style.display='none'" />
+      <span class="badge badge-admin" style="font-size:10px">⚙ SUPER ADMIN</span>
+      <button
+        onclick="cerrarAdminNav()"
+        style="margin-left:auto;width:32px;height:32px;border:none;background:var(--bg-3);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-2)"
+        aria-label="Cerrar menú"
+      >
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Items de navegación -->
+    <div style="padding:12px 8px;flex:1;display:flex;flex-direction:column;gap:2px">
+      <span class="nav-section-label">Administración</span>
+
+      {NAV.map(item => (
+        <a
+          href={item.href}
+          class={`nav-item ${tabActivo === item.id ? 'active' : ''}`}
+          onclick="cerrarAdminNav()"
+        >
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" set:html={item.icon} />
+          <span>{item.label}</span>
+        </a>
+      ))}
+
+      <hr class="nav-divider" style="margin-top:auto" />
+      <a href="/dashboard" class="nav-item" style="color:var(--text-3)" onclick="cerrarAdminNav()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"/>
+        </svg>
+        <span>Mi dashboard</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- Toast container -->
   <div id="toast" aria-live="polite"></div>
-  <div id="mobile-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,212,255,.08);z-index:199" onclick="closeMobileNav()"></div>
 
   <script>
     import { createBrowserClient } from '@supabase/ssr'
 
+    // ── Logout ─────────────────────────────────────────────────
     document.getElementById('btn-logout')?.addEventListener('click', async function() {
       const btn = this as HTMLButtonElement
       btn.textContent = 'Saliendo...'
@@ -371,35 +746,75 @@ const NAV = [
       window.location.href = '/auth/login'
     })
 
+    // ── Avatar ─────────────────────────────────────────────────
     const emailEl  = document.getElementById('user-email-short')
     const avatarEl = document.getElementById('user-avatar')
     if (emailEl && avatarEl) {
       avatarEl.textContent = (emailEl.textContent?.trim() ?? '?')[0].toUpperCase()
     }
 
-    const mobileBtn = document.getElementById('mobile-menu-btn') as HTMLButtonElement
-    const dashNav   = document.getElementById('dash-nav') as HTMLElement
-    const overlay   = document.getElementById('mobile-overlay') as HTMLElement
+    // ── Sidebar mobile (off-canvas desde hamburguesa) ──────────
+    const hamburger      = document.getElementById('admin-hamburger')!
+    const navMobile      = document.getElementById('admin-nav-mobile')!
+    const mobileOverlay  = document.getElementById('admin-mobile-overlay')!
 
-    function syncMobileBtn() { mobileBtn.style.display = window.innerWidth <= 768 ? 'flex' : 'none' }
-    syncMobileBtn()
-    window.addEventListener('resize', syncMobileBtn)
-
-    mobileBtn.addEventListener('click', () => {
-      const open = dashNav.classList.toggle('mobile-open')
-      overlay.style.display = open ? 'block' : 'none'
-    })
-    ;(window as any).closeMobileNav = () => {
-      dashNav.classList.remove('mobile-open')
-      overlay.style.display = 'none'
+    function abrirAdminNav() {
+      navMobile.style.transform = 'translateX(0)'
+      navMobile.style.transition = 'transform .35s cubic-bezier(.34,1.2,.64,1)'
+      mobileOverlay.style.display = 'block'
+      document.body.style.overflow = 'hidden'
     }
+    ;(window as any).cerrarAdminNav = function() {
+      navMobile.style.transform = 'translateX(-100%)'
+      navMobile.style.transition = 'transform .3s cubic-bezier(.32,0,.67,0)'
+      mobileOverlay.style.display = 'none'
+      document.body.style.overflow = ''
+    }
+    hamburger.addEventListener('click', () => {
+      navMobile.style.transform === 'translateX(0)'
+        ? (window as any).cerrarAdminNav()
+        : abrirAdminNav()
+    })
 
-    document.addEventListener('keydown', (e) => {
+    // ── Drawer "Más" en bottom nav ─────────────────────────────
+    const btnMas       = document.getElementById('admin-btn-mas')
+    const drawer       = document.getElementById('admin-drawer')
+    const drawerBack   = document.getElementById('admin-drawer-backdrop')
+
+    function abrirAdminDrawer() {
+      if (!drawer || !drawerBack) return
+      drawer.classList.add('open')
+      drawerBack.classList.add('open')
+      document.body.style.overflow = 'hidden'
+    }
+    ;(window as any).cerrarAdminDrawer = function() {
+      drawer?.classList.remove('open')
+      drawerBack?.classList.remove('open')
+      document.body.style.overflow = ''
+    }
+    btnMas?.addEventListener('click', () => {
+      drawer?.classList.contains('open')
+        ? (window as any).cerrarAdminDrawer()
+        : abrirAdminDrawer()
+    })
+
+    // Swipe down para cerrar drawer
+    let touchStartY = 0
+    drawer?.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY }, { passive: true })
+    drawer?.addEventListener('touchend',   e => {
+      if (e.changedTouches[0].clientY - touchStartY > 60) (window as any).cerrarAdminDrawer()
+    }, { passive: true })
+
+    // ── Keyboard ───────────────────────────────────────────────
+    document.addEventListener('keydown', e => {
       if (e.key === 'Escape') {
+        ;(window as any).cerrarAdminNav?.()
+        ;(window as any).cerrarAdminDrawer?.()
         document.querySelectorAll('.modal-backdrop.open').forEach(m => m.classList.remove('open'))
       }
     })
 
+    // ── Toast global ───────────────────────────────────────────
     ;(window as any).toast = (msg: string, type: 'success'|'error'|'warn' = 'success') => {
       const container = document.getElementById('toast')!
       const el = document.createElement('div')
