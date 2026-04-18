@@ -12,6 +12,7 @@ import ModernBlue from './modern-blue/Card.astro'
 import CleanWhite from './clean-white/Card.astro'
 import GeniusCard from './genius-card/Card.astro'
 import TealWave from './teal-wave/Card.astro'
+import FreshCircle from './fresh-circle/Card.astro'
 
 export interface ThemeMeta {
   id:             string
@@ -73,6 +74,16 @@ export const THEMES: ThemeMeta[] = [
     preview_accent: '#ffffff',
     etiquetas:      ['teal', 'profesional', 'médico', 'ola'],
     componente:     TealWave,
+    premium:        false,
+  },
+  {
+    id:             'fresh-circle',
+    nombre:         'Fresh Circle',
+    descripcion:    'Banner superior, foto circular centrada, nombre destacado y menú inferior de navegación rápida.',
+    preview_bg:     '#ffffff', 
+    preview_accent: '#0078D7', 
+    etiquetas:      ['limpio', 'circular', 'moderno', 'claro'],
+    componente:     FreshCircle,
     premium:        false,
   },
 ]
