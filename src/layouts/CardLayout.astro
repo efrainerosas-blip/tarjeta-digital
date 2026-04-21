@@ -1,6 +1,7 @@
 ---
 // src/layouts/CardLayout.astro
-import QRWidget from '../components/QRWidget.astro'
+import QRWidget      from '../components/QRWidget.astro'
+import InstallBanner from '../components/InstallBanner.astro'
 
 interface Props {
   title:        string
@@ -9,18 +10,27 @@ interface Props {
   bgColor?:     string
   cardUrl?:     string
   fotoUrl?:     string | null
+  slug?:        string | null
+  nombre?:      string | null
+  tituloProf?:  string | null
+  accentColor?: string | null
 }
 
 const {
   title,
   description = 'Tarjeta digital profesional',
   ogImage,
-  bgColor  = '#ffffff',
+  bgColor     = '#ffffff',
   cardUrl,
   fotoUrl,
+  slug,
+  nombre,
+  tituloProf,
+  accentColor,
 } = Astro.props
 
-const qrUrl = cardUrl ?? Astro.url.href
+const qrUrl       = cardUrl ?? Astro.url.href
+const manifestUrl = slug ? `/${slug}/manifest.json` : null
 ---
 <!doctype html>
 <html lang="es">
@@ -32,6 +42,16 @@ const qrUrl = cardUrl ?? Astro.url.href
   <meta property="og:description" content={description} />
   {ogImage && <meta property="og:image" content={ogImage} />}
   <meta property="og:type" content="profile" />
+  <meta name="mobile-web-app-capable"       content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title"   content={nombre ?? title} />
+  {accentColor && <meta name="theme-color" content={accentColor} />}
+  {manifestUrl && <link rel="manifest" href={manifestUrl} />}
+  {fotoUrl
+    ? <link rel="apple-touch-icon" href={fotoUrl} />
+    : <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  }
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <title>{title}</title>
   <style>
@@ -44,5 +64,25 @@ const qrUrl = cardUrl ?? Astro.url.href
 <body style={`background:${bgColor}`}>
   <slot />
   <QRWidget url={qrUrl} fotoUrl={fotoUrl} />
+  {slug && nombre && (
+    <InstallBanner
+      slug={slug}
+      nombre={nombre}
+      titulo={tituloProf}
+      fotoUrl={fotoUrl}
+      accent={accentColor ?? '#4B6CF7'}
+    />
+  )}
 </body>
+{slug && (
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker
+          .register('/sw.js', { scope: '/' })
+          .catch(() => {})
+      })
+    }
+  </script>
+)}
 </html>

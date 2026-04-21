@@ -1,0 +1,266 @@
+---
+// src/components/InstallBanner.astro
+// Banner de instalación PWA para tarjetas públicas.
+// Aparece 3s después de abrir la tarjeta, captura beforeinstallprompt.
+
+interface Props {
+  slug:     string
+  nombre:   string
+  titulo?:  string | null
+  fotoUrl?: string | null
+  accent?:  string
+}
+const { slug, nombre, titulo, fotoUrl, accent = '#4B6CF7' } = Astro.props
+---
+
+<style define:vars={{ accent }}>
+#cv-ib {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  z-index: 9999;
+  display: flex; justify-content: center;
+  padding: 0 12px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+  pointer-events: none;
+  transform: translateY(130%);
+  transition: transform .42s cubic-bezier(.34,1.2,.64,1);
+}
+#cv-ib.show { transform: translateY(0); pointer-events: all; }
+
+.ib-card {
+  width: 100%; max-width: 400px;
+  background: #fff;
+  border-radius: 22px;
+  padding: 16px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.16), 0 0 0 1px rgba(0,0,0,.05);
+  display: flex; flex-direction: column; gap: 13px;
+}
+
+/* Fila top */
+.ib-top { display: flex; align-items: center; gap: 12px; }
+.ib-avatar {
+  width: 54px; height: 54px; border-radius: 50%;
+  border: 2.5px solid var(--accent);
+  overflow: hidden; flex-shrink: 0;
+  background: #f3f4f6;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem;
+  box-shadow: 0 3px 12px rgba(0,0,0,.1);
+}
+.ib-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.ib-info { flex: 1; min-width: 0; }
+.ib-label { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin-bottom: 2px; }
+.ib-name  { font-size: 14px; font-weight: 800; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: system-ui; }
+.ib-role  { font-size: 11.5px; color: #6b7280; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: system-ui; }
+.ib-x {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #f3f4f6; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: #9ca3af; flex-shrink: 0; transition: background .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.ib-x:hover { background: #e5e7eb; color: #374151; }
+
+/* Perks */
+.ib-perks { display: flex; gap: 6px; flex-wrap: wrap; }
+.ib-perk {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 600; color: #6b7280;
+  background: #f9fafb; border: 1px solid #e5e7eb;
+  padding: 3px 9px; border-radius: 99px; font-family: system-ui;
+}
+.ib-perk svg { width: 11px; height: 11px; }
+
+/* Botones */
+.ib-btns { display: flex; gap: 8px; }
+.ib-btn-main {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 12px 14px;
+  background: var(--accent); color: #fff;
+  border: none; border-radius: 13px;
+  font-size: 13.5px; font-weight: 800; font-family: system-ui;
+  cursor: pointer; letter-spacing: -.01em;
+  box-shadow: 0 4px 14px rgba(0,0,0,.14);
+  transition: opacity .2s, transform .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.ib-btn-main:hover { opacity: .92; transform: translateY(-1px); }
+.ib-btn-main:active { transform: scale(.97); }
+.ib-btn-main svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+.ib-btn-later {
+  padding: 12px 14px;
+  background: #f3f4f6; color: #6b7280;
+  border: none; border-radius: 13px;
+  font-size: 12.5px; font-weight: 700; font-family: system-ui;
+  cursor: pointer; white-space: nowrap;
+  transition: background .15s, color .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.ib-btn-later:hover { background: #e5e7eb; color: #374151; }
+</style>
+
+<div id="cv-ib" role="dialog" aria-label="Guardar tarjeta digital">
+  <div class="ib-card">
+
+    <div class="ib-top">
+      <div class="ib-avatar">
+        {fotoUrl ? <img src={fotoUrl} alt={nombre} loading="lazy" /> : <span>👤</span>}
+      </div>
+      <div class="ib-info">
+        <div class="ib-label">Guardar tarjeta digital</div>
+        <div class="ib-name">{nombre}</div>
+        {titulo && <div class="ib-role">{titulo}</div>}
+      </div>
+      <button class="ib-x" id="cv-ib-x" aria-label="Cerrar">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="ib-perks">
+      <span class="ib-perk">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Pantalla de inicio
+      </span>
+      <span class="ib-perk">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        Acceso rápido
+      </span>
+      <span class="ib-perk">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728M15.536 8.464a5 5 0 010 7.072M6.343 6.343a9 9 0 000 12.728M9.172 9.172a5 5 0 000 7.07"/></svg>
+        Sin conexión
+      </span>
+    </div>
+
+    <div class="ib-btns">
+      <button class="ib-btn-main" id="cv-ib-install">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        Guardar en mi móvil
+      </button>
+      <button class="ib-btn-later" id="cv-ib-later">Ahora no</button>
+    </div>
+
+  </div>
+</div>
+
+<script define:vars={{ slug, accent }}>
+(function() {
+  const DISMISS_KEY  = 'cv-ib-dismissed-' + slug
+  const INSTALL_KEY  = 'cv-ib-installed-'  + slug
+  const DAYS         = 7
+
+  const banner   = document.getElementById('cv-ib')
+  const btnInst  = document.getElementById('cv-ib-install')
+  const btnLater = document.getElementById('cv-ib-later')
+  const btnX     = document.getElementById('cv-ib-x')
+  let   prompt_  = null
+
+  function yaInstalado()  { return localStorage.getItem(INSTALL_KEY) === '1' }
+  function fueDismissed() {
+    const ts = localStorage.getItem(DISMISS_KEY)
+    if (!ts) return false
+    return (Date.now() - parseInt(ts)) / 86400000 < DAYS
+  }
+
+  function show() {
+    if (!banner || yaInstalado() || fueDismissed()) return
+    // No mostrar si ya corre como PWA instalada
+    if (window.matchMedia('(display-mode: standalone)').matches) return
+    if (navigator.standalone) return
+    banner.classList.add('show')
+  }
+
+  function hide(installed) {
+    banner?.classList.remove('show')
+    if (installed) {
+      localStorage.setItem(INSTALL_KEY, '1')
+    } else {
+      localStorage.setItem(DISMISS_KEY, String(Date.now()))
+    }
+  }
+
+  // ── Android / Chrome ────────────────────────────────────────
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault()
+    prompt_ = e
+    setTimeout(show, 3000)
+  })
+
+  btnInst?.addEventListener('click', async function() {
+    if (prompt_) {
+      try {
+        prompt_.prompt()
+        const { outcome } = await prompt_.userChoice
+        hide(outcome === 'accepted')
+        prompt_ = null
+      } catch { hide(false) }
+    } else if (isIOS()) {
+      showIOSInstructions()
+    } else {
+      hide(false)
+    }
+  })
+
+  btnLater?.addEventListener('click', () => hide(false))
+  btnX?.addEventListener('click',     () => hide(false))
+
+  // Swipe down para cerrar
+  let ty = 0
+  banner?.addEventListener('touchstart', e => { ty = e.touches[0].clientY }, { passive: true })
+  banner?.addEventListener('touchend',   e => {
+    if (e.changedTouches[0].clientY - ty > 70) hide(false)
+  }, { passive: true })
+
+  window.addEventListener('appinstalled', () => { hide(true); prompt_ = null })
+
+  // ── iOS Safari ──────────────────────────────────────────────
+  function isIOS() {
+    return /iphone|ipad|ipod/i.test(navigator.userAgent)
+  }
+  function isSafariIOS() {
+    return isIOS() && /safari/i.test(navigator.userAgent) && !/crios|fxios|opios/i.test(navigator.userAgent)
+  }
+
+  if (isSafariIOS()) {
+    setTimeout(show, 4000)
+    if (btnInst) {
+      btnInst.innerHTML = `
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/>
+        </svg>
+        ¿Cómo guardarlo?
+      `
+    }
+  }
+
+  function showIOSInstructions() {
+    const card = banner?.querySelector('.ib-card')
+    if (!card) return
+    card.innerHTML = `
+      <div style="text-align:center;padding:8px 4px 4px;font-family:system-ui">
+        <div style="font-size:2rem;margin-bottom:10px">📲</div>
+        <div style="font-size:15px;font-weight:800;color:#111827">Guardar en iPhone</div>
+        <div style="font-size:13px;color:#6b7280;margin-top:10px;line-height:1.8">
+          1. Pulsa el botón
+          <svg style="display:inline-block;vertical-align:middle;width:18px;height:18px;color:${accent}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/>
+          </svg>
+          <strong style="color:#111827">Compartir</strong><br>
+          2. Selecciona
+          <strong style="color:#111827">"Añadir a pantalla de inicio"</strong>
+        </div>
+        <button id="cv-ib-ios-ok"
+          style="margin-top:16px;background:#f3f4f6;border:none;border-radius:11px;
+          padding:11px 24px;font-size:13px;font-weight:700;color:#6b7280;
+          cursor:pointer;font-family:system-ui">
+          Entendido
+        </button>
+      </div>
+    `
+    document.getElementById('cv-ib-ios-ok')?.addEventListener('click', () => hide(false))
+  }
+})()
+</script>

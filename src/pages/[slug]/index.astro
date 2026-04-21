@@ -49,6 +49,9 @@ const theme = getTheme(perfil.template_id ?? THEMES[0].id)
 const Card  = theme.componente as any
 
 const nombre   = [perfil.nombre, perfil.apellidos].filter(Boolean).join(' ')
+const titulo  = perfil.titulo_profesional || 'Tarjeta Digital Profesional'
+const bgColor = theme.preview_bg || '#ffffff'
+
 const cardProps = {
   perfil,
   experiencia:    experiencia    ?? [],
@@ -64,12 +67,16 @@ const cardProps = {
 ---
 
 <CardLayout
-  title={nombre}
-  description={perfil.bio ?? `Tarjeta digital de ${nombre}`}
-  ogImage={perfil.foto_url ?? undefined}
-  bgColor={theme.preview_bg}
-  cardUrl={`${Astro.url.origin}/${slug}`}
-  fotoUrl={perfil.foto_url ?? null}
+title={`${nombre} — Tarjeta digital`}
+description={perfil.bio ?? titulo}
+ogImage={perfil.foto_url ?? undefined}
+bgColor={bgColor}
+cardUrl={`${Astro.url.origin}/${slug}`}
+fotoUrl={perfil.foto_url ?? null}
+slug={slug}
+nombre={nombre}
+tituloProf={perfil.titulo_profesional ?? null}
+accentColor={perfil.color_primario ?? '#4B6CF7'}
 >
 
   <Card {...cardProps} />
