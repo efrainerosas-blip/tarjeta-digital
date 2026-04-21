@@ -13,6 +13,7 @@ import CleanWhite from './clean-white/Card.astro'
 import GeniusCard from './genius-card/Card.astro'
 import TealWave from './teal-wave/Card.astro'
 import FreshCircle from './fresh-circle/Card.astro'
+import IosCard       from './ios-card/Card.astro'
 
 export interface ThemeMeta {
   id:             string
@@ -85,6 +86,16 @@ export const THEMES: ThemeMeta[] = [
     etiquetas:      ['limpio', 'circular', 'moderno', 'claro'],
     componente:     FreshCircle,
     premium:        false,
+  },
+  {
+    id:             'ios-card',
+    nombre:         'iOS Card',
+    descripcion:    'Glassmorphism estilo Apple Wallet — fondo helado con esferas de profundidad, foto con glow pulsante y barra inferior glass.',
+    preview_bg:     '#ddeeff',
+    preview_accent: '#1A6FF5',
+    etiquetas:      ['glass', 'premium', 'minimalista', 'ios', 'apple'],
+    componente:     IosCard,
+    premium:        true,
   },
 ]
 
