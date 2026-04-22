@@ -172,9 +172,10 @@ function redLabel(red: { plataforma: string; url: string }): string {
       display: block;
       width: 100%;
       height: 48px;
-      /* Solapar ligeramente la foto desde abajo */
-      margin-top: -2px;
-      background: var(--bg);
+      margin-top: -48px;
+      position: relative;
+      z-index: 2;
+      background: transparent;
     }
     .hero-wave path {
       fill: var(--bg); /* mismo color que el fondo de la página */
