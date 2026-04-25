@@ -43,7 +43,10 @@ const db = getSupabaseAdmin()
 // Construir query base
 let query = db
   .from('perfiles')
-  .select('id, user_id, slug, nombre, apellidos, titulo_profesional, foto_url, plan_id, plan_expires_at, created_at, updated_at, status, template_id', { count: 'exact' })
+  .select(`
+    id, user_id, slug, nombre, foto_url, plan_id, plan_expires_at, created_at, updated_at, template_id, tipo_perfil,
+    perfiles_profesionales ( apellidos, titulo_profesional )
+  `, { count: 'exact' })
   .order('created_at', { ascending: false })
 
 // Aplicar filtro de plan si viene en la URL
@@ -55,7 +58,7 @@ if (filtPlan) {
 // Supabase no tiene ILIKE multi-campo en el cliente,
 // así que buscamos por slug (más confiable) y filtramos por nombre en JS
 if (buscar) {
-  query = query.or(`slug.ilike.%${buscar}%,nombre.ilike.%${buscar}%,apellidos.ilike.%${buscar}%`)
+  query = query.or(`slug.ilike.%${buscar}%,nombre.ilike.%${buscar}%`)
 }
 
 // Paginación
@@ -82,7 +85,8 @@ function formatFecha(iso: string | null): string {
 }
 
 function nombreCompleto(p: any): string {
-  return [p.nombre, p.apellidos].filter(Boolean).join(' ') || '—'
+  const apellidos = p.perfiles_profesionales?.apellidos || p.perfiles_profesionales?.[0]?.apellidos || '';
+  return [p.nombre, apellidos].filter(Boolean).join(' ') || '—'
 }
 
 // Construir URL de paginación conservando filtros activos
@@ -196,9 +200,9 @@ function pageUrl(p: number): string {
                       <div style="font-size:13px;font-weight:600;color:var(--text-1)">
                         {nombreCompleto(p)}
                       </div>
-                      {p.titulo_profesional && (
+                      {p.perfiles_profesionales?.[0]?.titulo_profesional && (
                         <div style="font-size:11px;color:var(--text-3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                          {p.titulo_profesional}
+                          {p.perfiles_profesionales[0].titulo_profesional}
                         </div>
                       )}
                     </div>
@@ -310,7 +314,7 @@ function pageUrl(p: number): string {
     document.querySelector<HTMLMetaElement>('meta[name="supabase-anon"]')!.content,
   )
 
-  // ── Cambio de plan inline ─────────────────────────────────
+  // ── Plan inline ─────────────────────────────────
   // Cuando el admin cambia el select de plan de un usuario,
   // actualiza plan_id en la BD inmediatamente sin recargar.
   document.querySelectorAll<HTMLSelectElement>('.plan-selector').forEach(sel => {
