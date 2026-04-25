@@ -1,6 +1,11 @@
 ---
-// src/pages/dashboard/index.astro — Tab: Perfil básico
+// src/pages/dashboard/index.astro — Perfil básico
+// Lee desde vista_perfiles_completos (JOIN 1:1 automático).
+// Guarda en perfiles (campos comunes) +
+//   perfiles_profesionales (apellidos, titulo, cv, status)
+//   perfiles_negocios (nombre_negocio, categoria, etc.)
 export const prerender = false
+
 import DashboardLayout from '../../layouts/DashboardLayout.astro'
 import { createServerClient } from '@supabase/ssr'
 import FotoEditorModal from '../../components/perfil/FotoEditorModal.astro'
@@ -11,7 +16,11 @@ const supabase = createServerClient(
   import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
   {
     cookies: {
-      getAll() { return (Astro.request.headers.get('Cookie') ?? '').split(';').filter(Boolean).map(c => { const [k,...v]=c.trim().split('='); return { name: k, value: v.join('=') } }) },
+      getAll() {
+        return (Astro.request.headers.get('Cookie') ?? '')
+          .split(';').filter(Boolean)
+          .map(c => { const [k,...v]=c.trim().split('='); return { name:k, value:v.join('=') } })
+      },
       setAll(cs) { cs.forEach(({name,value,options}) => Astro.cookies.set(name,value,options)) },
     },
   }
@@ -20,32 +29,40 @@ const supabase = createServerClient(
 const { data: { user }, error: authError } = await supabase.auth.getUser()
 if (authError || !user) return Astro.redirect('/auth/login')
 
+// ── Leer desde la vista unificada — un solo round-trip ────────
 const { data: perfil } = await supabase
-  .from('perfiles')
+  .from('vista_perfiles_completos')
   .select('*')
   .eq('user_id', user.id)
-  .single()
+  .maybeSingle()
 
-const cardUrl = perfil?.slug
-  ? `${Astro.url.origin}/${perfil.slug}`
-  : null
+const esProfesional = (perfil?.tipo_perfil ?? 'profesional') === 'profesional'
+const esNegocio     = perfil?.tipo_perfil === 'negocio'
+
+const cardUrl = perfil?.slug ? `${Astro.url.origin}/${perfil.slug}` : null
 ---
 
-<DashboardLayout title="Perfil" tabActivo="perfil" user={{ email: user.email!, id: user.id }} slug={perfil?.slug}>
+<DashboardLayout
+  title="Perfil"
+  tabActivo="perfil"
+  user={{ email: user.email!, id: user.id }}
+  slug={perfil?.slug}
+>
 
   <div class="page-header">
-    <h1 class="page-title">Tu perfil</h1>
-    <p class="page-desc">Esta información aparece en tu tarjeta digital pública.</p>
+    <h1 class="page-title">{esNegocio ? 'Mi negocio' : 'Tu perfil'}</h1>
+    <p class="page-desc">
+      {esNegocio
+        ? 'Esta información aparece en la tarjeta digital de tu negocio.'
+        : 'Esta información aparece en tu tarjeta digital pública.'
+      }
+    </p>
   </div>
 
   {perfil?.slug && cardUrl && (
-    <QRCard
-    url={cardUrl}
-    slug={perfil.slug}
-    fotoUrl={perfil?.foto_url ?? null}
-    />
+    <QRCard url={cardUrl} slug={perfil.slug} fotoUrl={perfil?.foto_url ?? null} />
   )}
- 
+
   {!perfil?.slug && (
     <div style="background:var(--bg-3);border:1px dashed var(--border-2);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px">
       <span style="font-size:20px">🔗</span>
@@ -60,7 +77,7 @@ const cardUrl = perfil?.slug
     <div style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px">
       <span style="font-size:20px">👋</span>
       <div>
-        <div style="font-weight:600;font-size:14px;color:var(--text-1)">Bienvenido — crea tu perfil</div>
+        <div style="font-weight:600;font-size:14px;color:var(--text-1)">Bienvenido — completa tu tarjeta</div>
         <div style="font-size:13px;color:var(--text-3);margin-top:2px">Completa los datos a continuación para generar tu tarjeta digital.</div>
       </div>
     </div>
@@ -68,18 +85,20 @@ const cardUrl = perfil?.slug
 
   <form id="perfil-form" autocomplete="off">
 
-    <!-- ── Foto y datos principales ────────────────────────── -->
+    <!-- ════════════════════════════════════════════════════
+         SECCIÓN: FOTO + DATOS PRINCIPALES
+         ════════════════════════════════════════════════════ -->
     <div class="section-card">
       <div class="section-card-title">
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0"/>
         </svg>
-        Datos personales
+        {esNegocio ? 'Datos del negocio' : 'Datos personales'}
       </div>
 
       <div style="display:flex;gap:20px;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap">
 
-        <!-- Foto de perfil -->
+        <!-- Foto / Logo -->
         <div style="flex-shrink:0;text-align:center">
           <div
             id="foto-preview"
@@ -87,214 +106,261 @@ const cardUrl = perfil?.slug
             onclick="window.abrirEditorFoto()"
           >
             {perfil?.foto_url
-              ? <img src={perfil.foto_url} style="width:100%;height:100%;object-fit:cover" alt="Foto de perfil" />
-              : '📷'
+              ? <img src={perfil.foto_url} style="width:100%;height:100%;object-fit:cover" alt="Foto" />
+              : (esNegocio ? '🏪' : '📷')
             }
           </div>
           <button type="button" class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="window.abrirEditorFoto()">
-            Editar foto
+            {esNegocio ? 'Logo / Foto' : 'Editar foto'}
           </button>
           <input type="hidden" name="foto_url" id="foto_url" value={perfil?.foto_url ?? ''} />
         </div>
 
-        <!-- Nombre y título -->
+        <!-- Nombre + campos según tipo -->
         <div style="flex:1;min-width:200px">
-          <div class="form-grid form-grid-2" style="margin-bottom:12px">
-            <div class="form-group">
-              <label for="nombre">Nombre *</label>
-              <input type="text" id="nombre" name="nombre" value={perfil?.nombre ?? ''} placeholder="Ej: María" required maxlength="60" />
-            </div>
-            <div class="form-group">
-              <label for="apellidos">Apellidos</label>
-              <input type="text" id="apellidos" name="apellidos" value={perfil?.apellidos ?? ''} placeholder="Ej: López García" maxlength="80" />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="titulo_profesional">Título profesional</label>
-            <input type="text" id="titulo_profesional" name="titulo_profesional" value={perfil?.titulo_profesional ?? ''} placeholder="Ej: Diseñadora UX · Freelance" maxlength="120" />
-            <span class="form-hint">Aparece debajo de tu nombre en la tarjeta.</span>
-          </div>
+
+          {/* ── PROFESIONAL ── */}
+          {esProfesional && (
+            <>
+              <div class="form-grid form-grid-2" style="margin-bottom:12px">
+                <div class="form-group">
+                  <label for="nombre">Nombre *</label>
+                  <input type="text" id="nombre" name="nombre"
+                    value={perfil?.nombre ?? ''} placeholder="Ej: María"
+                    required maxlength="60" />
+                </div>
+                <div class="form-group">
+                  <label for="apellidos">Apellidos</label>
+                  <input type="text" id="apellidos" name="apellidos"
+                    value={perfil?.apellidos ?? ''} placeholder="Ej: López García"
+                    maxlength="80" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="titulo_profesional">Título profesional</label>
+                <input type="text" id="titulo_profesional" name="titulo_profesional"
+                  value={perfil?.titulo_profesional ?? ''}
+                  placeholder="Ej: Diseñadora UX · Freelance" maxlength="120" />
+                <span class="form-hint">Aparece debajo de tu nombre en la tarjeta.</span>
+              </div>
+            </>
+          )}
+
+          {/* ── NEGOCIO ── */}
+          {esNegocio && (
+            <>
+              <div class="form-group" style="margin-bottom:12px">
+                <label for="nombre_negocio">Nombre del negocio *</label>
+                <input type="text" id="nombre_negocio" name="nombre_negocio"
+                  value={perfil?.nombre_negocio ?? ''}
+                  placeholder="Ej: Pollería El Buen Sabor"
+                  required maxlength="100" />
+                <span class="form-hint">Nombre comercial que aparece en tu tarjeta.</span>
+              </div>
+              <div class="form-group" style="margin-bottom:12px">
+                <label for="categoria_negocio">Categoría</label>
+                <input type="text" id="categoria_negocio" name="categoria_negocio"
+                  value={perfil?.categoria_negocio ?? ''}
+                  placeholder="Ej: Restaurante, Tienda de ropa..."
+                  maxlength="80" />
+              </div>
+              <div class="form-group">
+                <label for="nombre">Nombre del responsable *</label>
+                <input type="text" id="nombre" name="nombre"
+                  value={perfil?.nombre ?? ''} placeholder="Ej: Juan"
+                  required maxlength="60" />
+                <span class="form-hint">No aparece en la tarjeta pública.</span>
+              </div>
+            </>
+          )}
+
         </div>
       </div>
 
+      <!-- Campos comunes: ubicación, teléfono -->
       <div class="form-grid form-grid-2">
         <div class="form-group">
-          <label for="ubicacion">Ubicación</label>
-          <input type="text" id="ubicacion" name="ubicacion" value={perfil?.ubicacion ?? ''} placeholder="Ej: Lima, Perú" maxlength="100" />
+          <label for="ubicacion">{esNegocio ? 'Ciudad / Zona' : 'Ubicación'}</label>
+          <input type="text" id="ubicacion" name="ubicacion"
+            value={perfil?.ubicacion ?? ''}
+            placeholder={esNegocio ? 'Ej: Miraflores, Lima' : 'Ej: Lima, Perú'}
+            maxlength="100" />
         </div>
         <div class="form-group">
-          <label for="telefono">Teléfono</label>
-          <input type="tel" id="telefono" name="telefono" value={perfil?.telefono ?? ''} placeholder="+51 987 654 321" maxlength="20" />
+          <label for="telefono">{esNegocio ? 'Teléfono del local' : 'Teléfono'}</label>
+          <input type="tel" id="telefono" name="telefono"
+            value={perfil?.telefono ?? ''}
+            placeholder="+51 987 654 321" maxlength="20" />
           <span class="form-hint">Al clicar en la tarjeta abre el marcador en móvil.</span>
         </div>
-        <div class="form-group">
-          <label for="status">Estado actual</label>
-          <select id="status" name="status">
-            <option value="Disponible"       selected={perfil?.status === 'Disponible' || !perfil}>Disponible</option>
-            <option value="Trabajando"        selected={perfil?.status === 'Trabajando'}>Trabajando</option>
-            <option value="Abierto a ofertas" selected={perfil?.status === 'Abierto a ofertas'}>Abierto a ofertas</option>
-            <option value="Inactivo"          selected={perfil?.status === 'Inactivo'}>Inactivo</option>
-          </select>
-        </div>
+
+        {/* Status: selector diferente según tipo */}
+        {esProfesional && (
+          <div class="form-group">
+            <label for="status">Estado laboral</label>
+            <select id="status" name="status">
+              <option value="Disponible"        selected={perfil?.status === 'Disponible' || !perfil}>Disponible</option>
+              <option value="Trabajando"         selected={perfil?.status === 'Trabajando'}>Trabajando</option>
+              <option value="Abierto a ofertas"  selected={perfil?.status === 'Abierto a ofertas'}>Abierto a ofertas</option>
+              <option value="No disponible"      selected={perfil?.status === 'No disponible'}>No disponible</option>
+            </select>
+          </div>
+        )}
+
+        {esNegocio && (
+          <div class="form-group">
+            <label for="status_negocio">Estado del negocio</label>
+            <select id="status_negocio" name="status_negocio">
+              <option value="Abierto"               selected={perfil?.status_negocio === 'Abierto' || !perfil}>Abierto</option>
+              <option value="Cerrado"               selected={perfil?.status_negocio === 'Cerrado'}>Cerrado</option>
+              <option value="Solo delivery"         selected={perfil?.status_negocio === 'Solo delivery'}>Solo delivery</option>
+              <option value="Solo reservas"         selected={perfil?.status_negocio === 'Solo reservas'}>Solo reservas</option>
+              <option value="Temporalmente cerrado" selected={perfil?.status_negocio === 'Temporalmente cerrado'}>Temporalmente cerrado</option>
+            </select>
+          </div>
+        )}
+
+        {/* Dirección: solo negocio */}
+        {esNegocio && (
+          <div class="form-group">
+            <label for="direccion">Dirección del local</label>
+            <input type="text" id="direccion" name="direccion"
+              value={perfil?.direccion ?? ''}
+              placeholder="Ej: Av. Larco 345, Miraflores" maxlength="200" />
+          </div>
+        )}
       </div>
     </div>
 
-    <!-- ── Bio ────────────────────────────────────────────── -->
+    <!-- ════════════════════════════════════════════════════
+         SECCIÓN: BIO / DESCRIPCIÓN
+         ════════════════════════════════════════════════════ -->
     <div class="section-card">
       <div class="section-card-title">
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/>
         </svg>
-        Bio / Presentación
+        {esNegocio ? 'Descripción del negocio' : 'Bio / Presentación'}
       </div>
       <div class="form-group">
-        <label for="bio">Presentación breve</label>
-        <textarea id="bio" name="bio" rows="4" placeholder="Cuéntale al mundo quién eres, qué haces y cuál es tu propuesta de valor..." maxlength="500" style="resize:vertical">{perfil?.bio ?? ''}</textarea>
+        <label for="bio">{esNegocio ? 'Descripción breve' : 'Presentación breve'}</label>
+        <textarea id="bio" name="bio" rows="4"
+          placeholder={esNegocio
+            ? 'Describe tu negocio, qué ofreces y qué te hace diferente...'
+            : 'Cuéntale al mundo quién eres, qué haces y cuál es tu propuesta de valor...'
+          }
+          maxlength="500" style="resize:vertical">{perfil?.bio ?? ''}</textarea>
         <div class="char-counter" id="bio-counter">0 / 500</div>
       </div>
     </div>
 
-    <!-- ── URL, CV y Portada ───────────────────────────────── -->
+    <!-- ════════════════════════════════════════════════════
+         SECCIÓN: URL + ARCHIVOS (profesional) / URL (negocio)
+         ════════════════════════════════════════════════════ -->
     <div class="section-card">
       <div class="section-card-title">
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/>
         </svg>
-        URL y archivos
+        URL de la tarjeta
       </div>
 
       <div class="form-grid form-grid-2">
-
-        <!-- Slug -->
         <div class="form-group">
-          <label for="slug">URL de tu tarjeta *</label>
-          <input type="text" id="slug" name="slug" value={perfil?.slug ?? ''} placeholder="tu-nombre" maxlength="60" pattern="[a-z0-9-]+" required />
+          <label for="slug">URL pública *</label>
+          <input type="text" id="slug" name="slug"
+            value={perfil?.slug ?? ''}
+            placeholder={esNegocio ? 'mi-negocio' : 'tu-nombre'}
+            maxlength="60" pattern="[a-z0-9-]+" required />
           <div class="slug-preview" id="slug-preview">
             <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/>
             </svg>
-            <span id="slug-preview-text">{Astro.url.host}/{perfil?.slug ?? 'tu-nombre'}</span>
+            <span id="slug-preview-text">{Astro.url.host}/{perfil?.slug ?? (esNegocio ? 'mi-negocio' : 'tu-nombre')}</span>
           </div>
         </div>
 
-        <!-- URL de portada -->
         <div class="form-group">
-          <label for="foto_portada_url">URL de foto de portada</label>
-          <input type="url" id="foto_portada_url" name="foto_portada_url" value={perfil?.foto_portada_url ?? ''} placeholder="https://..." />
-          <span class="form-hint">Imagen de fondo para el theme cinematográfico.</span>
+          <label for="foto_portada_url">Foto de portada / banner</label>
+          <input type="url" id="foto_portada_url" name="foto_portada_url"
+            value={perfil?.foto_portada_url ?? ''} placeholder="https://..." />
+          <span class="form-hint">
+            {esNegocio ? 'Banner del negocio para el theme.' : 'Imagen de fondo para el theme cinematográfico.'}
+          </span>
         </div>
-
       </div>
 
-      <!-- ── Uploader de CV ─────────────────────────────────── -->
-      <!-- El archivo se guarda en memoria hasta que el usuario
-           clica "Guardar cambios" — así nunca quedan huérfanos  -->
-      <div style="margin-top:16px">
-        <label style="display:block;margin-bottom:8px">
-          Currículum Vitae (PDF, Word)
-        </label>
+      <!-- CV: solo para profesionales -->
+      {esProfesional && (
+        <div style="margin-top:16px">
+          <label style="display:block;margin-bottom:8px">Currículum Vitae (PDF, Word)</label>
 
-        <!-- Estado: sin CV -->
-        <div id="cv-empty" style={perfil?.cv_pdf_url ? 'display:none' : ''}>
-          <div
-            id="cv-dropzone"
-            style="border:2px dashed var(--border-2);border-radius:var(--radius-lg);padding:24px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s"
-            onclick="document.getElementById('cv-input').click()"
-          >
-            <svg width="28" height="28" fill="none" stroke="var(--text-3)" viewBox="0 0 24 24" style="margin:0 auto 8px">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
-            </svg>
-            <div style="font-size:13px;font-weight:600;color:var(--text-2)">Arrastra tu CV aquí o clica para examinar</div>
-            <div style="font-size:11px;color:var(--text-3);margin-top:4px">PDF, DOC o DOCX · Máximo 3 MB</div>
-          </div>
-          <input type="file" id="cv-input" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none" />
-        </div>
-
-        <!-- Estado: archivo seleccionado (pendiente de guardar) -->
-        <div id="cv-pending" style="display:none">
-          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:var(--radius-lg)">
-            <svg width="20" height="20" fill="none" stroke="var(--accent-2)" viewBox="0 0 24 24" style="flex-shrink:0">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
-            </svg>
-            <div style="flex:1;min-width:0">
-              <div id="cv-pending-name" style="font-size:13px;font-weight:600;color:var(--text-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
-              <div id="cv-pending-size" style="font-size:11px;color:var(--text-3);margin-top:1px"></div>
-            </div>
-            <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(245,158,11,.12);color:var(--warn);letter-spacing:.04em;flex-shrink:0">
-              PENDIENTE
-            </span>
-            <button type="button" id="cv-pending-cancel" style="background:none;border:none;cursor:pointer;color:var(--text-3);padding:4px;display:flex" title="Cancelar">
-              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          <div id="cv-empty" style={perfil?.cv_pdf_url ? 'display:none' : ''}>
+            <div id="cv-dropzone"
+              style="border:2px dashed var(--border-2);border-radius:var(--radius-lg);padding:24px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s"
+              onclick="document.getElementById('cv-input').click()">
+              <svg width="28" height="28" fill="none" stroke="var(--text-3)" viewBox="0 0 24 24" style="margin:0 auto 8px">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
               </svg>
-            </button>
-          </div>
-          <div style="font-size:11px;color:var(--text-3);margin-top:6px;padding-left:2px">
-            ⚠ El archivo se subirá cuando cliques "Guardar cambios"
-          </div>
-        </div>
-
-        <!-- Barra de progreso (visible durante el upload) -->
-        <div id="cv-progress" style="display:none;margin-top:8px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-            <span style="font-size:12px;color:var(--text-3)" id="cv-progress-label">Subiendo CV…</span>
-            <span style="font-size:12px;color:var(--text-3)" id="cv-progress-pct">0%</span>
-          </div>
-          <div style="height:4px;background:var(--bg-4);border-radius:99px;overflow:hidden">
-            <div id="cv-progress-bar" style="height:100%;width:0%;background:var(--accent);border-radius:99px;transition:width .2s"></div>
-          </div>
-        </div>
-
-        <!-- Estado: CV ya guardado -->
-        <div id="cv-saved" style={perfil?.cv_pdf_url ? '' : 'display:none'}>
-          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-lg)">
-            <svg width="20" height="20" fill="none" stroke="var(--success)" viewBox="0 0 24 24" style="flex-shrink:0">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
-            </svg>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:13px;font-weight:600;color:var(--text-1)">CV guardado</div>
-              <div id="cv-saved-name" style="font-size:11px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                {perfil?.cv_pdf_url ? new URL(perfil.cv_pdf_url).pathname.split('/').pop() : ''}
-              </div>
+              <div style="font-size:13px;font-weight:600;color:var(--text-2)">Arrastra tu CV aquí o clica para examinar</div>
+              <div style="font-size:11px;color:var(--text-3);margin-top:4px">PDF, DOC o DOCX · Máximo 3 MB</div>
             </div>
-            <a
-              id="cv-saved-link"
-              href={perfil?.cv_pdf_url ?? '#'}
-              target="_blank"
-              rel="noopener"
-              class="btn btn-ghost"
-              style="font-size:11px;padding:4px 10px;flex-shrink:0"
-            >
-              Ver ↗
-            </a>
-            <button
-              type="button"
-              id="cv-delete"
-              class="btn btn-danger"
-              style="font-size:11px;padding:4px 10px;flex-shrink:0"
-              title="Eliminar CV"
-            >
-              Eliminar
-            </button>
+            <input type="file" id="cv-input" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none" />
           </div>
-          <button
-            type="button"
-            class="btn btn-ghost"
-            style="font-size:11px;margin-top:8px"
-            onclick="document.getElementById('cv-input').click()"
-          >
-            Reemplazar CV
-          </button>
-          <input type="file" id="cv-input" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none" />
+
+          <div id="cv-pending" style="display:none">
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:var(--radius-lg)">
+              <svg width="20" height="20" fill="none" stroke="var(--accent-2)" viewBox="0 0 24 24" style="flex-shrink:0">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+              </svg>
+              <div style="flex:1;min-width:0">
+                <div id="cv-pending-name" style="font-size:13px;font-weight:600;color:var(--text-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+                <div id="cv-pending-size" style="font-size:11px;color:var(--text-3);margin-top:1px"></div>
+              </div>
+              <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:rgba(245,158,11,.12);color:var(--warn);letter-spacing:.04em;flex-shrink:0">PENDIENTE</span>
+              <button type="button" id="cv-pending-cancel" style="background:none;border:none;cursor:pointer;color:var(--text-3);padding:4px;display:flex">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <div style="font-size:11px;color:var(--text-3);margin-top:6px">⚠ El archivo se subirá cuando cliques "Guardar cambios"</div>
+          </div>
+
+          <div id="cv-progress" style="display:none;margin-top:8px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="font-size:12px;color:var(--text-3)" id="cv-progress-label">Subiendo CV…</span>
+              <span style="font-size:12px;color:var(--text-3)" id="cv-progress-pct">0%</span>
+            </div>
+            <div style="height:4px;background:var(--bg-4);border-radius:99px;overflow:hidden">
+              <div id="cv-progress-bar" style="height:100%;width:0%;background:var(--accent);border-radius:99px;transition:width .2s"></div>
+            </div>
+          </div>
+
+          <div id="cv-saved" style={perfil?.cv_pdf_url ? '' : 'display:none'}>
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-lg)">
+              <svg width="20" height="20" fill="none" stroke="var(--success)" viewBox="0 0 24 24" style="flex-shrink:0">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+              </svg>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:600;color:var(--text-1)">CV guardado</div>
+                <div id="cv-saved-name" style="font-size:11px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                  {perfil?.cv_pdf_url ? new URL(perfil.cv_pdf_url).pathname.split('/').pop() : ''}
+                </div>
+              </div>
+              <a id="cv-saved-link" href={perfil?.cv_pdf_url ?? '#'} target="_blank" rel="noopener" class="btn btn-ghost" style="font-size:11px;padding:4px 10px;flex-shrink:0">Ver ↗</a>
+              <button type="button" id="cv-delete" class="btn btn-danger" style="font-size:11px;padding:4px 10px;flex-shrink:0">Eliminar</button>
+            </div>
+            <button type="button" class="btn btn-ghost" style="font-size:11px;margin-top:8px" onclick="document.getElementById('cv-input').click()">Reemplazar CV</button>
+            <input type="file" id="cv-input" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none" />
+          </div>
+
+          <input type="hidden" name="cv_pdf_url" id="cv_pdf_url" value={perfil?.cv_pdf_url ?? ''} />
         </div>
-
-        <!-- Campo hidden que lleva la URL al formulario -->
-        <input type="hidden" name="cv_pdf_url" id="cv_pdf_url" value={perfil?.cv_pdf_url ?? ''} />
-      </div>
-
+      )}
     </div>
 
-    <!-- ── Color de acento ────────────────────────────────── -->
+    <!-- ════════════════════════════════════════════════════
+         SECCIÓN: COLOR DE ACENTO
+         ════════════════════════════════════════════════════ -->
     <div class="section-card">
       <div class="section-card-title">
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -306,22 +372,28 @@ const cardUrl = perfil?.slug
         <div>
           <label for="color_primario">Color principal</label>
           <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-            <input type="color" id="color_primario" name="color_primario" value={perfil?.color_primario ?? '#6366f1'} style="width:44px;height:36px;padding:2px;border-radius:8px;cursor:pointer" />
-            <input type="text" id="color_primario_hex" value={perfil?.color_primario ?? '#6366f1'} placeholder="#6366f1" style="width:100px;font-family:var(--font-mono);font-size:13px" maxlength="7" />
+            <input type="color" id="color_primario" name="color_primario"
+              value={perfil?.color_primario ?? '#6366f1'}
+              style="width:44px;height:36px;padding:2px;border-radius:8px;cursor:pointer" />
+            <input type="text" id="color_primario_hex"
+              value={perfil?.color_primario ?? '#6366f1'}
+              placeholder="#6366f1" style="width:100px;font-family:var(--font-mono);font-size:13px" maxlength="7" />
           </div>
         </div>
         <div style="margin-top:20px">
           <span class="form-hint">Presets:</span>
           <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap" id="color-presets">
             {['#6366f1','#0ea5e9','#10b981','#f59e0b','#ef4444','#ec4899','#8b5cf6','#111827'].map(c => (
-              <button type="button" class="color-preset" data-color={c} style={`width:24px;height:24px;border-radius:50%;background:${c};border:2px solid transparent;cursor:pointer;transition:.15s`} aria-label={c} />
+              <button type="button" class="color-preset" data-color={c}
+                style={`width:24px;height:24px;border-radius:50%;background:${c};border:2px solid transparent;cursor:pointer;transition:.15s`}
+                aria-label={c} />
             ))}
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ── Guardar ─────────────────────────────────────────── -->
+    <!-- ── Guardar ─────────────────────────────────────────────── -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding-top:8px;flex-wrap:wrap;gap:12px">
       <span style="font-size:12px;color:var(--text-3)" id="save-status"></span>
       <div style="display:flex;gap:8px">
@@ -343,6 +415,13 @@ const cardUrl = perfil?.slug
 
 </DashboardLayout>
 
+<!-- tipo_perfil disponible para el script sin exponer datos sensibles -->
+<div id="perfil-meta"
+  data-tipo={perfil?.tipo_perfil ?? 'profesional'}
+  data-perfil-id={perfil?.id ?? ''}
+  style="display:none">
+</div>
+
 <script>
   import { createBrowserClient } from '@supabase/ssr'
 
@@ -351,22 +430,26 @@ const cardUrl = perfil?.slug
     document.querySelector<HTMLMetaElement>('meta[name="supabase-anon"]')!.content,
   )
 
-  // ── Constantes ────────────────────────────────────────────────
-  const MAX_BYTES    = 3 * 1024 * 1024   // 3 MB
-  const BUCKET       = 'avatars'
+  const meta        = document.getElementById('perfil-meta')!
+  const tipoPerfil  = meta.dataset.tipo as 'profesional' | 'negocio'
+  const esProfesional = tipoPerfil === 'profesional'
+  const esNegocio     = tipoPerfil === 'negocio'
 
-  // ── Char counter bio ──────────────────────────────────────────
+  const MAX_BYTES = 3 * 1024 * 1024
+  const BUCKET    = 'avatars'
+
+  // ── Bio counter ──────────────────────────────────────────────
   const bioEl      = document.getElementById('bio') as HTMLTextAreaElement
   const bioCounter = document.getElementById('bio-counter')!
   function updateBioCounter() {
-    const n = bioEl.value.length
+    const n = bioEl?.value.length ?? 0
     bioCounter.textContent = `${n} / 500`
     bioCounter.className   = `char-counter${n > 450 ? (n >= 500 ? ' over' : ' warn') : ''}`
   }
   bioEl?.addEventListener('input', updateBioCounter)
   updateBioCounter()
 
-  // ── Slug preview ──────────────────────────────────────────────
+  // ── Slug preview ─────────────────────────────────────────────
   const slugEl          = document.getElementById('slug') as HTMLInputElement
   const slugPreviewText = document.getElementById('slug-preview-text')!
   const host            = window.location.host
@@ -378,8 +461,8 @@ const cardUrl = perfil?.slug
     if (previewLink) previewLink.href = `/${clean || '#'}`
   })
 
-  // ── Color sync ────────────────────────────────────────────────
-  const colorPicker = document.getElementById('color_primario') as HTMLInputElement
+  // ── Color sync ───────────────────────────────────────────────
+  const colorPicker = document.getElementById('color_primario')     as HTMLInputElement
   const colorHex    = document.getElementById('color_primario_hex') as HTMLInputElement
   colorPicker?.addEventListener('input', () => { colorHex.value = colorPicker.value })
   colorHex?.addEventListener('input', () => {
@@ -392,291 +475,209 @@ const cardUrl = perfil?.slug
     })
   })
 
-  // ── Helpers de formato ────────────────────────────────────────
-  function formatBytes(bytes: number): string {
-    if (bytes < 1024)       return `${bytes} B`
-    if (bytes < 1024*1024)  return `${(bytes/1024).toFixed(1)} KB`
-    return `${(bytes/(1024*1024)).toFixed(1)} MB`
-  }
-
-  // ── FOTO DE PERFIL — recibe el blob del FotoEditorModal ──────
-  const fotoPreview   = document.getElementById('foto-preview')   as HTMLDivElement
-  const fotoUrlHidden = document.getElementById('foto_url')        as HTMLInputElement
+  // ── Foto de perfil ───────────────────────────────────────────
+  const fotoPreview   = document.getElementById('foto-preview')  as HTMLDivElement
+  const fotoUrlHidden = document.getElementById('foto_url')       as HTMLInputElement
 
   window.addEventListener('foto-confirmada', async (e: any) => {
     const { blob, previewUrl } = e.detail
-
-    // Mostrar preview inmediato
     fotoPreview.innerHTML = `<img src="${previewUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;opacity:.7" />`
-
     const { data: { user } } = await sb.auth.getUser()
     if (!user) return
-
-    // Limpiar fotos anteriores con otras extensiones
     await sb.storage.from('avatars').remove([
-      `${user.id}/foto.png`,
-      `${user.id}/foto.jpg`,
-      `${user.id}/foto.jpeg`,
-      `${user.id}/foto.gif`,
-      `${user.id}/foto.webp`,
+      `${user.id}/foto.png`, `${user.id}/foto.jpg`,
+      `${user.id}/foto.jpeg`, `${user.id}/foto.gif`, `${user.id}/foto.webp`,
     ])
-
-    // Subir WebP al bucket en carpeta del usuario
     const path = `${user.id}/foto.webp`
-    const { error } = await sb.storage.from('avatars').upload(path, blob, {
-      upsert: true,
-      contentType: 'image/webp',
-    })
-
-    if (error) {
-      ;(window as any).toast?.('Error subiendo foto: ' + error.message, 'error')
-      fotoPreview.innerHTML = '📷'
-      return
-    }
-
+    const { error } = await sb.storage.from('avatars').upload(path, blob, { upsert: true, contentType: 'image/webp' })
+    if (error) { ;(window as any).toast?.('Error subiendo foto: ' + error.message, 'error'); fotoPreview.innerHTML = '📷'; return }
     const { data: { publicUrl } } = sb.storage.from('avatars').getPublicUrl(path)
-    const urlConCache = `${publicUrl}?t=${Date.now()}`
     fotoUrlHidden.value = publicUrl
-    fotoPreview.innerHTML = `<img src="${urlConCache}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" alt="Foto de perfil" />`
+    fotoPreview.innerHTML = `<img src="${publicUrl}?t=${Date.now()}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`
     ;(window as any).toast?.('Foto actualizada — guarda los cambios', 'success')
   })
 
-  // ── CV UPLOADER ───────────────────────────────────────────────
-  // El archivo NO se sube hasta clicar "Guardar cambios"
-  // Así evitamos archivos huérfanos en el bucket
-  let cvFilePendiente: File | null = null   // archivo en memoria, pendiente de subir
+  // ── CV (solo profesional) ────────────────────────────────────
+  let cvFilePendiente: File | null = null
+  if (esProfesional) {
+    const cvInput         = document.getElementById('cv-input')         as HTMLInputElement
+    const cvEmpty         = document.getElementById('cv-empty')          as HTMLDivElement
+    const cvPending       = document.getElementById('cv-pending')        as HTMLDivElement
+    const cvPendingName   = document.getElementById('cv-pending-name')   as HTMLDivElement
+    const cvPendingSize   = document.getElementById('cv-pending-size')   as HTMLDivElement
+    const cvPendingCancel = document.getElementById('cv-pending-cancel') as HTMLButtonElement
+    const cvProgress      = document.getElementById('cv-progress')       as HTMLDivElement
+    const cvProgressBar   = document.getElementById('cv-progress-bar')   as HTMLDivElement
+    const cvProgressLabel = document.getElementById('cv-progress-label') as HTMLSpanElement
+    const cvProgressPct   = document.getElementById('cv-progress-pct')   as HTMLSpanElement
+    const cvSaved         = document.getElementById('cv-saved')          as HTMLDivElement
+    const cvSavedName     = document.getElementById('cv-saved-name')     as HTMLDivElement
+    const cvSavedLink     = document.getElementById('cv-saved-link')     as HTMLAnchorElement
+    const cvDelete        = document.getElementById('cv-delete')         as HTMLButtonElement
+    const cvUrlHidden     = document.getElementById('cv_pdf_url')        as HTMLInputElement
+    const cvDropzone      = document.getElementById('cv-dropzone')       as HTMLDivElement
 
-  const cvInput          = document.getElementById('cv-input')          as HTMLInputElement
-  const cvEmpty          = document.getElementById('cv-empty')           as HTMLDivElement
-  const cvPending        = document.getElementById('cv-pending')         as HTMLDivElement
-  const cvPendingName    = document.getElementById('cv-pending-name')    as HTMLDivElement
-  const cvPendingSize    = document.getElementById('cv-pending-size')    as HTMLDivElement
-  const cvPendingCancel  = document.getElementById('cv-pending-cancel')  as HTMLButtonElement
-  const cvProgress       = document.getElementById('cv-progress')        as HTMLDivElement
-  const cvProgressBar    = document.getElementById('cv-progress-bar')    as HTMLDivElement
-  const cvProgressLabel  = document.getElementById('cv-progress-label')  as HTMLSpanElement
-  const cvProgressPct    = document.getElementById('cv-progress-pct')    as HTMLSpanElement
-  const cvSaved          = document.getElementById('cv-saved')           as HTMLDivElement
-  const cvSavedName      = document.getElementById('cv-saved-name')      as HTMLDivElement
-  const cvSavedLink      = document.getElementById('cv-saved-link')      as HTMLAnchorElement
-  const cvDelete         = document.getElementById('cv-delete')          as HTMLButtonElement
-  const cvUrlHidden      = document.getElementById('cv_pdf_url')         as HTMLInputElement
-  const cvDropzone       = document.getElementById('cv-dropzone')        as HTMLDivElement
-
-  // Estado de la UI del CV
-  function mostrarEstadoCV(estado: 'empty' | 'pending' | 'saved') {
-    cvEmpty.style.display   = estado === 'empty'   ? '' : 'none'
-    cvPending.style.display = estado === 'pending' ? '' : 'none'
-    cvSaved.style.display   = estado === 'saved'   ? '' : 'none'
-    cvProgress.style.display = 'none'
-  }
-
-  // Al seleccionar archivo
-  cvInput?.addEventListener('change', () => {
-    const file = cvInput.files?.[0]
-    if (!file) return
-
-    // Validar tamaño
-    if (file.size > MAX_BYTES) {
-      ;(window as any).toast?.(`El archivo supera el límite de 3 MB (${formatBytes(file.size)}). Comprime el PDF e inténtalo de nuevo.`, 'warn')
-      cvInput.value = ''
-      return
+    function mostrarEstadoCV(estado: 'empty'|'pending'|'saved') {
+      cvEmpty.style.display    = estado === 'empty'   ? '' : 'none'
+      cvPending.style.display  = estado === 'pending' ? '' : 'none'
+      cvSaved.style.display    = estado === 'saved'   ? '' : 'none'
+      cvProgress.style.display = 'none'
+    }
+    function formatBytes(b: number) {
+      if (b < 1024) return `${b} B`
+      if (b < 1048576) return `${(b/1024).toFixed(1)} KB`
+      return `${(b/1048576).toFixed(1)} MB`
     }
 
-    // Validar tipo
-    const tiposPermitidos = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
-    if (!tiposPermitidos.includes(file.type) && !file.name.match(/\.(pdf|doc|docx)$/i)) {
-      ;(window as any).toast?.('Solo se aceptan archivos PDF, DOC o DOCX', 'warn')
+    cvInput?.addEventListener('change', () => {
+      const file = cvInput.files?.[0]; if (!file) return
+      if (file.size > MAX_BYTES) { ;(window as any).toast?.(`Supera 3 MB (${formatBytes(file.size)})`, 'warn'); cvInput.value = ''; return }
+      const tipos = ['application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+      if (!tipos.includes(file.type) && !file.name.match(/\.(pdf|doc|docx)$/i)) { ;(window as any).toast?.('Solo PDF, DOC o DOCX', 'warn'); cvInput.value = ''; return }
+      cvFilePendiente = file
+      cvPendingName.textContent = file.name
+      cvPendingSize.textContent = formatBytes(file.size)
+      mostrarEstadoCV('pending')
       cvInput.value = ''
-      return
-    }
-
-    // Guardar en memoria — NO subir todavía
-    cvFilePendiente = file
-    cvPendingName.textContent = file.name
-    cvPendingSize.textContent = formatBytes(file.size)
-    mostrarEstadoCV('pending')
-    cvInput.value = ''   // resetear input para permitir reseleccionar el mismo archivo
-  })
-
-  // Cancelar selección pendiente
-  cvPendingCancel?.addEventListener('click', () => {
-    cvFilePendiente = null
-    // Si había CV guardado antes, volver a mostrarlo
-    if (cvUrlHidden.value) {
-      mostrarEstadoCV('saved')
-    } else {
+    })
+    cvPendingCancel?.addEventListener('click', () => { cvFilePendiente = null; mostrarEstadoCV(cvUrlHidden.value ? 'saved' : 'empty') })
+    cvDelete?.addEventListener('click', async () => {
+      if (!confirm('¿Eliminar el CV?')) return
+      const { data: { user } } = await sb.auth.getUser(); if (!user) return
+      cvDelete.disabled = true; cvDelete.textContent = 'Eliminando…'
+      for (const ext of ['pdf','doc','docx']) await sb.storage.from(BUCKET).remove([`${user.id}/cv.${ext}`])
+      cvUrlHidden.value = ''; cvFilePendiente = null
+      cvDelete.disabled = false; cvDelete.textContent = 'Eliminar'
       mostrarEstadoCV('empty')
-    }
-  })
-
-  // Eliminar CV guardado
-  cvDelete?.addEventListener('click', async () => {
-    if (!confirm('¿Eliminar el CV? Esta acción no se puede deshacer.')) return
-
-    const { data: { user } } = await sb.auth.getUser()
-    if (!user) return
-
-    cvDelete.disabled = true
-    cvDelete.textContent = 'Eliminando…'
-
-    // Eliminar del bucket — intentar con extensiones comunes
-    const exts = ['pdf', 'doc', 'docx']
-    for (const ext of exts) {
-      await sb.storage.from(BUCKET).remove([`${user.id}/cv.${ext}`])
-    }
-
-    // Limpiar la URL en el formulario
-    cvUrlHidden.value = ''
-    cvFilePendiente   = null
-
-    cvDelete.disabled = false
-    cvDelete.textContent = 'Eliminar'
-    mostrarEstadoCV('empty')
-    ;(window as any).toast?.('CV eliminado — guarda los cambios para confirmar', 'success')
-  })
-
-  // Drag & drop en la zona de drop del CV
-  cvDropzone?.addEventListener('dragover', e => {
-    e.preventDefault()
-    cvDropzone.style.borderColor  = 'var(--accent)'
-    cvDropzone.style.background   = 'var(--accent-bg)'
-  })
-  cvDropzone?.addEventListener('dragleave', () => {
-    cvDropzone.style.borderColor = 'var(--border-2)'
-    cvDropzone.style.background  = ''
-  })
-  cvDropzone?.addEventListener('drop', e => {
-    e.preventDefault()
-    cvDropzone.style.borderColor = 'var(--border-2)'
-    cvDropzone.style.background  = ''
-    const file = e.dataTransfer?.files[0]
-    if (!file) return
-    // Reutilizar la misma validación pasando por el input
-    const dt = new DataTransfer()
-    dt.items.add(file)
-    cvInput.files = dt.files
-    cvInput.dispatchEvent(new Event('change'))
-  })
-
-  // ── Función para subir CV al bucket durante el guardado ───────
-  async function subirCVSiPendiente(userId: string): Promise<string | null> {
-    if (!cvFilePendiente) return cvUrlHidden.value || null
-
-    // Mostrar barra de progreso
-    cvProgress.style.display = 'block'
-    cvProgressBar.style.width = '0%'
-    cvProgressLabel.textContent = 'Subiendo CV…'
-    cvProgressPct.textContent = '0%'
-
-    // Simular progreso mientras sube (Supabase no tiene progreso real en JS)
-    let pct = 0
-    const intervalo = setInterval(() => {
-      pct = Math.min(pct + 10, 85)
-      cvProgressBar.style.width = `${pct}%`
-      cvProgressPct.textContent = `${pct}%`
-    }, 150)
-
-    const ext  = cvFilePendiente.name.split('.').pop()?.toLowerCase() ?? 'pdf'
-    const path = `${userId}/cv.${ext}`
-
-    const { error } = await sb.storage.from(BUCKET).upload(path, cvFilePendiente, {
-      upsert:      true,
-      contentType: cvFilePendiente.type,
+      ;(window as any).toast?.('CV eliminado', 'success')
+    })
+    cvDropzone?.addEventListener('dragover', e => { e.preventDefault(); cvDropzone.style.borderColor = 'var(--accent)'; cvDropzone.style.background = 'var(--accent-bg)' })
+    cvDropzone?.addEventListener('dragleave', () => { cvDropzone.style.borderColor = 'var(--border-2)'; cvDropzone.style.background = '' })
+    cvDropzone?.addEventListener('drop', e => {
+      e.preventDefault(); cvDropzone.style.borderColor = 'var(--border-2)'; cvDropzone.style.background = ''
+      const file = e.dataTransfer?.files[0]; if (!file) return
+      const dt = new DataTransfer(); dt.items.add(file); cvInput.files = dt.files
+      cvInput.dispatchEvent(new Event('change'))
     })
 
-    clearInterval(intervalo)
-
-    if (error) {
-      cvProgress.style.display = 'none'
-      ;(window as any).toast?.('Error subiendo CV: ' + error.message, 'error')
-      return null
+    // Subir CV durante el guardado
+    ;(window as any).__subirCV = async (userId: string): Promise<string|null> => {
+      const cvUrlHiddenEl = document.getElementById('cv_pdf_url') as HTMLInputElement
+      if (!cvFilePendiente) return cvUrlHiddenEl.value || null
+      cvProgress.style.display = 'block'; cvProgressBar.style.width = '0%'
+      let pct = 0
+      const iv = setInterval(() => { pct = Math.min(pct+10,85); cvProgressBar.style.width=`${pct}%`; cvProgressPct.textContent=`${pct}%` }, 150)
+      const ext = cvFilePendiente.name.split('.').pop()?.toLowerCase() ?? 'pdf'
+      const { error } = await sb.storage.from(BUCKET).upload(`${userId}/cv.${ext}`, cvFilePendiente, { upsert: true, contentType: cvFilePendiente.type })
+      clearInterval(iv)
+      if (error) { cvProgress.style.display='none'; ;(window as any).toast?.('Error subiendo CV: '+error.message,'error'); return null }
+      cvProgressBar.style.width='100%'; cvProgressPct.textContent='100%'; cvProgressLabel.textContent='✓ CV subido'
+      setTimeout(() => { cvProgress.style.display='none' }, 1000)
+      const { data: { publicUrl } } = sb.storage.from(BUCKET).getPublicUrl(`${userId}/cv.${ext}`)
+      cvFilePendiente = null; cvSavedName.textContent = `cv.${ext}`; cvSavedLink.href = publicUrl
+      mostrarEstadoCV('saved')
+      return publicUrl
     }
-
-    // Progreso al 100%
-    cvProgressBar.style.width = '100%'
-    cvProgressPct.textContent = '100%'
-    cvProgressLabel.textContent = '✓ CV subido'
-    setTimeout(() => { cvProgress.style.display = 'none' }, 1000)
-
-    const { data: { publicUrl } } = sb.storage.from(BUCKET).getPublicUrl(path)
-
-    // Actualizar estado a "guardado"
-    cvFilePendiente = null
-    cvSavedName.textContent = `cv.${ext}`
-    cvSavedLink.href = publicUrl
-    mostrarEstadoCV('saved')
-
-    return publicUrl
   }
 
-  // ── GUARDAR PERFIL ────────────────────────────────────────────
+  // ── GUARDAR PERFIL ───────────────────────────────────────────
   const form       = document.getElementById('perfil-form') as HTMLFormElement
   const btnSave    = document.getElementById('btn-save')    as HTMLButtonElement
   const saveStatus = document.getElementById('save-status')!
 
   form?.addEventListener('submit', async (e) => {
     e.preventDefault()
-    btnSave.disabled = true
+    btnSave.disabled  = true
     btnSave.innerHTML = '<span style="opacity:.6">Guardando…</span>'
     saveStatus.textContent = ''
 
     const { data: { user } } = await sb.auth.getUser()
     if (!user) { window.location.href = '/auth/login'; return }
 
-    // ── 1. Subir CV si hay uno pendiente ──────────────────────
-    const cvUrl = await subirCVSiPendiente(user.id)
-    // Si el upload falló y había un archivo pendiente, abortar
-    if (cvFilePendiente !== null && !cvUrl) {
+    // ── 1. Subir CV si hay uno pendiente (solo profesional) ───
+    let cvUrl: string | null = null
+    if (esProfesional && (window as any).__subirCV) {
+      cvUrl = await (window as any).__subirCV(user.id)
+      if (cvFilePendiente !== null && !cvUrl) {
+        btnSave.disabled = false
+        btnSave.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Guardar cambios'
+        return
+      }
+    }
+
+    const fd = new FormData(form)
+
+    // ── 2. Payload para perfiles (campos comunes) ─────────────
+    const urlFields = ['foto_url', 'foto_portada_url']
+    const basePayload: Record<string,unknown> = { user_id: user.id }
+
+    for (const campo of ['nombre','ubicacion','telefono','foto_url','foto_portada_url','slug','color_primario']) {
+      const val = (fd.get(campo) as string)?.trim() ?? ''
+      basePayload[campo] = urlFields.includes(campo) ? (val || null) : val
+    }
+    if (!/^#[0-9a-fA-F]{6}$/.test(basePayload.color_primario as string)) {
+      basePayload.color_primario = '#6366f1'
+    }
+
+    // ── 3. Upsert en perfiles ─────────────────────────────────
+    const { data: perfilGuardado, error: perfilErr } = await sb
+      .from('perfiles')
+      .upsert(basePayload, { onConflict: 'user_id' })
+      .select('id')
+      .single()
+
+    if (perfilErr || !perfilGuardado) {
+      ;(window as any).toast?.('Error guardando perfil: ' + perfilErr?.message, 'error')
       btnSave.disabled = false
       btnSave.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Guardar cambios'
       return
     }
 
-    // ── 2. Construir payload del perfil ───────────────────────
-    const fd = new FormData(form)
-    const payload: Record<string, unknown> = {}
+    const perfilId = perfilGuardado.id
 
-    fd.forEach((v, k) => {
-      const val = (v as string).trim()
-      const urlFields = ['foto_url', 'cv_pdf_url', 'foto_portada_url']
-      payload[k] = urlFields.includes(k) ? (val || null) : val
-    })
+    // ── 4. Upsert en tabla satélite según tipo ────────────────
+    let sateliteErr: any = null
 
-    // Sobreescribir cv_pdf_url con la URL real del bucket
-    payload.cv_pdf_url = cvUrl
+    if (esProfesional) {
+      const ppPayload: Record<string,unknown> = {
+        perfil_id:          perfilId,
+        apellidos:          (fd.get('apellidos')         as string)?.trim() || null,
+        titulo_profesional: (fd.get('titulo_profesional')as string)?.trim() || null,
+        cv_pdf_url:         cvUrl,
+        status:             (fd.get('status')            as string) || 'Disponible',
+      }
+      const { error } = await sb
+        .from('perfiles_profesionales')
+        .upsert(ppPayload, { onConflict: 'perfil_id' })
+      sateliteErr = error
 
-    // Validar color
-    if (!/^#[0-9a-fA-F]{6}$/.test(payload.color_primario as string)) {
-      payload.color_primario = '#6366f1'
+    } else {
+      const pnPayload: Record<string,unknown> = {
+        perfil_id:        perfilId,
+        nombre_negocio:   (fd.get('nombre_negocio')   as string)?.trim() || null,
+        categoria_negocio:(fd.get('categoria_negocio') as string)?.trim() || null,
+        direccion:        (fd.get('direccion')         as string)?.trim() || null,
+        status_negocio:   (fd.get('status_negocio')   as string) || 'Abierto',
+      }
+      const { error } = await sb
+        .from('perfiles_negocios')
+        .upsert(pnPayload, { onConflict: 'perfil_id' })
+      sateliteErr = error
     }
 
-    payload.user_id = user.id
-
-    // ── 3. Upsert del perfil ──────────────────────────────────
-    const { error } = await sb
-      .from('perfiles')
-      .upsert(payload, { onConflict: 'user_id' })
-
-    btnSave.disabled = false
+    btnSave.disabled  = false
     btnSave.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Guardar cambios'
 
-    if (error) {
-      ;(window as any).toast?.('Error: ' + error.message, 'error')
+    if (sateliteErr) {
+      ;(window as any).toast?.('Error: ' + sateliteErr.message, 'error')
     } else {
-      // Actualizar el hidden con la URL final
-      cvUrlHidden.value = cvUrl ?? ''
       saveStatus.textContent = `Guardado · ${new Date().toLocaleTimeString()}`
       ;(window as any).toast?.('Perfil guardado correctamente', 'success')
     }
   })
 
-  // ── Indicador "sin guardar" al editar ─────────────────────────
-  let autoSaveTimer: ReturnType<typeof setTimeout> | undefined
+  // ── Indicador "sin guardar" ──────────────────────────────────
   form?.querySelectorAll('input,textarea,select').forEach(el => {
-    el.addEventListener('input', () => {
-      clearTimeout(autoSaveTimer)
-      saveStatus.textContent = 'Sin guardar…'
-    })
+    el.addEventListener('input', () => { saveStatus.textContent = 'Sin guardar…' })
   })
 </script>

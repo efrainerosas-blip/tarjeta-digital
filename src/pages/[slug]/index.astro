@@ -14,71 +14,140 @@ const supabase = createClient(
 
 const { slug } = Astro.params
 
+// ── 1. Leer perfil desde la vista unificada ───────────────────
+// vista_perfiles_completos hace el LEFT JOIN con perfiles_profesionales
+// y perfiles_negocios en una sola query — un solo round-trip.
 const { data: perfil, error } = await supabase
-  .from('perfiles')
+  .from('vista_perfiles_completos')
   .select('*')
   .eq('slug', slug)
   .maybeSingle()
 
-if (error) { console.error('[slug] error BD:', error.message); return Astro.redirect('/404') }
-if (!perfil) { console.log('[slug] no encontrado:', slug); return Astro.redirect('/404') }
+if (error) {
+  console.error('[slug] error BD:', error.message)
+  return Astro.redirect('/404')
+}
+if (!perfil) {
+  console.log('[slug] no encontrado:', slug)
+  return Astro.redirect('/404')
+}
 
-const [
-  { data: experiencia },
-  { data: estudios },
-  { data: capacitaciones },
-  { data: habilidades },
-  { data: servicios },
-  { data: proyectos },
-  { data: redes },
-  { data: logros },
-  { data: referencias },
-] = await Promise.all([
-  supabase.from('experiencia_laboral').select('*').eq('perfil_id', perfil.id).order('orden'),
-  supabase.from('estudios').select('*').eq('perfil_id', perfil.id).order('orden'),
-  supabase.from('capacitaciones').select('*').eq('perfil_id', perfil.id).order('orden'),
-  supabase.from('habilidades').select('*').eq('perfil_id', perfil.id).order('orden'),
-  supabase.from('servicios').select('*').eq('perfil_id', perfil.id).order('orden'),
-  supabase.from('proyectos').select('*').eq('perfil_id', perfil.id).order('orden'),
-  supabase.from('redes_sociales').select('*').eq('perfil_id', perfil.id).order('orden').limit(3),
-  supabase.from('logros').select('*').eq('perfil_id', perfil.id).order('orden'),
-  supabase.from('referencias').select('*').eq('perfil_id', perfil.id).order('orden'),
-])
+const esProfesional = perfil.tipo_perfil === 'profesional'
+const esNegocio     = perfil.tipo_perfil === 'negocio'
 
+// ── 2. Cargar datos satélite según tipo ───────────────────────
+// Profesional: carga todo (experiencia, estudios, habilidades, etc.)
+// Negocio:     solo carga servicios, proyectos (galería) y redes
+// Esto evita queries innecesarias para negocios.
+
+let experiencia:    any[] = []
+let estudios:       any[] = []
+let capacitaciones: any[] = []
+let habilidades:    any[] = []
+let logros:         any[] = []
+let referencias:    any[] = []
+let servicios:      any[] = []
+let proyectos:      any[] = []
+let redes:          any[] = []
+
+if (esProfesional) {
+  // Profesional: todas las queries en paralelo
+  const [
+    { data: _exp },
+    { data: _est },
+    { data: _cap },
+    { data: _hab },
+    { data: _svc },
+    { data: _pry },
+    { data: _red },
+    { data: _log },
+    { data: _ref },
+  ] = await Promise.all([
+    supabase.from('experiencia_laboral').select('*').eq('perfil_id', perfil.id).order('orden'),
+    supabase.from('estudios')           .select('*').eq('perfil_id', perfil.id).order('orden'),
+    supabase.from('capacitaciones')     .select('*').eq('perfil_id', perfil.id).order('orden'),
+    supabase.from('habilidades')        .select('*').eq('perfil_id', perfil.id).order('orden'),
+    supabase.from('servicios')          .select('*').eq('perfil_id', perfil.id).order('orden'),
+    supabase.from('proyectos')          .select('*').eq('perfil_id', perfil.id).order('orden'),
+    supabase.from('redes_sociales')     .select('*').eq('perfil_id', perfil.id).order('orden'),
+    supabase.from('logros')             .select('*').eq('perfil_id', perfil.id).order('orden'),
+    supabase.from('referencias')        .select('*').eq('perfil_id', perfil.id).order('orden'),
+  ])
+  experiencia    = _exp ?? []
+  estudios       = _est ?? []
+  capacitaciones = _cap ?? []
+  habilidades    = _hab ?? []
+  servicios      = _svc ?? []
+  proyectos      = _pry ?? []
+  redes          = _red ?? []
+  logros         = _log ?? []
+  referencias    = _ref ?? []
+
+} else {
+  // Negocio: solo servicios (catálogo), proyectos (galería) y redes
+  const [
+    { data: _svc },
+    { data: _pry },
+    { data: _red },
+  ] = await Promise.all([
+    supabase.from('servicios')     .select('*').eq('perfil_id', perfil.id).order('orden'),
+    supabase.from('proyectos')     .select('*').eq('perfil_id', perfil.id).order('orden'),
+    supabase.from('redes_sociales').select('*').eq('perfil_id', perfil.id).order('orden'),
+  ])
+  servicios = _svc ?? []
+  proyectos = _pry ?? []
+  redes     = _red ?? []
+}
+
+// ── 3. Seleccionar theme según tipo_perfil ────────────────────
+// Los themes de profesional y negocio viven en registros distintos
+// en THEMES (diferenciados por el campo `tipo` que agregaremos).
+// Por ahora: si el template_id no existe para ese tipo, usa el primero
+// disponible del tipo correspondiente.
 const theme = getTheme(perfil.template_id ?? THEMES[0].id)
 const Card  = theme.componente as any
 
-const nombre   = [perfil.nombre, perfil.apellidos].filter(Boolean).join(' ')
-const titulo  = perfil.titulo_profesional || 'Tarjeta Digital Profesional'
+// ── 4. Construir nombre display ───────────────────────────────
+// Profesional: nombre + apellidos (apellidos viene de la vista)
+// Negocio:     nombre_negocio como título principal
+const nombre = esProfesional
+  ? [perfil.nombre, perfil.apellidos].filter(Boolean).join(' ')
+  : (perfil.nombre_negocio ?? perfil.nombre)
+
+// Descripción para OG y meta
+const descripcion = esProfesional
+  ? (perfil.bio ?? perfil.titulo_profesional ?? 'Tarjeta Digital Profesional')
+  : (perfil.bio ?? perfil.categoria_negocio  ?? 'Tarjeta Digital de Negocio')
+
 const bgColor = theme.preview_bg || '#ffffff'
 
+// ── 5. Props para el componente del theme ─────────────────────
 const cardProps = {
   perfil,
-  experiencia:    experiencia    ?? [],
-  estudios:       estudios       ?? [],
-  habilidades:    habilidades    ?? [],
-  servicios:      servicios      ?? [],
-  proyectos:      proyectos      ?? [],
-  redes:          redes          ?? [],
-  logros:         logros         ?? [],
-  capacitaciones: capacitaciones ?? [],
-  referencias:    referencias    ?? [],
+  experiencia,
+  estudios,
+  habilidades,
+  servicios,
+  proyectos,
+  redes,
+  logros,
+  capacitaciones,
+  referencias,
 }
 ---
 
 <CardLayout
-title={`${nombre} — Tarjeta digital`}
-description={perfil.bio ?? titulo}
-ogImage={perfil.foto_url ?? undefined}
-bgColor={bgColor}
-cardUrl={`${Astro.url.origin}/${slug}`}
-fotoUrl={perfil.foto_url ?? null}
-slug={slug}
-nombre={nombre}
-tituloProf={perfil.titulo_profesional ?? null}
-accentColor={perfil.color_primario ?? '#4B6CF7'}
+  title={`${nombre} — Tarjeta digital`}
+  description={descripcion}
+  ogImage={perfil.foto_url ?? undefined}
+  bgColor={bgColor}
+  cardUrl={`${Astro.url.origin}/${slug}`}
+  fotoUrl={perfil.foto_url ?? null}
+  slug={slug}
+  nombre={nombre}
+  tituloProf={esProfesional ? (perfil.titulo_profesional ?? null) : (perfil.categoria_negocio ?? null)}
+  accentColor={perfil.color_primario ?? '#4B6CF7'}
 >
-
   <Card {...cardProps} />
 </CardLayout>
 
@@ -87,12 +156,22 @@ accentColor={perfil.color_primario ?? '#4B6CF7'}
 <script>
   const perfilId = document.getElementById('track-data')?.dataset.perfilId
   if (perfilId) {
-    fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ perfil_id: perfilId }) })
+    fetch('/api/track', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ perfil_id: perfilId }),
+    })
   }
+
   function track(tipo: string, metadata: Record<string, string>) {
     if (!perfilId) return
-    fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ perfil_id: perfilId, tipo, metadata }) })
+    fetch('/api/track', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ perfil_id: perfilId, tipo, metadata }),
+    })
   }
+
   document.querySelectorAll<HTMLElement>('.track-red').forEach(el => {
     el.addEventListener('click', () => track('click_red', { plataforma: el.dataset.plataforma ?? '' }))
   })

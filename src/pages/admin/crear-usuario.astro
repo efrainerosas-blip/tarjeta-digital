@@ -1,15 +1,11 @@
 ---
 // src/pages/admin/crear-usuario.astro
-// Formulario para que el SuperAdmin cree nuevos usuarios.
-// Genera contraseña temporal y muestra credenciales para
-// compartir por WhatsApp al finalizar.
 export const prerender = false
 
 import AdminLayout from '../../layouts/AdminLayout.astro'
 import { getSupabaseAdmin, isAdmin } from '../../lib/supabase-admin'
 import { createServerClient } from '@supabase/ssr'
 
-// ── 1. Verificar sesión + permisos admin ──────────────────────
 const supabaseAuth = createServerClient(
   import.meta.env.PUBLIC_SUPABASE_URL,
   import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
@@ -30,18 +26,26 @@ if (authError || !user || !(await isAdmin(user.email))) {
   return Astro.redirect('/dashboard?error=forbidden')
 }
 
-// ── 2. Cargar planes disponibles para el selector ─────────────
 const db = getSupabaseAdmin()
 const { data: planes } = await db
   .from('planes')
   .select('id, nombre, descripcion, precio_mensual, duracion_prueba_dias')
   .eq('activo', true)
   .order('precio_mensual')
+
+const CATEGORIAS = [
+  'Restaurante', 'Cafetería', 'Panadería', 'Pollería', 'Cevichería',
+  'Tienda de ropa', 'Tienda de calzado', 'Minimarket', 'Farmacia',
+  'Salón de belleza', 'Barbería', 'Spa', 'Gimnasio',
+  'Taller mecánico', 'Ferretería', 'Librería', 'Floristería',
+  'Clínica dental', 'Veterinaria', 'Agencia de viajes',
+  'Estudio de fotografía', 'Agencia de marketing', 'Consultora',
+]
 ---
 
 <AdminLayout title="Crear Usuario" tabActivo="usuarios" user={{ email: user.email!, id: user.id }}>
 
-  <!-- Encabezado de página con botón volver -->
+  <!-- Encabezado -->
   <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
     <div>
       <h1 class="page-title">Crear nuevo usuario</h1>
@@ -55,63 +59,108 @@ const { data: planes } = await db
     </a>
   </div>
 
-  <!-- Layout de dos columnas: formulario + ayuda -->
   <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start">
 
-    <!-- ── FORMULARIO PRINCIPAL ──────────────────────────────── -->
+    <!-- ── FORMULARIO ──────────────────────────────────────────── -->
     <div>
 
-      <!-- Datos personales -->
-      <div class="section-card">
+      <!-- ① TIPO DE TARJETA — determina el formulario completo -->
+      <div class="section-card" style="border-color:var(--admin);background:var(--admin-bg);margin-bottom:16px">
+        <div class="section-card-title" style="color:var(--admin-2)">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/>
+          </svg>
+          Tipo de tarjeta
+          <span style="font-size:11px;font-weight:400;color:var(--text-3);margin-left:4px">— define qué secciones verá el usuario</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+
+          <!-- Profesional -->
+          <label id="tipo-card-profesional" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:18px 14px;border:2px solid var(--admin);border-radius:var(--radius-lg);cursor:pointer;background:var(--bg-2);transition:all var(--transition);text-align:center">
+            <input type="radio" name="tipo_perfil" value="profesional" checked style="display:none" />
+            <div style="width:46px;height:46px;border-radius:13px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:22px">👔</div>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--text-1)">Profesional</div>
+              <div style="font-size:11px;color:var(--text-3);margin-top:3px;line-height:1.5">CV · Experiencia<br>Habilidades · Proyectos</div>
+            </div>
+          </label>
+
+          <!-- Negocio -->
+          <label id="tipo-card-negocio" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:18px 14px;border:2px solid var(--border);border-radius:var(--radius-lg);cursor:pointer;background:var(--bg-2);transition:all var(--transition);text-align:center">
+            <input type="radio" name="tipo_perfil" value="negocio" style="display:none" />
+            <div style="width:46px;height:46px;border-radius:13px;background:var(--cyan-bg);display:flex;align-items:center;justify-content:center;font-size:22px">🏪</div>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--text-1)">Negocio</div>
+              <div style="font-size:11px;color:var(--text-3);margin-top:3px;line-height:1.5">Catálogo · Horario<br>Dirección · Contacto</div>
+            </div>
+          </label>
+
+        </div>
+      </div>
+
+      <!-- ② DATOS DEL NEGOCIO — solo visible cuando tipo = negocio -->
+      <div class="section-card" id="card-negocio" style="display:none;border-color:var(--cyan);background:var(--cyan-bg);margin-bottom:16px">
+        <div class="section-card-title" style="color:var(--cyan-2)">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .415.336.75.75.75z"/>
+          </svg>
+          Datos del negocio
+        </div>
+
+        <div class="form-group" style="margin-bottom:14px">
+          <label for="nombre_negocio">Nombre del negocio *</label>
+          <input type="text" id="nombre_negocio" name="nombre_negocio"
+            autocomplete="off" placeholder="Ej: Pollería El Buen Sabor" maxlength="100" />
+          <span class="form-hint">Nombre comercial. Será el título principal de la tarjeta.</span>
+        </div>
+
+        <div class="form-group">
+          <label for="categoria_negocio">Categoría</label>
+          <input type="text" id="categoria_negocio" name="categoria_negocio"
+            autocomplete="off" placeholder="Ej: Restaurante, Tienda de ropa..."
+            maxlength="80" list="categorias-list" />
+          <datalist id="categorias-list">
+            {CATEGORIAS.map(c => <option value={c} />)}
+          </datalist>
+          <span class="form-hint">Elige una sugerencia o escribe la tuya.</span>
+        </div>
+      </div>
+
+      <!-- ③ DATOS PERSONALES — título varía según tipo -->
+      <div class="section-card" style="margin-bottom:16px">
         <div class="section-card-title">
           <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
           </svg>
-          Datos personales
+          <span id="titulo-datos-personales">Datos personales</span>
         </div>
 
         <div class="form-grid form-grid-2">
           <div class="form-group">
             <label for="nombre">Nombre *</label>
-            <input
-              type="text"
-              id="nombre"
-              name="nombre"
-              required
-              autocomplete="off"
-              placeholder="Ej: Carlos"
-              maxlength="60"
-            />
+            <input type="text" id="nombre" name="nombre" required autocomplete="off"
+              placeholder="Ej: Carlos" maxlength="60" />
           </div>
-          <div class="form-group">
+          <!-- Apellidos: solo para profesional -->
+          <div class="form-group" id="field-apellidos">
             <label for="apellidos">Apellidos</label>
-            <input
-              type="text"
-              id="apellidos"
-              name="apellidos"
-              autocomplete="off"
-              placeholder="Ej: García Pérez"
-              maxlength="80"
-            />
+            <input type="text" id="apellidos" name="apellidos" autocomplete="off"
+              placeholder="Ej: García Pérez" maxlength="80" />
           </div>
         </div>
 
-        <div class="form-group" style="margin-top:16px">
+        <!-- Título profesional: solo para profesional -->
+        <div class="form-group" style="margin-top:16px" id="field-titulo">
           <label for="titulo">Título profesional</label>
-          <input
-            type="text"
-            id="titulo"
-            name="titulo"
-            autocomplete="off"
-            placeholder="Ej: Diseñador UX / Abogado corporativo"
-            maxlength="100"
-          />
+          <input type="text" id="titulo" name="titulo" autocomplete="off"
+            placeholder="Ej: Diseñador UX / Abogado corporativo" maxlength="100" />
           <span class="form-hint">Aparecerá debajo del nombre en la tarjeta.</span>
         </div>
       </div>
 
-      <!-- Móvil — el dato más importante -->
-      <div class="section-card" style="border-color:var(--accent);background:rgba(99,102,241,.04)">
+      <!-- ④ MÓVIL — siempre visible -->
+      <div class="section-card" style="border-color:var(--accent);background:var(--accent-bg);margin-bottom:16px">
         <div class="section-card-title" style="color:var(--accent-2)">
           <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 8.25h3"/>
@@ -123,7 +172,6 @@ const { data: planes } = await db
         <div class="form-group">
           <label for="movil">Número *</label>
           <div style="display:flex;gap:8px;align-items:center">
-            <!-- Prefijo de país -->
             <select id="prefijo" name="prefijo" style="width:110px;flex-shrink:0">
               <option value="51">🇵🇪 +51</option>
               <option value="52">🇲🇽 +52</option>
@@ -133,25 +181,15 @@ const { data: planes } = await db
               <option value="34">🇪🇸 +34</option>
               <option value="1">🇺🇸 +1</option>
             </select>
-            <input
-              type="tel"
-              id="movil"
-              name="movil"
-              required
-              autocomplete="off"
-              placeholder="987 654 321"
-              maxlength="12"
-              style="flex:1"
-            />
+            <input type="tel" id="movil" name="movil" required autocomplete="off"
+              placeholder="987 654 321" maxlength="12" style="flex:1" />
           </div>
-          <span class="form-hint">
-            El usuario ingresará con este número + la contraseña temporal que se generará.
-          </span>
+          <span class="form-hint">El usuario ingresará con este número + la contraseña temporal.</span>
         </div>
       </div>
 
-      <!-- Plan -->
-      <div class="section-card">
+      <!-- ⑤ PLAN — siempre visible -->
+      <div class="section-card" style="margin-bottom:16px">
         <div class="section-card-title">
           <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/>
@@ -162,18 +200,11 @@ const { data: planes } = await db
 
         <div style="display:grid;gap:10px">
           {(planes ?? []).map(plan => (
-            <label
-              class="plan-option"
-              data-plan-id={plan.id}
-              style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:1.5px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all var(--transition)"
-            >
-              <input
-                type="radio"
-                name="plan_id"
-                value={plan.id}
+            <label class="plan-option" data-plan-id={plan.id}
+              style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:1.5px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all var(--transition)">
+              <input type="radio" name="plan_id" value={plan.id}
                 checked={plan.id === 'free'}
-                style="width:16px;height:16px;flex-shrink:0;accent-color:var(--accent)"
-              />
+                style="width:16px;height:16px;flex-shrink:0;accent-color:var(--accent)" />
               <div style="flex:1">
                 <div style="font-size:13px;font-weight:600;color:var(--text-1);display:flex;align-items:center;gap:8px">
                   {plan.nombre}
@@ -196,7 +227,7 @@ const { data: planes } = await db
         </div>
       </div>
 
-      <!-- Botón crear -->
+      <!-- Botones -->
       <div style="display:flex;gap:10px;justify-content:flex-end">
         <a href="/admin/usuarios" class="btn btn-ghost">Cancelar</a>
         <button type="button" id="btn-crear" class="btn btn-primary" style="min-width:160px">
@@ -206,12 +237,12 @@ const { data: planes } = await db
           Crear usuario
         </button>
       </div>
-
     </div>
 
-    <!-- ── PANEL DE AYUDA ────────────────────────────────────── -->
+    <!-- ── PANEL DE AYUDA ──────────────────────────────────────── -->
     <div style="position:sticky;top:calc(var(--header-h) + 20px)">
 
+      <!-- Cómo funciona -->
       <div class="section-card" style="margin-bottom:12px">
         <div class="section-card-title" style="font-size:13px">
           <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -220,14 +251,29 @@ const { data: planes } = await db
           ¿Cómo funciona?
         </div>
         <ol style="font-size:12px;color:var(--text-3);line-height:1.8;padding-left:16px">
+          <li>Elige el tipo de tarjeta</li>
           <li>Completa los datos del usuario</li>
-          <li>El sistema genera una contraseña temporal automática</li>
+          <li>El sistema genera una contraseña temporal</li>
           <li>Se crea la cuenta en Supabase Auth</li>
-          <li>Las credenciales aparecen para copiar o enviar por WhatsApp</li>
+          <li>Comparte las credenciales por WhatsApp</li>
           <li>El usuario cambia su contraseña al primer login</li>
         </ol>
       </div>
 
+      <!-- Diferencias entre tipos -->
+      <div class="section-card" id="ayuda-tipo" style="margin-bottom:12px;border-color:var(--admin-border);background:var(--admin-bg)">
+        <div class="section-card-title" style="font-size:13px;color:var(--admin-2)">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"/>
+          </svg>
+          <span id="ayuda-tipo-titulo">Perfil Profesional</span>
+        </div>
+        <p id="ayuda-tipo-texto" style="font-size:12px;color:var(--text-3);line-height:1.7">
+          El usuario podrá completar su CV: experiencia laboral, educación, habilidades, proyectos, logros, capacitaciones y referencias profesionales.
+        </p>
+      </div>
+
+      <!-- Importante -->
       <div class="section-card" style="background:rgba(245,158,11,.04);border-color:rgba(245,158,11,.2)">
         <div class="section-card-title" style="font-size:13px;color:var(--warn)">
           <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -236,8 +282,8 @@ const { data: planes } = await db
           Importante
         </div>
         <ul style="font-size:12px;color:var(--text-3);line-height:1.8;padding-left:16px">
-          <li>El número de móvil es el <strong style="color:var(--text-2)">único</strong> identificador del usuario</li>
-          <li>No se puede cambiar después — úsalo con cuidado</li>
+          <li>El móvil es el <strong style="color:var(--text-2)">único</strong> identificador — no se puede cambiar</li>
+          <li>El tipo de tarjeta <strong style="color:var(--text-2)">solo lo puede cambiar el Admin</strong></li>
           <li>La contraseña temporal <strong style="color:var(--text-2)">expira</strong> al cambiarla en el primer login</li>
         </ul>
       </div>
@@ -245,7 +291,7 @@ const { data: planes } = await db
     </div>
   </div>
 
-  <!-- ── MODAL DE CREDENCIALES (aparece al crear exitosamente) ── -->
+  <!-- ── MODAL DE CREDENCIALES ──────────────────────────────────── -->
   <div class="modal-backdrop" id="modal-credenciales">
     <div class="modal" style="max-width:460px">
       <div class="modal-header">
@@ -255,12 +301,13 @@ const { data: planes } = await db
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.5 12.75l6 6 9-13.5"/>
             </svg>
           </div>
-          <span class="modal-title">¡Usuario creado!</span>
+          <div>
+            <div class="modal-title">¡Usuario creado!</div>
+            <div id="modal-tipo-badge" style="margin-top:3px"></div>
+          </div>
         </div>
-        <!-- No hay botón cerrar aquí — el admin debe copiar las credenciales primero -->
       </div>
 
-      <!-- Credenciales generadas -->
       <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px">
         <div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">
           Credenciales de acceso
@@ -276,32 +323,20 @@ const { data: planes } = await db
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center">
             <span style="font-size:12px;color:var(--text-3)">URL de acceso:</span>
-            <code style="font-family:var(--font-mono);font-size:11px;color:var(--text-3)">
-              /auth/login
-            </code>
+            <code style="font-family:var(--font-mono);font-size:11px;color:var(--text-3)">/auth/login</code>
           </div>
         </div>
       </div>
 
-      <!-- Acciones -->
       <div style="display:flex;flex-direction:column;gap:8px">
-
-        <!-- WhatsApp — acción principal -->
-        <a
-          id="btn-whatsapp"
-          href="#"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="btn btn-success"
-          style="width:100%;justify-content:center;padding:12px"
-        >
+        <a id="btn-whatsapp" href="#" target="_blank" rel="noopener noreferrer"
+          class="btn btn-success" style="width:100%;justify-content:center;padding:12px">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
           </svg>
           Enviar credenciales por WhatsApp
         </a>
 
-        <!-- Copiar -->
         <button id="btn-copiar" class="btn btn-ghost" style="width:100%;justify-content:center">
           <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"/>
@@ -309,7 +344,6 @@ const { data: planes } = await db
           Copiar credenciales
         </button>
 
-        <!-- Crear otro + Ir a usuarios -->
         <div style="display:flex;gap:8px;margin-top:4px">
           <button id="btn-crear-otro" class="btn btn-ghost" style="flex:1;justify-content:center;font-size:12px">
             + Crear otro
@@ -318,71 +352,121 @@ const { data: planes } = await db
             Ver usuarios →
           </a>
         </div>
-
       </div>
     </div>
   </div>
 
 </AdminLayout>
 
-<!-- Datos del servidor para el script -->
-<div
-  id="page-data"
-  data-url={import.meta.env.PUBLIC_SUPABASE_URL}
-  style="display:none"
-></div>
-
 <style>
-  /* Resaltar la opción de plan seleccionada */
   .plan-option:has(input:checked) {
     border-color: var(--accent);
     background: var(--accent-bg);
   }
-
-  /* Responsive: colapsar a una columna en mobile/tablet */
+  /* Tipo seleccionado — profesional */
+  #tipo-card-profesional:has(input:checked) {
+    border-color: var(--admin);
+    background: var(--admin-bg);
+    box-shadow: 0 0 0 3px var(--admin-bg);
+  }
+  /* Tipo seleccionado — negocio */
+  #tipo-card-negocio:has(input:checked) {
+    border-color: var(--cyan);
+    background: var(--cyan-bg);
+    box-shadow: 0 0 0 3px var(--cyan-bg);
+  }
   @media (max-width: 900px) {
     div[style*="grid-template-columns:1fr 340px"] {
       grid-template-columns: 1fr !important;
     }
-    div[style*="position:sticky"] {
-      position: static !important;
-    }
+    div[style*="position:sticky"] { position: static !important; }
   }
 </style>
 
 <script>
-  // ── Elementos del formulario ─────────────────────────────────
-  const btnCrear   = document.getElementById('btn-crear')   as HTMLButtonElement
-  const inputMovil = document.getElementById('movil')       as HTMLInputElement
-  const inputPref  = document.getElementById('prefijo')     as HTMLSelectElement
+  // ── Referencias DOM ──────────────────────────────────────────
+  const btnCrear      = document.getElementById('btn-crear')      as HTMLButtonElement
+  const inputMovil    = document.getElementById('movil')          as HTMLInputElement
+  const inputPref     = document.getElementById('prefijo')        as HTMLSelectElement
+  const cardNegocio   = document.getElementById('card-negocio')   as HTMLDivElement
+  const fieldApellidos= document.getElementById('field-apellidos')as HTMLDivElement
+  const fieldTitulo   = document.getElementById('field-titulo')   as HTMLDivElement
+  const tituloDatos   = document.getElementById('titulo-datos-personales')!
+  const ayudaTitulo   = document.getElementById('ayuda-tipo-titulo')!
+  const ayudaTexto    = document.getElementById('ayuda-tipo-texto')!
+  const cardProfLabel = document.getElementById('tipo-card-profesional')!
+  const cardNegLabel  = document.getElementById('tipo-card-negocio')!
 
-  // ── Elementos del modal de credenciales ─────────────────────
+  // Modal
   const modal        = document.getElementById('modal-credenciales')!
   const credMovil    = document.getElementById('cred-movil')!
   const credPassword = document.getElementById('cred-password')!
-  const btnWhatsapp  = document.getElementById('btn-whatsapp') as HTMLAnchorElement
-  const btnCopiar    = document.getElementById('btn-copiar')   as HTMLButtonElement
-  const btnCrearOtro = document.getElementById('btn-crear-otro') as HTMLButtonElement
+  const modalBadge   = document.getElementById('modal-tipo-badge')!
+  const btnWhatsapp  = document.getElementById('btn-whatsapp')  as HTMLAnchorElement
+  const btnCopiar    = document.getElementById('btn-copiar')    as HTMLButtonElement
+  const btnCrearOtro = document.getElementById('btn-crear-otro')as HTMLButtonElement
 
-  // ── Limpiar el móvil al escribir (solo dígitos) ──────────────
+  // ── Estado actual del tipo ───────────────────────────────────
+  let tipoActual: 'profesional' | 'negocio' = 'profesional'
+
+  // ── Cambiar UI según tipo seleccionado ───────────────────────
+  function actualizarTipo(tipo: 'profesional' | 'negocio') {
+    tipoActual = tipo
+    const esNegocio = tipo === 'negocio'
+
+    // Mostrar/ocultar secciones
+    cardNegocio.style.display    = esNegocio ? '' : 'none'
+    fieldApellidos.style.display = esNegocio ? 'none' : ''
+    fieldTitulo.style.display    = esNegocio ? 'none' : ''
+
+    // Actualizar labels
+    tituloDatos.textContent = esNegocio
+      ? 'Datos del responsable'
+      : 'Datos personales'
+
+    // Actualizar panel de ayuda
+    ayudaTitulo.textContent = esNegocio ? 'Perfil Negocio' : 'Perfil Profesional'
+    ayudaTexto.textContent  = esNegocio
+      ? 'El usuario podrá agregar su catálogo de productos o servicios, horario de atención, dirección del local y redes sociales del negocio.'
+      : 'El usuario podrá completar su CV: experiencia laboral, educación, habilidades, proyectos, logros, capacitaciones y referencias profesionales.'
+
+    // Required dinámico
+    const inputNegocio = document.getElementById('nombre_negocio') as HTMLInputElement
+    if (inputNegocio) inputNegocio.required = esNegocio
+  }
+
+  // ── Listeners en los radio buttons ──────────────────────────
+  document.querySelectorAll<HTMLInputElement>('input[name="tipo_perfil"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      actualizarTipo(radio.value as 'profesional' | 'negocio')
+    })
+  })
+
+  // ── Solo dígitos en móvil ────────────────────────────────────
   inputMovil.addEventListener('input', () => {
     inputMovil.value = inputMovil.value.replace(/\D/g, '')
   })
 
   // ── Crear usuario ────────────────────────────────────────────
   btnCrear.addEventListener('click', async () => {
-    // Recoger datos del formulario
-    const nombre    = (document.getElementById('nombre')    as HTMLInputElement).value.trim()
-    const apellidos = (document.getElementById('apellidos') as HTMLInputElement).value.trim()
-    const titulo    = (document.getElementById('titulo')    as HTMLInputElement).value.trim()
-    const prefijo   = inputPref.value
-    const movil     = inputMovil.value.trim()
-    const plan_id   = (document.querySelector<HTMLInputElement>('input[name="plan_id"]:checked'))?.value ?? 'free'
+    const nombre            = (document.getElementById('nombre')           as HTMLInputElement).value.trim()
+    const apellidos         = (document.getElementById('apellidos')        as HTMLInputElement).value.trim()
+    const titulo            = (document.getElementById('titulo')           as HTMLInputElement).value.trim()
+    const nombre_negocio    = (document.getElementById('nombre_negocio')   as HTMLInputElement)?.value.trim() ?? ''
+    const categoria_negocio = (document.getElementById('categoria_negocio')as HTMLInputElement)?.value.trim() ?? ''
+    const prefijo           = inputPref.value
+    const movil             = inputMovil.value.trim()
+    const plan_id           = document.querySelector<HTMLInputElement>('input[name="plan_id"]:checked')?.value ?? 'free'
 
-    // Validación básica en el cliente
+    // Validaciones en cliente
     if (!nombre) {
-      ;(window as any).toast?.('El nombre es requerido', 'error')
+      ;(window as any).toast?.('El nombre del responsable es requerido', 'error')
       document.getElementById('nombre')?.focus()
+      return
+    }
+    if (tipoActual === 'negocio' && !nombre_negocio) {
+      ;(window as any).toast?.('El nombre del negocio es requerido', 'error')
+      document.getElementById('nombre_negocio')?.focus()
       return
     }
     if (!movil || movil.length < 7) {
@@ -391,62 +475,61 @@ const { data: planes } = await db
       return
     }
 
-    // Construir el móvil completo con prefijo
     const movilCompleto = `${prefijo}${movil}`
 
-    // Estado de carga
-    btnCrear.disabled    = true
-    btnCrear.innerHTML   = '<span style="opacity:.6">Creando usuario…</span>'
+    btnCrear.disabled  = true
+    btnCrear.innerHTML = '<span style="opacity:.6">Creando usuario…</span>'
 
     try {
       const res = await fetch('/api/admin/crear-usuario', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          tipo_perfil:  tipoActual,
           nombre,
           apellidos,
           titulo,
-          movil: movilCompleto,
+          nombre_negocio,
+          categoria_negocio,
+          movil:        movilCompleto,
           plan_id,
         }),
       })
 
       const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? `Error ${res.status}`)
 
-      if (!res.ok) {
-        throw new Error(data.error ?? `Error ${res.status}`)
-      }
-
-      // ── Éxito: mostrar modal con credenciales ──────────────
+      // Mostrar modal con credenciales
       credMovil.textContent    = movilCompleto
       credPassword.textContent = data.password
+      btnWhatsapp.href         = data.whatsapp_url
 
-      // Construir URL de WhatsApp con las credenciales
-      btnWhatsapp.href = data.whatsapp_url
+      // Badge de tipo en el modal
+      modalBadge.innerHTML = tipoActual === 'negocio'
+        ? '<span class="badge badge-admin" style="font-size:10px">🏪 Negocio</span>'
+        : '<span class="badge badge-free"  style="font-size:10px">👔 Profesional</span>'
 
-      // Abrir modal
       modal.classList.add('open')
-
-      ;(window as any).toast?.(`Usuario ${nombre} creado correctamente`, 'success')
+      ;(window as any).toast?.(
+        `${tipoActual === 'negocio' ? 'Negocio' : 'Usuario'} ${data.nombre_display} creado correctamente`,
+        'success'
+      )
 
     } catch (err: any) {
       ;(window as any).toast?.(`Error: ${err.message}`, 'error')
-
     } finally {
       btnCrear.disabled  = false
       btnCrear.innerHTML = `
         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15"/>
         </svg>
-        Crear usuario
-      `
+        Crear usuario`
     }
   })
 
-  // ── Copiar credenciales al portapapeles ──────────────────────
+  // ── Copiar credenciales ──────────────────────────────────────
   btnCopiar.addEventListener('click', async () => {
     const texto = `Usuario: ${credMovil.textContent}\nContraseña: ${credPassword.textContent}\nAcceso: ${window.location.origin}/auth/login`
-
     try {
       await navigator.clipboard.writeText(texto)
       btnCopiar.textContent = '✓ ¡Copiado!'
@@ -455,32 +538,40 @@ const { data: planes } = await db
           <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"/>
           </svg>
-          Copiar credenciales
-        `
+          Copiar credenciales`
       }, 2000)
     } catch {
       ;(window as any).toast?.('No se pudo copiar. Hazlo manualmente.', 'warn')
     }
   })
 
-  // ── Crear otro usuario — limpiar formulario y cerrar modal ───
+  // ── Crear otro — limpiar form según tipo ─────────────────────
   btnCrearOtro.addEventListener('click', () => {
     modal.classList.remove('open')
 
-    // Limpiar todos los inputs
+    // Limpiar campos comunes
     ;(document.getElementById('nombre')    as HTMLInputElement).value = ''
     ;(document.getElementById('apellidos') as HTMLInputElement).value = ''
     ;(document.getElementById('titulo')    as HTMLInputElement).value = ''
     inputMovil.value = ''
 
+    // Limpiar campos de negocio
+    const inputNombreNeg = document.getElementById('nombre_negocio') as HTMLInputElement
+    const inputCategoria = document.getElementById('categoria_negocio') as HTMLInputElement
+    if (inputNombreNeg) inputNombreNeg.value = ''
+    if (inputCategoria) inputCategoria.value = ''
+
     // Resetear al primer plan
     const primerPlan = document.querySelector<HTMLInputElement>('input[name="plan_id"]')
     if (primerPlan) primerPlan.checked = true
 
-    // Foco en el nombre para empezar de nuevo
+    // Resetear tipo a profesional
+    const radioProfesional = document.querySelector<HTMLInputElement>('input[name="tipo_perfil"][value="profesional"]')
+    if (radioProfesional) {
+      radioProfesional.checked = true
+      actualizarTipo('profesional')
+    }
+
     document.getElementById('nombre')?.focus()
   })
-
-  // ── Cerrar modal con Escape ──────────────────────────────────
-  // (ya está manejado globalmente en AdminLayout con Escape → .modal-backdrop.open)
 </script>
