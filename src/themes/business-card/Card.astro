@@ -1,0 +1,788 @@
+---
+// src/themes/business-card/Card.astro
+// THEME: Business Card
+// Tarjeta de presentación física digitalizada.
+// Flip 3D CSS puro — cara frontal y cara trasera.
+// Diseño premium: fondo oscuro, acento del negocio,
+// tipografía editorial Playfair + DM Sans.
+// Solo consume datos de perfiles_negocios (via vista).
+
+import type { CardProps } from '../types'
+
+const { perfil, servicios, redes } = Astro.props as CardProps
+
+const accent  = perfil.color_primario  ?? '#C41E3A'
+const accent2 = perfil.color_secundario ?? '#8B0000'
+const nombre  = perfil.nombre_negocio  ?? perfil.nombre ?? 'Mi Negocio'
+const tagline = perfil.tagline         ?? perfil.categoria_negocio ?? ''
+const logo    = perfil.foto_url        ?? null
+const tel     = perfil.telefono        ?? perfil.whatsapp_pedidos  ?? null
+const email   = perfil.email_negocio   ?? null
+const dir     = perfil.direccion       ?? null
+const web     = perfil.sitio_web       ?? null
+const wa      = perfil.whatsapp_pedidos ?? perfil.telefono ?? null
+const slug    = perfil.slug            ?? ''
+
+// Luminancia para color de texto sobre el acento
+function lum(hex: string): number {
+  const h = hex.replace('#','')
+  const r = parseInt(h.slice(0,2),16)
+  const g = parseInt(h.slice(2,4),16)
+  const b = parseInt(h.slice(4,6),16)
+  return (0.299*r + 0.587*g + 0.114*b)/255
+}
+const accentText = lum(accent.startsWith('#') ? accent : '#C41E3A') > 0.55
+  ? '#0a0a0a' : '#ffffff'
+
+// Íconos redes (mismos que ios-card)
+const ICONOS: Record<string,string> = {
+  LinkedIn:    `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>`,
+  Instagram:   `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>`,
+  Facebook:    `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>`,
+  WhatsApp:    `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`,
+  TikTok:      `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>`,
+  YouTube:     `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>`,
+  'Twitter/X': `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`,
+  Telegram:    `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>`,
+}
+function icon(p: string) {
+  return ICONOS[p] ?? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>`
+}
+---
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" slot="head" />
+
+<style is:inline define:vars={{ accent, accent2, accentText }}>
+
+/* ── VARIABLES ────────────────────────────────────────────── */
+.bc-page {
+  --bc-font-display: 'Playfair Display', Georgia, serif;
+  --bc-font-body:    'DM Sans', system-ui, sans-serif;
+  --bc-dark:         #0f0f0f;
+  --bc-dark2:        #1a1a1a;
+  --bc-dark3:        #252525;
+  --bc-light:        #f5f0eb;
+  --bc-light2:       #e8e0d8;
+  --bc-text:         #1a1a1a;
+  --bc-muted:        #6b6560;
+  --bc-card-w:       360px;
+  --bc-card-h:       620px;
+  --bc-r:            16px;
+
+  min-height: 100vh;
+  font-family: var(--bc-font-body);
+  background: linear-gradient(145deg, #1a1410 0%, #0f0c0a 50%, #1a1410 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 16px 100px;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Patrón de fondo sutil */
+.bc-page::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--accent) 8%, transparent) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, color-mix(in srgb, var(--accent2) 6%, transparent) 0%, transparent 50%);
+  pointer-events: none; z-index: 0;
+}
+
+/* ── ESCENA 3D ─────────────────────────────────────────────── */
+.bc-scene {
+  position: relative; z-index: 1;
+  width: var(--bc-card-w);
+  height: var(--bc-card-h);
+  perspective: 1200px;
+  cursor: pointer;
+  margin-bottom: 24px;
+  animation: bc-appear .7s cubic-bezier(.34,1.4,.64,1) both;
+}
+
+@keyframes bc-appear {
+  from { opacity:0; transform: translateY(30px) rotateX(8deg); }
+  to   { opacity:1; transform: translateY(0) rotateX(0deg); }
+}
+
+/* ── TARJETA (flipper) ─────────────────────────────────────── */
+.bc-card {
+  width: 100%; height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform .7s cubic-bezier(.4,.2,.2,1);
+  filter: drop-shadow(0 24px 60px rgba(0,0,0,.6));
+}
+.bc-card.flipped { transform: rotateY(180deg); }
+
+/* ── CARAS ─────────────────────────────────────────────────── */
+.bc-face {
+  position: absolute; inset: 0;
+  border-radius: var(--bc-r);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+}
+
+/* ════════════════════════════════════════════════════════════
+   CARA FRONTAL
+   ════════════════════════════════════════════════════════════ */
+.bc-front {
+  background: var(--bc-light);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Banda superior de color */
+.bc-front-header {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  height: 200px;
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 0;
+  overflow: visible;
+}
+
+/* Patrón geométrico en la banda */
+.bc-front-header::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    repeating-linear-gradient(
+      45deg,
+      rgba(255,255,255,.04) 0px,
+      rgba(255,255,255,.04) 1px,
+      transparent 1px,
+      transparent 20px
+    );
+}
+.bc-front-header::after {
+  content: '';
+  position: absolute;
+  bottom: -30px; left: 0; right: 0;
+  height: 60px;
+  background: var(--bc-light);
+  border-radius: 50% 50% 0 0 / 30px 30px 0 0;
+}
+
+/* Logo circular centrado sobre la división */
+.bc-logo-wrap {
+  position: relative; z-index: 2;
+  width: 96px; height: 96px;
+  border-radius: 50%;
+  background: var(--bc-light);
+  padding: 4px;
+  box-shadow:
+    0 0 0 3px var(--accent),
+    0 8px 32px rgba(0,0,0,.3);
+  margin-bottom: -48px;
+  flex-shrink: 0;
+}
+.bc-logo {
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  object-fit: cover; object-position: center;
+  display: block;
+}
+.bc-logo-placeholder {
+  width: 100%; height: 100%; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.4rem;
+}
+
+/* Cuerpo de la cara frontal */
+.bc-front-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 56px 28px 24px;
+  text-align: center;
+}
+
+.bc-business-name {
+  font-family: var(--bc-font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--bc-text);
+  line-height: 1.15;
+  letter-spacing: -.02em;
+  margin-bottom: 6px;
+}
+
+.bc-tagline {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--bc-muted);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+
+/* Divisor ornamental */
+.bc-divider {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; margin-bottom: 22px;
+}
+.bc-divider-line { flex: 1; height: 1px; background: var(--bc-light2); }
+.bc-divider-dot  { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+
+/* Lista de contacto */
+.bc-contacts { width: 100%; display: flex; flex-direction: column; gap: 11px; }
+.bc-contact-row {
+  display: flex; align-items: center; gap: 12px;
+  text-decoration: none; transition: all .15s;
+}
+.bc-contact-row:hover .bc-contact-icon { background: var(--accent); color: var(--accentText); }
+.bc-contact-icon {
+  width: 34px; height: 34px; border-radius: 9px;
+  background: var(--bc-light2);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--accent); flex-shrink: 0;
+  transition: all .15s;
+}
+.bc-contact-icon svg { width: 16px; height: 16px; }
+.bc-contact-text { text-align: left; }
+.bc-contact-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--bc-muted); line-height: 1; }
+.bc-contact-value { font-size: 12.5px; font-weight: 500; color: var(--bc-text); margin-top: 2px; line-height: 1.3; }
+
+/* Status pill */
+.bc-status {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: auto; padding-top: 18px;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--bc-muted);
+}
+.bc-status-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  flex-shrink: 0;
+}
+.bc-status-dot.abierto { background: #22c55e; box-shadow: 0 0 6px rgba(34,197,94,.5); }
+.bc-status-dot.cerrado { background: #ef4444; }
+.bc-status-dot.otro    { background: #f59e0b; }
+
+/* ════════════════════════════════════════════════════════════
+   CARA TRASERA
+   ════════════════════════════════════════════════════════════ */
+.bc-back {
+  background: linear-gradient(160deg, var(--bc-dark) 0%, var(--bc-dark2) 60%, var(--bc-dark3) 100%);
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 40px 28px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Patrón de fondo trasera */
+.bc-back::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--accent) 15%, transparent) 0%, transparent 60%);
+  pointer-events: none;
+}
+.bc-back::after {
+  content: '';
+  position: absolute;
+  top: -60px; left: -60px;
+  width: 240px; height: 240px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.04);
+}
+
+/* Logo en la trasera */
+.bc-back-logo {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+}
+.bc-back-logo-img {
+  width: 72px; height: 72px; border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255,255,255,.15);
+  box-shadow: 0 0 32px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.bc-back-logo-placeholder {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem;
+  border: 2px solid rgba(255,255,255,.15);
+}
+.bc-back-name {
+  font-family: var(--bc-font-display);
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: rgba(255,255,255,.92);
+  letter-spacing: -.01em;
+  text-align: center;
+}
+.bc-back-cat {
+  font-size: 10px;
+  font-weight: 400;
+  color: rgba(255,255,255,.4);
+  text-transform: uppercase;
+  letter-spacing: .15em;
+  margin-top: -8px;
+  text-align: center;
+}
+
+/* Redes sociales en la trasera */
+.bc-socials {
+  position: relative; z-index: 1;
+  display: flex; gap: 12px; flex-wrap: wrap;
+  justify-content: center;
+}
+.bc-social-btn {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.1);
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,.7);
+  text-decoration: none;
+  transition: all .18s;
+  -webkit-tap-highlight-color: transparent;
+}
+.bc-social-btn svg { width: 20px; height: 20px; }
+.bc-social-btn:hover {
+  background: var(--accent);
+  color: var(--accentText);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+/* Web en la trasera */
+.bc-back-web {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.bc-back-web-link {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 500;
+  color: rgba(255,255,255,.5);
+  text-decoration: none;
+  letter-spacing: .04em;
+  padding: 8px 18px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 99px;
+  transition: all .18s;
+}
+.bc-back-web-link:hover { color: rgba(255,255,255,.9); border-color: rgba(255,255,255,.3); }
+.bc-back-web-link svg { width: 12px; height: 12px; opacity: .5; }
+
+/* Línea decorativa trasera */
+.bc-back-line {
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent);
+}
+
+/* ── HINT FLIP ─────────────────────────────────────────────── */
+.bc-flip-hint {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; color: rgba(255,255,255,.3);
+  font-family: var(--bc-font-body);
+  animation: bc-hint-pulse 3s ease-in-out infinite 2s;
+}
+@keyframes bc-hint-pulse {
+  0%,100% { opacity: .5; }
+  50%      { opacity: 1; }
+}
+.bc-flip-hint svg { width: 14px; height: 14px; }
+
+/* ── BOTÓN FLIP FLOTANTE ──────────────────────────────────── */
+.bc-flip-btn {
+  position: relative; z-index: 2;
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 99px;
+  padding: 10px 20px;
+  font-family: var(--bc-font-body);
+  font-size: 12px; font-weight: 500;
+  color: rgba(255,255,255,.65);
+  cursor: pointer;
+  transition: all .2s;
+  margin-top: 12px;
+  -webkit-tap-highlight-color: transparent;
+}
+.bc-flip-btn:hover {
+  background: var(--accent);
+  color: var(--accentText);
+  border-color: var(--accent);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.bc-flip-btn svg { width: 14px; height: 14px; }
+
+/* ── BARRA INFERIOR ─────────────────────────────────────────── */
+.bc-bar {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 420px;
+  background: rgba(15,12,10,.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid rgba(255,255,255,.08);
+  padding: 12px 20px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+  display: flex; gap: 10px;
+  z-index: 50;
+}
+.bc-bar-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 13px 10px; border-radius: 12px;
+  font-family: var(--bc-font-body);
+  font-size: 13.5px; font-weight: 600;
+  text-decoration: none; border: none; cursor: pointer;
+  transition: all .2s; letter-spacing: -.01em;
+  -webkit-tap-highlight-color: transparent;
+}
+.bc-bar-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+.bc-bar-wa {
+  background: #25D366;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(37,211,102,.35);
+}
+.bc-bar-wa:hover { opacity: .9; transform: translateY(-1px); }
+.bc-bar-solid {
+  background: var(--accent);
+  color: var(--accentText);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+.bc-bar-solid:hover { opacity: .92; transform: translateY(-1px); }
+
+/* ── CATÁLOGO (servicios) ───────────────────────────────────── */
+.bc-catalog-section {
+  width: 100%; max-width: var(--bc-card-w);
+  position: relative; z-index: 1;
+  margin-top: 8px;
+}
+.bc-catalog-title {
+  font-family: var(--bc-font-display);
+  font-size: 18px; font-weight: 500;
+  color: rgba(255,255,255,.85);
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.bc-catalog-title::after {
+  content: ''; flex: 1; height: 1px;
+  background: rgba(255,255,255,.08);
+}
+.bc-catalog-grid { display: flex; flex-direction: column; gap: 8px; }
+.bc-catalog-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 12px;
+  transition: all .15s;
+  text-decoration: none;
+}
+.bc-catalog-item:hover { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.12); }
+.bc-catalog-ico { font-size: 20px; flex-shrink: 0; }
+.bc-catalog-name { font-size: 13px; font-weight: 500; color: rgba(255,255,255,.85); }
+.bc-catalog-desc { font-size: 11px; color: rgba(255,255,255,.4); margin-top: 1px; }
+.bc-catalog-price {
+  margin-left: auto; flex-shrink: 0;
+  font-size: 12px; font-weight: 700;
+  color: var(--accentText);
+  background: var(--accent);
+  padding: 3px 10px; border-radius: 99px;
+}
+
+/* ── FOOTER ─────────────────────────────────────────────────── */
+.bc-footer {
+  position: relative; z-index: 1;
+  text-align: center; padding: 20px 0 6px;
+  font-size: 11px; color: rgba(255,255,255,.2);
+  font-family: var(--bc-font-body);
+}
+.bc-footer a { color: rgba(255,255,255,.4); text-decoration: none; font-weight: 600; }
+
+/* ── DESKTOP ─────────────────────────────────────────────────── */
+@media (min-width: 480px) {
+  .bc-page {
+    padding-top: 60px;
+    background: #0a0a0a;
+  }
+}
+
+/* Estado para el dot de status */
+.bc-status-dot-open   { background: #22c55e; box-shadow: 0 0 8px rgba(34,197,94,.6); }
+.bc-status-dot-closed { background: #ef4444; }
+.bc-status-dot-other  { background: #f59e0b; }
+
+</style>
+
+<div class="bc-page">
+
+  <!-- ── ESCENA 3D ──────────────────────────────────────────── -->
+  <div class="bc-scene" id="bc-scene" onclick="bcFlip()" title="Toca para voltear">
+
+    <div class="bc-card" id="bc-card">
+
+      <!-- ════════════════════ CARA FRONTAL ════════════════════ -->
+      <div class="bc-face bc-front">
+
+        <!-- Banda de color + logo -->
+        <div class="bc-front-header">
+          <div class="bc-logo-wrap">
+            {logo
+              ? <img src={logo} alt={nombre} class="bc-logo" />
+              : <div class="bc-logo-placeholder">🏪</div>
+            }
+          </div>
+        </div>
+
+        <!-- Datos del negocio -->
+        <div class="bc-front-body">
+
+          <h1 class="bc-business-name">{nombre}</h1>
+
+          {tagline && <p class="bc-tagline">{tagline}</p>}
+
+          <div class="bc-divider">
+            <div class="bc-divider-line"></div>
+            <div class="bc-divider-dot"></div>
+            <div class="bc-divider-line"></div>
+          </div>
+
+          <!-- Contactos -->
+          <div class="bc-contacts">
+
+            {tel && (
+              <a href={`tel:${tel.replace(/\D/g,'')}`} class="bc-contact-row">
+                <div class="bc-contact-icon">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.948V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                  </svg>
+                </div>
+                <div class="bc-contact-text">
+                  <div class="bc-contact-label">Teléfono</div>
+                  <div class="bc-contact-value">{tel}</div>
+                </div>
+              </a>
+            )}
+
+            {email && (
+              <a href={`mailto:${email}`} class="bc-contact-row">
+                <div class="bc-contact-icon">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                  </svg>
+                </div>
+                <div class="bc-contact-text">
+                  <div class="bc-contact-label">Email</div>
+                  <div class="bc-contact-value">{email}</div>
+                </div>
+              </a>
+            )}
+
+            {dir && (
+              <div class="bc-contact-row">
+                <div class="bc-contact-icon">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  </svg>
+                </div>
+                <div class="bc-contact-text">
+                  <div class="bc-contact-label">Dirección</div>
+                  <div class="bc-contact-value">{dir}</div>
+                </div>
+              </div>
+            )}
+
+            {web && (
+              <a href={web} target="_blank" rel="noopener noreferrer" class="bc-contact-row">
+                <div class="bc-contact-icon">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/>
+                  </svg>
+                </div>
+                <div class="bc-contact-text">
+                  <div class="bc-contact-label">Sitio web</div>
+                  <div class="bc-contact-value">{web.replace(/^https?:\/\//,'')}</div>
+                </div>
+              </a>
+            )}
+
+          </div><!-- /contacts -->
+
+          <!-- Status -->
+          <div class="bc-status">
+            <div class={`bc-status-dot ${perfil.status_negocio === 'Abierto' ? 'bc-status-dot-open' : perfil.status_negocio === 'Cerrado' ? 'bc-status-dot-closed' : 'bc-status-dot-other'}`}></div>
+            {perfil.status_negocio ?? 'Abierto'}
+          </div>
+
+        </div><!-- /front-body -->
+      </div><!-- /front -->
+
+      <!-- ════════════════════ CARA TRASERA ════════════════════ -->
+      <div class="bc-face bc-back">
+
+        <div class="bc-back-line"></div>
+
+        <!-- Logo + nombre -->
+        <div class="bc-back-logo">
+          {logo
+            ? <img src={logo} alt={nombre} class="bc-back-logo-img" />
+            : <div class="bc-back-logo-placeholder">🏪</div>
+          }
+          <div class="bc-back-name">{nombre}</div>
+          {tagline && <div class="bc-back-cat">{tagline}</div>}
+        </div>
+
+        <!-- Redes sociales -->
+        {redes.length > 0 && (
+          <div class="bc-socials">
+            {redes.map(r => (
+              <a href={r.url} target="_blank" rel="noopener noreferrer"
+                 class="bc-social-btn" title={r.plataforma}
+                 aria-label={r.plataforma}>
+                <Fragment set:html={icon(r.plataforma)} />
+              </a>
+            ))}
+          </div>
+        )}
+
+        <!-- WhatsApp + web -->
+        <div class="bc-back-web">
+          {wa && (
+            <a href={`https://wa.me/${wa.replace(/\D/g,'')}`}
+               target="_blank" rel="noopener noreferrer"
+               class="bc-back-web-link">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+              WhatsApp
+            </a>
+          )}
+          {web && (
+            <a href={web} target="_blank" rel="noopener noreferrer" class="bc-back-web-link">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/>
+              </svg>
+              {web.replace(/^https?:\/\//,'')}
+            </a>
+          )}
+        </div>
+
+        <!-- Hint flip -->
+        <div class="bc-flip-hint">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          Toca para ver el frente
+        </div>
+
+      </div><!-- /back -->
+    </div><!-- /card -->
+  </div><!-- /scene -->
+
+  <!-- Botón flip debajo de la tarjeta -->
+  <button class="bc-flip-btn" onclick="bcFlip()" id="bc-flip-btn">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+    </svg>
+    <span id="bc-flip-label">Ver reverso</span>
+  </button>
+
+  <!-- ── CATÁLOGO (si tiene servicios) ─────────────────────── -->
+  {servicios.length > 0 && (
+    <div class="bc-catalog-section">
+      <div class="bc-catalog-title">Catálogo</div>
+      <div class="bc-catalog-grid">
+        {servicios.map(s => (
+          <div class="bc-catalog-item">
+            {s.icono && <div class="bc-catalog-ico">{s.icono}</div>}
+            <div>
+              <div class="bc-catalog-name">{s.nombre}</div>
+              {s.descripcion && <div class="bc-catalog-desc">{s.descripcion}</div>}
+            </div>
+            {s.precio_referencial && (
+              <div class="bc-catalog-price">{s.precio_referencial}</div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )}
+
+  <footer class="bc-footer">
+    Tarjeta digital por <a href="/">CardVirtual</a>
+  </footer>
+
+</div><!-- /bc-page -->
+
+<!-- ── BARRA INFERIOR ──────────────────────────────────────── -->
+<div class="bc-bar">
+  {wa && (
+    <a href={`https://wa.me/${wa.replace(/\D/g,'')}`}
+       target="_blank" rel="noopener noreferrer"
+       class="bc-bar-btn bc-bar-wa">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+      WhatsApp
+    </a>
+  )}
+  {tel && !wa && (
+    <a href={`tel:${tel.replace(/\D/g,'')}`} class="bc-bar-btn bc-bar-wa">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.948V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+      </svg>
+      Llamar
+    </a>
+  )}
+  <a href={`/${slug}`} class="bc-bar-btn bc-bar-solid">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+    </svg>
+    Contactar
+  </a>
+</div>
+
+<div id="track-data" data-perfil-id={perfil.id} style="display:none"></div>
+
+<script>
+  // ── Flip 3D ────────────────────────────────────────────────
+  const card      = document.getElementById('bc-card')!
+  const label     = document.getElementById('bc-flip-label')!
+  let   isFlipped = false
+
+  ;(window as any).bcFlip = function() {
+    isFlipped = !isFlipped
+    card.classList.toggle('flipped', isFlipped)
+    label.textContent = isFlipped ? 'Ver frente' : 'Ver reverso'
+  }
+
+  // Swipe horizontal para flip en móvil
+  let touchX = 0
+  const scene = document.getElementById('bc-scene')!
+  scene.addEventListener('touchstart', e => { touchX = e.touches[0].clientX }, { passive: true })
+  scene.addEventListener('touchend',   e => {
+    const diff = e.changedTouches[0].clientX - touchX
+    if (Math.abs(diff) > 50) ;(window as any).bcFlip()
+  }, { passive: true })
+
+  // Tracking
+  const perfilId = document.getElementById('track-data')?.dataset.perfilId
+  if (perfilId) {
+    fetch('/api/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ perfil_id: perfilId }),
+    })
+  }
+</script>

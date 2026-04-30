@@ -25,7 +25,11 @@ const { data: { user }, error: authError } = await supabase.auth.getUser()
 if (authError || !user) return Astro.redirect('/auth/login')
 
 const { data: perfil } = await supabase
-  .from('perfiles').select('id, slug').eq('user_id', user.id).single()
+  .from('perfiles').select('id, slug, tipo_perfil').eq('user_id', user.id).single()
+
+if (perfil?.tipo_perfil === 'negocio') {
+  return Astro.redirect('/dashboard')
+}
 
 const perfilId = perfil?.id ?? null
 
@@ -34,7 +38,7 @@ const { data: items } = perfilId
   : { data: [] }
 ---
 
-<DashboardLayout title="Educación" tabActivo="estudios" user={{ email: user.email!, id: user.id }} slug={perfil?.slug}>
+<DashboardLayout title="Educación" tabActivo="estudios" user={{ email: user.email!, id: user.id }} slug={perfil?.slug} tipoPerfil={perfil?.tipo_perfil ?? 'profesional'}></DashboardLayout>
 
   <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
     <div>

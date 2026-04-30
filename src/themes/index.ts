@@ -3,17 +3,19 @@
 // THEME REGISTRY — para agregar un theme nuevo:
 //   1. Crear carpeta src/themes/{id}/Card.astro
 //   2. Importarlo aquí abajo
-//   3. Agregarlo al array THEMES
+//   3. Agregarlo al array THEMES con tipo correcto
 // ============================================================
 
 import type { AstroComponentFactory } from 'astro/runtime/server/index.js'
-import AppCard    from './app-card/Card.astro'
-import ModernBlue from './modern-blue/Card.astro'
-import CleanWhite from './clean-white/Card.astro'
-import GeniusCard from './genius-card/Card.astro'
-import TealWave from './teal-wave/Card.astro'
-import FreshCircle from './fresh-circle/Card.astro'
-import IosCard       from './ios-card/Card.astro'
+
+import AppCard      from './app-card/Card.astro'
+import ModernBlue   from './modern-blue/Card.astro'
+import CleanWhite   from './clean-white/Card.astro'
+import GeniusCard   from './genius-card/Card.astro'
+import TealWave     from './teal-wave/Card.astro'
+import FreshCircle  from './fresh-circle/Card.astro'
+import IosCard      from './ios-card/Card.astro'
+import BusinessCard from './business-card/Card.astro'
 
 export interface ThemeMeta {
   id:             string
@@ -21,12 +23,15 @@ export interface ThemeMeta {
   descripcion:    string
   preview_bg:     string
   preview_accent: string
-  etiquetas:      string[] 
+  etiquetas:      string[]
   componente:     AstroComponentFactory
   premium:        boolean
+  tipo:           'profesional' | 'negocio' | 'ambos'
 }
 
 export const THEMES: ThemeMeta[] = [
+
+  // ── PROFESIONAL ────────────────────────────────────────────
   {
     id:             'app-card',
     nombre:         'App Card',
@@ -36,6 +41,7 @@ export const THEMES: ThemeMeta[] = [
     etiquetas:      ['móvil', 'app', 'moderno'],
     componente:     AppCard,
     premium:        false,
+    tipo:           'profesional',
   },
   {
     id:             'modern-blue',
@@ -46,6 +52,7 @@ export const THEMES: ThemeMeta[] = [
     etiquetas:      ['profesional', 'corporativo', 'azul'],
     componente:     ModernBlue,
     premium:        false,
+    tipo:           'profesional',
   },
   {
     id:             'clean-white',
@@ -56,6 +63,7 @@ export const THEMES: ThemeMeta[] = [
     etiquetas:      ['limpio', 'blanco', 'moderno'],
     componente:     CleanWhite,
     premium:        false,
+    tipo:           'profesional',
   },
   {
     id:             'genius-card',
@@ -66,6 +74,7 @@ export const THEMES: ThemeMeta[] = [
     etiquetas:      ['oscuro', 'elegante', 'púrpura'],
     componente:     GeniusCard,
     premium:        false,
+    tipo:           'profesional',
   },
   {
     id:             'teal-wave',
@@ -76,16 +85,18 @@ export const THEMES: ThemeMeta[] = [
     etiquetas:      ['teal', 'profesional', 'médico', 'ola'],
     componente:     TealWave,
     premium:        false,
+    tipo:           'profesional',
   },
   {
     id:             'fresh-circle',
     nombre:         'Fresh Circle',
     descripcion:    'Banner superior, foto circular centrada, nombre destacado y menú inferior de navegación rápida.',
-    preview_bg:     '#ffffff', 
-    preview_accent: '#0078D7', 
+    preview_bg:     '#ffffff',
+    preview_accent: '#0078D7',
     etiquetas:      ['limpio', 'circular', 'moderno', 'claro'],
     componente:     FreshCircle,
     premium:        false,
+    tipo:           'profesional',
   },
   {
     id:             'ios-card',
@@ -96,9 +107,42 @@ export const THEMES: ThemeMeta[] = [
     etiquetas:      ['glass', 'premium', 'minimalista', 'ios', 'apple'],
     componente:     IosCard,
     premium:        true,
+    tipo:           'profesional',
+  },
+
+  // ── NEGOCIO ────────────────────────────────────────────────
+  {
+    id:             'business-card',
+    nombre:         'Business Card',
+    descripcion:    'Tarjeta de presentación física digitalizada — flip 3D entre cara frontal (datos de contacto) y trasera (redes y web).',
+    preview_bg:     '#0f0f0f',
+    preview_accent: '#C41E3A',
+    etiquetas:      ['negocio', 'tarjeta', 'flip', 'clásico'],
+    componente:     BusinessCard,
+    premium:        false,
+    tipo:           'negocio',
   },
 ]
 
+// ── Helpers ────────────────────────────────────────────────────
+
+// Obtener theme por id — usado en [slug]/index.astro
 export function getTheme(id: string): ThemeMeta {
   return THEMES.find(t => t.id === id) ?? THEMES[0]
+}
+
+// Themes disponibles para un tipo — usado en dashboard/temas.astro
+export function getThemesPorTipo(tipo: 'profesional' | 'negocio'): ThemeMeta[] {
+  return THEMES.filter(t => t.tipo === tipo || t.tipo === 'ambos')
+}
+
+// Obtener theme con fallback inteligente por tipo.
+// Si el template_id guardado no es compatible con el tipo actual,
+// devuelve el primer theme del tipo correcto en lugar de un theme incorrecto.
+export function getThemeParaPerfil(
+  templateId: string | null | undefined,
+  tipoPerfil:  'profesional' | 'negocio'
+): ThemeMeta {
+  const disponibles = getThemesPorTipo(tipoPerfil)
+  return disponibles.find(t => t.id === templateId) ?? disponibles[0] ?? THEMES[0]
 }

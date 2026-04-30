@@ -33,7 +33,7 @@ if (authError || !user) return Astro.redirect('/auth/login')
 // ── 2. Cargar perfil para saber si es primer login ────────────
 const { data: perfil } = await supabase
   .from('perfiles')
-  .select('id, slug, nombre, debe_cambiar_password, telefono')
+  .select('id, slug, nombre, debe_cambiar_password, telefono, tipo_perfil')
   .eq('user_id', user.id)
   .maybeSingle()
 
@@ -43,12 +43,7 @@ const esPrimerLogin =
   perfil?.debe_cambiar_password === true
 ---
 
-<DashboardLayout
-  title="Seguridad"
-  tabActivo="seguridad"
-  user={{ email: user.email!, id: user.id }}
-  slug={perfil?.slug}
->
+<DashboardLayout title="Seguridad" tabActivo="seguridad" user={{ email: user.email!, id: user.id }} slug={perfil?.slug} tipoPerfil={perfil?.tipo_perfil ?? 'profesional'}></DashboardLayout>
 
   <!-- ── BANNER DE PRIMER LOGIN ──────────────────────────────── -->
   {esPrimerLogin && (

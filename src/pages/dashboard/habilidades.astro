@@ -25,7 +25,11 @@ const { data: { user }, error: authError } = await supabase.auth.getUser()
 if (authError || !user) return Astro.redirect('/auth/login')
 
 const { data: perfil } = await supabase
-  .from('perfiles').select('id, slug').eq('user_id', user.id).single()
+  .from('perfiles').select('id, slug, tipo_perfil').eq('user_id', user.id).single()
+
+if (perfil?.tipo_perfil === 'negocio') {
+  return Astro.redirect('/dashboard')
+}
 
 const perfilId = perfil?.id ?? null
 
@@ -34,7 +38,7 @@ const { data: items } = perfilId
   : { data: [] }
 ---
 
-<DashboardLayout title="Habilidades" tabActivo="habilidades" user={{ email: user.email!, id: user.id }} slug={perfil?.slug}>
+<DashboardLayout title="Habilidades" tabActivo="habilidades" user={{ email: user.email!, id: user.id }} slug={perfil?.slug} tipoPerfil={perfil?.tipo_perfil ?? 'profesional'}>
 
   <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
     <div>
@@ -107,9 +111,6 @@ const { data: items } = perfilId
     )}
   </div>
 
-</DashboardLayout>
-
-<!-- MODAL — fuera del slot del layout -->
 <div class="modal-backdrop" id="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
   <div class="modal">
     <div class="modal-header">
@@ -166,11 +167,11 @@ const { data: items } = perfilId
   </div>
 </div>
 
-<script>
+</DashboardLayout> <script>
   import { createBrowserClient } from '@supabase/ssr'
   import { initDragAndDrop } from '../../utils/drag-drop'
 
-  const btnNuevo = document.getElementById('btn-nuevo') as HTMLButtonElement
+  const btnNuevo = document.getElementById('btn-nuevo') as HTMLButtonElement | null
   const perfilId = btnNuevo?.dataset.perfilId || null
   const tabla    = btnNuevo?.dataset.tabla    || ''
   const labelStr = btnNuevo?.dataset.label    || ''
@@ -201,9 +202,9 @@ const { data: items } = perfilId
     })
     if (data) {
       itemIdEl.value = data['id'] ?? ''
-    getField('nombre').value = (data && data['nombre'] != null) ? String(data['nombre']) : ''
-    getField('categoria').value = (data && data['categoria'] != null) ? String(data['categoria']) : ''
-    getField('nivel').value = (data && data['nivel'] != null) ? String(data['nivel']) : ''
+      getField('nombre').value = (data && data['nombre'] != null) ? String(data['nombre']) : ''
+      getField('categoria').value = (data && data['categoria'] != null) ? String(data['categoria']) : ''
+      getField('nivel').value = (data && data['nivel'] != null) ? String(data['nivel']) : ''
     }
     backdrop.classList.add('open')
     setTimeout(() => document.querySelector<HTMLElement>('[data-field]')?.focus(), 60)
@@ -222,7 +223,10 @@ const { data: items } = perfilId
       btn.disabled = true
       const { data, error } = await sb.from(tabla).select('*').eq('id', btn.dataset.id!).single()
       btn.disabled = false
-      if (error || !data) { window.toast('No se pudo cargar el registro', 'error'); return }
+      if (error || !data) { 
+        ;(window as any).toast('No se pudo cargar el registro', 'error')
+        return 
+      }
       openModal('Editar ' + labelStr, data)
     })
   })
@@ -232,9 +236,13 @@ const { data: items } = perfilId
       if (!confirm('¿Eliminar este registro? Esta acción no se puede deshacer.')) return
       btn.disabled = true
       const { error } = await sb.from(tabla).delete().eq('id', btn.dataset.id!)
-      if (error) { window.toast('Error: ' + error.message, 'error'); btn.disabled = false; return }
+      if (error) { 
+        ;(window as any).toast('Error: ' + error.message, 'error')
+        btn.disabled = false
+        return 
+      }
       document.querySelector(`.list-item[data-id="${btn.dataset.id}"]`)?.remove()
-      window.toast('Eliminado correctamente', 'success')
+      ;(window as any).toast('Eliminado correctamente', 'success')
     })
   })
 
@@ -258,7 +266,8 @@ const { data: items } = perfilId
         .from(tabla).select('orden')
         .eq('perfil_id', perfilId!)
         .order('orden', { ascending: false })
-        .limit(1).single()
+        .limit(1).maybeSingle()
+      
       payload['orden'] = (last?.orden ?? 0) + 1
       ;({ error } = await sb.from(tabla).insert(payload))
     }
@@ -266,11 +275,16 @@ const { data: items } = perfilId
     submitBtn.disabled = false
     submitBtn.innerHTML = `<svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Guardar`
 
-    if (error) { window.toast('Error: ' + error.message, 'error'); return }
-    window.toast(id ? 'Actualizado correctamente' : 'Agregado correctamente', 'success')
+    if (error) { 
+      ;(window as any).toast('Error: ' + error.message, 'error')
+      return 
+    }
+    
+    ;(window as any).toast(id ? 'Actualizado correctamente' : 'Agregado correctamente', 'success')
     closeModal()
     setTimeout(() => window.location.reload(), 500)
   })
+
   document.addEventListener('DOMContentLoaded', () => {
     initDragAndDrop('lista-items', tabla, sb);
   });

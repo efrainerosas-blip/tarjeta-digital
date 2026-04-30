@@ -3,9 +3,10 @@
 // Para agregar un theme nuevo: solo tocar src/themes/index.ts
 export const prerender = false
 
-import CardLayout from '../../layouts/CardLayout.astro'
+import CardLayout   from '../../layouts/CardLayout.astro'
 import { createClient } from '@supabase/supabase-js'
-import { getTheme, THEMES } from '../../themes/index'
+import { getThemeParaPerfil } from '../../themes/index'
+import type { CardProps } from '../../themes/types'
 
 const supabase = createClient(
   import.meta.env.PUBLIC_SUPABASE_URL,
@@ -15,8 +16,7 @@ const supabase = createClient(
 const { slug } = Astro.params
 
 // ── 1. Leer perfil desde la vista unificada ───────────────────
-// vista_perfiles_completos hace el LEFT JOIN con perfiles_profesionales
-// y perfiles_negocios en una sola query — un solo round-trip.
+// Un solo round-trip — LEFT JOIN 1:1 sobre PK, O(1) por fila.
 const { data: perfil, error } = await supabase
   .from('vista_perfiles_completos')
   .select('*')
@@ -32,26 +32,30 @@ if (!perfil) {
   return Astro.redirect('/404')
 }
 
-const esProfesional = perfil.tipo_perfil === 'profesional'
-const esNegocio     = perfil.tipo_perfil === 'negocio'
+const tipoPerfil    = (perfil.tipo_perfil ?? 'profesional') as 'profesional' | 'negocio'
+const esProfesional = tipoPerfil === 'profesional'
 
 // ── 2. Cargar datos satélite según tipo ───────────────────────
-// Profesional: carga todo (experiencia, estudios, habilidades, etc.)
-// Negocio:     solo carga servicios, proyectos (galería) y redes
-// Esto evita queries innecesarias para negocios.
+// Profesional: 9 queries en paralelo
+// Negocio:     3 queries (servicios/catálogo, proyectos/galería, redes)
+// Las tablas que no aplican al tipo no se consultan — ahorro en BD.
 
-let experiencia:    any[] = []
-let estudios:       any[] = []
-let capacitaciones: any[] = []
-let habilidades:    any[] = []
-let logros:         any[] = []
-let referencias:    any[] = []
-let servicios:      any[] = []
-let proyectos:      any[] = []
-let redes:          any[] = []
+import type {
+  Experiencia, Estudio, Capacitacion, Habilidad,
+  Servicio, Proyecto, Red, Logro, Referencia
+} from '../../themes/types'
+
+let experiencia:    Experiencia[]    = []
+let estudios:       Estudio[]        = []
+let capacitaciones: Capacitacion[]   = []
+let habilidades:    Habilidad[]      = []
+let logros:         Logro[]          = []
+let referencias:    Referencia[]     = []
+let servicios:      Servicio[]       = []
+let proyectos:      Proyecto[]       = []
+let redes:          Red[]            = []
 
 if (esProfesional) {
-  // Profesional: todas las queries en paralelo
   const [
     { data: _exp },
     { data: _est },
@@ -73,56 +77,52 @@ if (esProfesional) {
     supabase.from('logros')             .select('*').eq('perfil_id', perfil.id).order('orden'),
     supabase.from('referencias')        .select('*').eq('perfil_id', perfil.id).order('orden'),
   ])
-  experiencia    = _exp ?? []
-  estudios       = _est ?? []
-  capacitaciones = _cap ?? []
-  habilidades    = _hab ?? []
-  servicios      = _svc ?? []
-  proyectos      = _pry ?? []
-  redes          = _red ?? []
-  logros         = _log ?? []
-  referencias    = _ref ?? []
+  experiencia    = (_exp ?? []) as Experiencia[]
+  estudios       = (_est ?? []) as Estudio[]
+  capacitaciones = (_cap ?? []) as Capacitacion[]
+  habilidades    = (_hab ?? []) as Habilidad[]
+  servicios      = (_svc ?? []) as Servicio[]
+  proyectos      = (_pry ?? []) as Proyecto[]
+  redes          = (_red ?? []) as Red[]
+  logros         = (_log ?? []) as Logro[]
+  referencias    = (_ref ?? []) as Referencia[]
 
 } else {
-  // Negocio: solo servicios (catálogo), proyectos (galería) y redes
   const [
     { data: _svc },
     { data: _pry },
     { data: _red },
   ] = await Promise.all([
-    supabase.from('servicios')     .select('*').eq('perfil_id', perfil.id).order('orden'),
-    supabase.from('proyectos')     .select('*').eq('perfil_id', perfil.id).order('orden'),
-    supabase.from('redes_sociales').select('*').eq('perfil_id', perfil.id).order('orden'),
+    supabase.from('servicios')      .select('*').eq('perfil_id', perfil.id).order('orden'),
+    supabase.from('proyectos')      .select('*').eq('perfil_id', perfil.id).order('orden'),
+    supabase.from('redes_sociales') .select('*').eq('perfil_id', perfil.id).order('orden'),
   ])
-  servicios = _svc ?? []
-  proyectos = _pry ?? []
-  redes     = _red ?? []
+  servicios = (_svc ?? []) as Servicio[]
+  proyectos = (_pry ?? []) as Proyecto[]
+  redes     = (_red ?? []) as Red[]
 }
 
-// ── 3. Seleccionar theme según tipo_perfil ────────────────────
-// Los themes de profesional y negocio viven en registros distintos
-// en THEMES (diferenciados por el campo `tipo` que agregaremos).
-// Por ahora: si el template_id no existe para ese tipo, usa el primero
-// disponible del tipo correspondiente.
-const theme = getTheme(perfil.template_id ?? THEMES[0].id)
+// ── 3. Seleccionar theme con fallback inteligente por tipo ────
+// getThemeParaPerfil garantiza que un negocio nunca reciba
+// un theme de profesional aunque tenga un template_id incorrecto.
+const theme = getThemeParaPerfil(perfil.template_id, tipoPerfil)
 const Card  = theme.componente as any
 
-// ── 4. Construir nombre display ───────────────────────────────
-// Profesional: nombre + apellidos (apellidos viene de la vista)
-// Negocio:     nombre_negocio como título principal
+// ── 4. Construir metadatos para <head> ────────────────────────
 const nombre = esProfesional
   ? [perfil.nombre, perfil.apellidos].filter(Boolean).join(' ')
   : (perfil.nombre_negocio ?? perfil.nombre)
 
-// Descripción para OG y meta
 const descripcion = esProfesional
   ? (perfil.bio ?? perfil.titulo_profesional ?? 'Tarjeta Digital Profesional')
-  : (perfil.bio ?? perfil.categoria_negocio  ?? 'Tarjeta Digital de Negocio')
+  : (perfil.bio ?? perfil.tagline ?? perfil.categoria_negocio ?? 'Tarjeta Digital de Negocio')
 
-const bgColor = theme.preview_bg || '#ffffff'
+const tituloProf = esProfesional
+  ? (perfil.titulo_profesional ?? null)
+  : (perfil.tagline ?? perfil.categoria_negocio ?? null)
 
-// ── 5. Props para el componente del theme ─────────────────────
-const cardProps = {
+// ── 5. Ensamblar props tipadas para el theme ──────────────────
+const cardProps: CardProps = {
   perfil,
   experiencia,
   estudios,
@@ -140,12 +140,12 @@ const cardProps = {
   title={`${nombre} — Tarjeta digital`}
   description={descripcion}
   ogImage={perfil.foto_url ?? undefined}
-  bgColor={bgColor}
+  bgColor={theme.preview_bg || '#ffffff'}
   cardUrl={`${Astro.url.origin}/${slug}`}
   fotoUrl={perfil.foto_url ?? null}
   slug={slug}
   nombre={nombre}
-  tituloProf={esProfesional ? (perfil.titulo_profesional ?? null) : (perfil.categoria_negocio ?? null)}
+  tituloProf={tituloProf}
   accentColor={perfil.color_primario ?? '#4B6CF7'}
 >
   <Card {...cardProps} />
@@ -155,6 +155,8 @@ const cardProps = {
 
 <script>
   const perfilId = document.getElementById('track-data')?.dataset.perfilId
+
+  // Vista inicial
   if (perfilId) {
     fetch('/api/track', {
       method:  'POST',
@@ -172,13 +174,18 @@ const cardProps = {
     })
   }
 
+  // Clicks en redes, CV y proyectos
   document.querySelectorAll<HTMLElement>('.track-red').forEach(el => {
-    el.addEventListener('click', () => track('click_red', { plataforma: el.dataset.plataforma ?? '' }))
+    el.addEventListener('click', () =>
+      track('click_red', { plataforma: el.dataset.plataforma ?? '' })
+    )
   })
   document.querySelectorAll<HTMLElement>('.track-cv').forEach(el => {
     el.addEventListener('click', () => track('descarga_cv', {}))
   })
   document.querySelectorAll<HTMLElement>('.track-proyecto').forEach(el => {
-    el.addEventListener('click', () => track('click_proyecto', { titulo: el.dataset.titulo ?? '' }))
+    el.addEventListener('click', () =>
+      track('click_proyecto', { titulo: el.dataset.titulo ?? '' })
+    )
   })
 </script>

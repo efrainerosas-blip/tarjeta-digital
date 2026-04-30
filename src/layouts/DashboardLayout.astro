@@ -18,7 +18,6 @@ const {
   tipoPerfil = 'profesional',
 } = Astro.props
 
-const esProfesional = tipoPerfil !== 'negocio'
 const esNegocio     = tipoPerfil === 'negocio'
 
 // ── Navegación según tipo ─────────────────────────────────────
@@ -134,7 +133,7 @@ const labelSeccion: Record<string, string> = {
       background: linear-gradient(135deg, var(--accent), var(--accent-2));
       color: #fff; box-shadow: 0 2px 8px var(--accent-bg);
     }
-    .btn-primary:hover { opacity: .9; transform: translateY(-1px); }
+    .btn-primary:hover { opacity: .9; transform: translateY(-1px); box-shadow: 0 4px 16px var(--accent-bg); }
     .btn-primary:active { transform: translateY(0); }
     .btn-ghost { background: transparent; color: var(--text-2); border: 1px solid var(--border); }
     .btn-ghost:hover { background: var(--bg-3); color: var(--text-1); border-color: var(--border-2); }
@@ -471,11 +470,13 @@ const labelSeccion: Record<string, string> = {
     function abrirDrawer() {
       drawer.classList.add('open')
       drawerBackdrop.classList.add('open')
+      btnMas?.setAttribute('aria-expanded', 'true')
       document.body.style.overflow = 'hidden'
     }
     ;(window as any).cerrarDrawer = function() {
       drawer.classList.remove('open')
       drawerBackdrop.classList.remove('open')
+      btnMas?.setAttribute('aria-expanded', 'false')
       document.body.style.overflow = ''
     }
     btnMas?.addEventListener('click', () => {

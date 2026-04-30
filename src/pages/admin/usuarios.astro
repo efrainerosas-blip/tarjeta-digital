@@ -1,7 +1,7 @@
 ---
 // src/pages/admin/usuarios.astro
 // Gestión completa de usuarios del SuperAdmin.
-// Muestra todos los perfiles con búsqueda, filtro por plan,
+// Muestra todos los perfiles con búsqueda, filtro por plan y tipo,
 // y permite cambiar el plan de cualquier usuario inline.
 export const prerender = false
 
@@ -31,72 +31,87 @@ if (authError || !user || !isAdmin(user.email)) {
 }
 
 // ── 2. Leer filtros de la URL ─────────────────────────────────
-const url     = new URL(Astro.request.url)
-const buscar  = url.searchParams.get('q')?.trim() ?? ''
-const filtPlan = url.searchParams.get('plan')?.trim() ?? ''   // 'free' | 'premium' | ''
-const pagina  = Math.max(1, parseInt(url.searchParams.get('p') ?? '1'))
-const POR_PAG = 20
+const url      = new URL(Astro.request.url)
+const buscar   = url.searchParams.get('q')?.trim()    ?? ''
+const filtPlan = url.searchParams.get('plan')?.trim() ?? ''
+const filtTipo = url.searchParams.get('tipo')?.trim() ?? ''
+const pagina   = Math.max(1, parseInt(url.searchParams.get('p') ?? '1'))
+const POR_PAG  = 20
 
 // ── 3. Cargar usuarios con el cliente admin ───────────────────
 const db = getSupabaseAdmin()
 
-// Construir query base
 let query = db
   .from('perfiles')
   .select(`
-    id, user_id, slug, nombre, foto_url, plan_id, plan_expires_at, created_at, updated_at, template_id, tipo_perfil,
+    id, user_id, slug, nombre, foto_url,
+    plan_id, plan_expires_at, created_at, updated_at,
+    template_id, tipo_perfil,
     perfiles_profesionales ( apellidos, titulo_profesional )
   `, { count: 'exact' })
   .order('created_at', { ascending: false })
 
-// Aplicar filtro de plan si viene en la URL
-if (filtPlan) {
-  query = query.eq('plan_id', filtPlan)
-}
+if (filtPlan) query = query.eq('plan_id',    filtPlan)
+if (filtTipo) query = query.eq('tipo_perfil', filtTipo)
+if (buscar)   query = query.or(`slug.ilike.%${buscar}%,nombre.ilike.%${buscar}%`)
 
-// Aplicar búsqueda por nombre o slug
-// Supabase no tiene ILIKE multi-campo en el cliente,
-// así que buscamos por slug (más confiable) y filtramos por nombre en JS
-if (buscar) {
-  query = query.or(`slug.ilike.%${buscar}%,nombre.ilike.%${buscar}%`)
-}
-
-// Paginación
 const desde = (pagina - 1) * POR_PAG
 query = query.range(desde, desde + POR_PAG - 1)
 
 const { data: perfiles, count: totalCount, error: queryError } = await query
-
 const totalPaginas = Math.ceil((totalCount ?? 0) / POR_PAG)
 
-// ── 4. Cargar planes disponibles para el selector inline ──────
+// ── 4. Totales por tipo para los chips de filtro ──────────────
+// Dos queries ligeras (solo count, sin datos) para mostrar
+// cuántos profesionales y negocios hay en total.
+const [{ count: totalProf }, { count: totalNeg }] = await Promise.all([
+  db.from('perfiles').select('*', { count: 'exact', head: true }).eq('tipo_perfil', 'profesional'),
+  db.from('perfiles').select('*', { count: 'exact', head: true }).eq('tipo_perfil', 'negocio'),
+])
+
+// ── 5. Planes disponibles para el selector inline ─────────────
 const { data: planes } = await db
   .from('planes')
   .select('id, nombre, precio_mensual')
   .eq('activo', true)
   .order('precio_mensual')
 
-// ── 5. Helpers ────────────────────────────────────────────────
+// ── 6. Helpers ────────────────────────────────────────────────
 function formatFecha(iso: string | null): string {
   if (!iso) return '—'
   return new Date(iso).toLocaleDateString('es-PE', {
-    day: '2-digit', month: 'short', year: 'numeric'
+    day: '2-digit', month: 'short', year: 'numeric',
   })
 }
 
 function nombreCompleto(p: any): string {
-  const apellidos = p.perfiles_profesionales?.apellidos || p.perfiles_profesionales?.[0]?.apellidos || '';
-  return [p.nombre, apellidos].filter(Boolean).join(' ') || '—'
+  const ap = p.perfiles_profesionales?.apellidos
+          ?? p.perfiles_profesionales?.[0]?.apellidos
+          ?? ''
+  return [p.nombre, ap].filter(Boolean).join(' ') || '—'
 }
 
-// Construir URL de paginación conservando filtros activos
+// Conserva TODOS los filtros activos al paginar
 function pageUrl(p: number): string {
   const params = new URLSearchParams()
   if (buscar)   params.set('q',    buscar)
   if (filtPlan) params.set('plan', filtPlan)
+  if (filtTipo) params.set('tipo', filtTipo)
   params.set('p', String(p))
   return `/admin/usuarios?${params.toString()}`
 }
+
+// URL de filtro por tipo conservando los demás filtros activos
+function tipoUrl(tipo: string): string {
+  const params = new URLSearchParams()
+  if (buscar)   params.set('q',    buscar)
+  if (filtPlan) params.set('plan', filtPlan)
+  if (tipo)     params.set('tipo', tipo)
+  // Resetear paginación al cambiar de tipo
+  return `/admin/usuarios?${params.toString()}`
+}
+
+const hayFiltros = buscar || filtPlan || filtTipo
 ---
 
 <AdminLayout title="Usuarios" tabActivo="usuarios" user={{ email: user.email!, id: user.id }}>
@@ -105,37 +120,61 @@ function pageUrl(p: number): string {
     <h1 class="page-title">Usuarios</h1>
     <p class="page-desc">
       {totalCount ?? 0} usuario{(totalCount ?? 0) !== 1 ? 's' : ''} registrado{(totalCount ?? 0) !== 1 ? 's' : ''}
-      {filtPlan && ` · filtrando por plan "${filtPlan}"`}
-      {buscar   && ` · buscando "${buscar}"`}
+      {filtPlan && ` · plan "${filtPlan}"`}
+      {filtTipo && ` · ${filtTipo === 'profesional' ? '👔 Profesionales' : '🏪 Negocios'}`}
+      {buscar   && ` · "${buscar}"`}
     </p>
   </div>
 
-  <!-- ── BARRA DE FILTROS ───────────────────────────────────── -->
+  <!-- ── CHIPS DE TIPO ──────────────────────────────────────── -->
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <a
+      href={tipoUrl('')}
+      class={`tipo-chip ${!filtTipo ? 'activo' : ''}`}
+    >
+      Todos
+      <span class="tipo-count">{(totalProf ?? 0) + (totalNeg ?? 0)}</span>
+    </a>
+    <a
+      href={tipoUrl('profesional')}
+      class={`tipo-chip ${filtTipo === 'profesional' ? 'activo' : ''}`}
+    >
+      👔 Profesionales
+      <span class="tipo-count">{totalProf ?? 0}</span>
+    </a>
+    <a
+      href={tipoUrl('negocio')}
+      class={`tipo-chip ${filtTipo === 'negocio' ? 'activo' : ''}`}
+    >
+      🏪 Negocios
+      <span class="tipo-count">{totalNeg ?? 0}</span>
+    </a>
+  </div>
+
+  <!-- ── BARRA DE BÚSQUEDA + PLAN ───────────────────────────── -->
   <form
     method="GET"
     action="/admin/usuarios"
     style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center"
   >
-    <!-- Buscador -->
+    <!-- Conservar filtro de tipo al buscar -->
+    {filtTipo && <input type="hidden" name="tipo" value={filtTipo} />}
+
     <div style="position:relative;flex:1;min-width:200px">
-      <svg
-        width="14" height="14"
-        fill="none" stroke="currentColor" viewBox="0 0 24 24"
-        style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-3);pointer-events:none"
-      >
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-3);pointer-events:none">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
       </svg>
       <input
         type="search"
         name="q"
         value={buscar}
-        placeholder="Buscar por nombre, apellido o slug…"
+        placeholder="Buscar por nombre o slug…"
         style="padding-left:32px"
         autocomplete="off"
       />
     </div>
 
-    <!-- Filtro por plan -->
     <select name="plan" style="width:160px">
       <option value="" selected={!filtPlan}>Todos los planes</option>
       {(planes ?? []).map(p => (
@@ -150,14 +189,14 @@ function pageUrl(p: number): string {
       Buscar
     </button>
 
-    {(buscar || filtPlan) && (
+    {hayFiltros && (
       <a href="/admin/usuarios" class="btn btn-ghost" style="flex-shrink:0">
         ✕ Limpiar
       </a>
     )}
   </form>
 
-  <!-- ── TABLA DE USUARIOS ──────────────────────────────────── -->
+  <!-- ── TABLA ──────────────────────────────────────────────── -->
   {queryError ? (
     <div style="padding:20px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius-lg);color:var(--danger);font-size:13px">
       Error al cargar usuarios: {queryError.message}
@@ -167,7 +206,7 @@ function pageUrl(p: number): string {
       <div style="font-size:32px;margin-bottom:12px">🔍</div>
       <div style="font-size:14px;font-weight:600;color:var(--text-1)">Sin resultados</div>
       <div style="font-size:13px;color:var(--text-3);margin-top:4px">
-        {buscar || filtPlan ? 'Prueba con otros filtros.' : 'Aún no hay usuarios registrados.'}
+        {hayFiltros ? 'Prueba con otros filtros.' : 'Aún no hay usuarios registrados.'}
       </div>
     </div>
   ) : (
@@ -177,6 +216,7 @@ function pageUrl(p: number): string {
           <thead>
             <tr>
               <th>Usuario</th>
+              <th>Tipo</th>
               <th>Slug</th>
               <th>Plan</th>
               <th>Template</th>
@@ -185,95 +225,104 @@ function pageUrl(p: number): string {
             </tr>
           </thead>
           <tbody>
-            {(perfiles ?? []).map(p => (
-              <tr data-id={p.id}>
-                <!-- Usuario: avatar + nombre + título -->
-                <td>
-                  <div style="display:flex;align-items:center;gap:10px">
-                    <div style={`width:32px;height:32px;border-radius:50%;background:var(--bg-4);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text-3)`}>
-                      {p.foto_url
-                        ? <img src={p.foto_url} style="width:100%;height:100%;object-fit:cover" alt="" loading="lazy" />
-                        : (p.nombre?.[0] ?? '?').toUpperCase()
-                      }
-                    </div>
-                    <div>
-                      <div style="font-size:13px;font-weight:600;color:var(--text-1)">
-                        {nombreCompleto(p)}
+            {(perfiles ?? []).map(p => {
+              const esNegocio = p.tipo_perfil === 'negocio'
+              return (
+                <tr data-id={p.id}>
+
+                  <!-- Usuario: avatar + nombre + subtítulo -->
+                  <td>
+                    <div style="display:flex;align-items:center;gap:10px">
+                      <div style="width:32px;height:32px;border-radius:50%;background:var(--bg-4);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text-3)">
+                        {p.foto_url
+                          ? <img src={p.foto_url} style="width:100%;height:100%;object-fit:cover" alt="" loading="lazy" />
+                          : (p.nombre?.[0] ?? '?').toUpperCase()
+                        }
                       </div>
-                      {p.perfiles_profesionales?.[0]?.titulo_profesional && (
-                        <div style="font-size:11px;color:var(--text-3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                          {p.perfiles_profesionales[0].titulo_profesional}
+                      <div>
+                        <div style="font-size:13px;font-weight:600;color:var(--text-1)">
+                          {nombreCompleto(p)}
                         </div>
-                      )}
+                        {p.perfiles_profesionales?.[0]?.titulo_profesional && (
+                          <div style="font-size:11px;color:var(--text-3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                            {p.perfiles_profesionales[0].titulo_profesional}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
 
-                <!-- Slug con link -->
-                <td>
-                  <a
-                    href={`/${p.slug}`}
-                    target="_blank"
-                    style="font-family:var(--font-mono);font-size:12px;color:var(--accent-2);text-decoration:none;display:flex;align-items:center;gap:4px"
-                  >
-                    /{p.slug}
-                    <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                    </svg>
-                  </a>
-                </td>
+                  <!-- Tipo: badge 👔/🏪 -->
+                  <td>
+                    <span class={`tipo-badge ${esNegocio ? 'negocio' : 'profesional'}`}>
+                      {esNegocio ? '🏪 Negocio' : '👔 Profesional'}
+                    </span>
+                  </td>
 
-                <!-- Plan — selector inline para cambiar al vuelo -->
-                <td>
-                  <select
-                    class="plan-selector"
-                    data-perfil-id={p.id}
-                    data-plan-actual={p.plan_id ?? 'free'}
-                    style="width:130px;padding:5px 8px;font-size:12px;background:var(--bg-3)"
-                  >
-                    {(planes ?? []).map(pl => (
-                      <option
-                        value={pl.id}
-                        selected={p.plan_id === pl.id}
-                      >
-                        {pl.nombre}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-
-                <!-- Template activo -->
-                <td>
-                  <span style="font-size:12px;font-family:var(--font-mono);color:var(--text-3)">
-                    {p.template_id ?? 'minimal'}
-                  </span>
-                </td>
-
-                <!-- Fecha de registro -->
-                <td>
-                  <span style="font-size:12px;color:var(--text-3)">
-                    {formatFecha(p.created_at)}
-                  </span>
-                </td>
-
-                <!-- Acciones -->
-                <td>
-                  <div style="display:flex;align-items:center;gap:6px">
-                    <!-- Ver tarjeta -->
+                  <!-- Slug con link -->
+                  <td>
                     <a
                       href={`/${p.slug}`}
                       target="_blank"
-                      class="icon-btn"
-                      title="Ver tarjeta pública"
+                      style="font-family:var(--font-mono);font-size:12px;color:var(--accent-2);text-decoration:none;display:flex;align-items:center;gap:4px"
                     >
-                      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><circle cx="12" cy="12" r="3"/>
+                      /{p.slug}
+                      <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                       </svg>
                     </a>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+
+                  <!-- Plan selector inline -->
+                  <td>
+                    <select
+                      class="plan-selector"
+                      data-perfil-id={p.id}
+                      data-plan-actual={p.plan_id ?? 'free'}
+                      style="width:130px;padding:5px 8px;font-size:12px;background:var(--bg-3)"
+                    >
+                      {(planes ?? []).map(pl => (
+                        <option value={pl.id} selected={p.plan_id === pl.id}>
+                          {pl.nombre}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+
+                  <!-- Template activo -->
+                  <td>
+                    <span style="font-size:12px;font-family:var(--font-mono);color:var(--text-3)">
+                      {p.template_id ?? '—'}
+                    </span>
+                  </td>
+
+                  <!-- Fecha de registro -->
+                  <td>
+                    <span style="font-size:12px;color:var(--text-3)">
+                      {formatFecha(p.created_at)}
+                    </span>
+                  </td>
+
+                  <!-- Acciones -->
+                  <td>
+                    <div style="display:flex;align-items:center;gap:6px">
+                      <a
+                        href={`/${p.slug}`}
+                        target="_blank"
+                        class="icon-btn"
+                        title="Ver tarjeta pública"
+                      >
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+                          <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                      </a>
+                    </div>
+                  </td>
+
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
@@ -303,8 +352,70 @@ function pageUrl(p: number): string {
 
 </AdminLayout>
 
-<!-- Datos para el script -->
 <div id="page-data" data-admin-email={user.email} style="display:none"></div>
+
+<style>
+  /* ── Chips de tipo ─────────────────────────────────────────── */
+  .tipo-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-2);
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    text-decoration: none;
+    transition: all .15s;
+    cursor: pointer;
+  }
+  .tipo-chip:hover {
+    border-color: var(--border-2);
+    color: var(--text-1);
+  }
+  .tipo-chip.activo {
+    background: var(--accent-bg);
+    color: var(--accent);
+    border-color: var(--accent-border);
+    font-weight: 600;
+  }
+  .tipo-count {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 99px;
+    background: var(--bg-4);
+    color: var(--text-3);
+  }
+  .tipo-chip.activo .tipo-count {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  /* ── Badge tipo en la tabla ─────────────────────────────────── */
+  .tipo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .tipo-badge.profesional {
+    background: var(--accent-bg);
+    color: var(--accent);
+    border: 1px solid var(--accent-border);
+  }
+  .tipo-badge.negocio {
+    background: var(--cyan-bg);
+    color: var(--cyan-2);
+    border: 1px solid rgba(0,212,255,.2);
+  }
+</style>
 
 <script>
   import { createBrowserClient } from '@supabase/ssr'
@@ -314,31 +425,22 @@ function pageUrl(p: number): string {
     document.querySelector<HTMLMetaElement>('meta[name="supabase-anon"]')!.content,
   )
 
-  // ── Plan inline ─────────────────────────────────
-  // Cuando el admin cambia el select de plan de un usuario,
-  // actualiza plan_id en la BD inmediatamente sin recargar.
+  // ── Plan inline ──────────────────────────────────────────────
   document.querySelectorAll<HTMLSelectElement>('.plan-selector').forEach(sel => {
     sel.addEventListener('change', async () => {
       const perfilId   = sel.dataset.perfilId!
       const planNuevo  = sel.value
       const planActual = sel.dataset.planActual!
 
-      // Evitar llamada innecesaria si no cambió
       if (planNuevo === planActual) return
 
-      // Feedback visual inmediato — deshabilitar mientras guarda
       sel.disabled = true
-      const rowEl = sel.closest('tr')
 
       try {
-        // Usar el cliente anon con sesión del admin
-        // La actualización se permite porque el admin tiene sesión válida
-        // y el service role no está disponible en el browser.
-        // Para cambios de plan usamos el endpoint de API protegido.
         const res = await fetch('/api/admin/set-plan', {
-          method: 'POST',
+          method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ perfil_id: perfilId, plan_id: planNuevo }),
+          body:    JSON.stringify({ perfil_id: perfilId, plan_id: planNuevo }),
         })
 
         if (!res.ok) {
@@ -346,14 +448,10 @@ function pageUrl(p: number): string {
           throw new Error(err.error ?? `HTTP ${res.status}`)
         }
 
-        // Actualizar el data-plan-actual para que futuros cambios
-        // puedan detectar si realmente hay diferencia
         sel.dataset.planActual = planNuevo
-
         ;(window as any).toast?.(`Plan actualizado a "${planNuevo}"`, 'success')
 
       } catch (err: any) {
-        // Revertir el selector al valor anterior si falló
         sel.value = planActual
         ;(window as any).toast?.(`Error: ${err.message}`, 'error')
       } finally {
@@ -362,9 +460,7 @@ function pageUrl(p: number): string {
     })
   })
 
-  // ── Búsqueda con debounce al escribir ─────────────────────
-  // Envía el formulario automáticamente 600ms después de
-  // dejar de escribir — sin necesidad de presionar "Buscar"
+  // ── Búsqueda con debounce ────────────────────────────────────
   const searchInput = document.querySelector<HTMLInputElement>('input[name="q"]')
   const searchForm  = searchInput?.closest('form') as HTMLFormElement | null
   let   searchTimer: ReturnType<typeof setTimeout> | undefined

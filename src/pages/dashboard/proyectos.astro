@@ -25,7 +25,9 @@ const { data: { user }, error: authError } = await supabase.auth.getUser()
 if (authError || !user) return Astro.redirect('/auth/login')
 
 const { data: perfil } = await supabase
-  .from('perfiles').select('id, slug').eq('user_id', user.id).single()
+  .from('perfiles').select('id, slug, tipo_perfil').eq('user_id', user.id).single()
+
+const esNegocio = perfil?.tipo_perfil === 'negocio'
 
 const perfilId = perfil?.id ?? null
 
@@ -34,12 +36,12 @@ const { data: items } = perfilId
   : { data: [] }
 ---
 
-<DashboardLayout title="Proyectos" tabActivo="proyectos" user={{ email: user.email!, id: user.id }} slug={perfil?.slug}>
+<DashboardLayout title={esNegocio ? 'Galería' : 'Proyectos'} tabActivo="proyectos" user={{ email: user.email!, id: user.id }} slug={perfil?.slug} tipoPerfil={perfil?.tipo_perfil ?? 'profesional'}>
 
   <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
     <div>
-      <h1 class="page-title">Proyectos</h1>
-      <p class="page-desc">Muestra tu portafolio: apps, sitios web, investigaciones y más.</p>
+      <h1 class="page-title">{esNegocio ? 'Galería de fotos' : 'Proyectos'}</h1>
+      <p class="page-desc">{esNegocio ? 'Fotos de tu local, productos o trabajos realizados.' : 'Muestra tu portafolio: apps, sitios web, investigaciones y más.'}</p>
     </div>
     <button
       class="btn btn-primary"
@@ -97,7 +99,7 @@ const { data: items } = perfilId
       <div style="text-align:center;padding:48px 20px;color:var(--text-3)">
         <div style="font-size:36px;margin-bottom:12px">🗂</div>
         <div style="font-size:14px;font-weight:600;color:var(--text-2);margin-bottom:4px">Sin registros aún</div>
-        <div style="font-size:13px">Muestra tu portafolio: apps, sitios web, investigaciones y más.</div>
+        <div style="font-size:13px">{esNegocio ? 'Agrega fotos de tu local o productos.' : 'Muestra tu portafolio: apps, sitios web, investigaciones y más.'}</div>
         {perfilId && (
           <button class="btn btn-primary" style="margin-top:16px" id="btn-empty-state">
             Agregar el primero

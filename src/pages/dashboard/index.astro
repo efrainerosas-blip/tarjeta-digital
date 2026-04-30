@@ -47,6 +47,7 @@ const cardUrl = perfil?.slug ? `${Astro.url.origin}/${perfil.slug}` : null
   tabActivo="perfil"
   user={{ email: user.email!, id: user.id }}
   slug={perfil?.slug}
+  tipoPerfil={perfil?.tipo_perfil ?? 'profesional'}
 >
 
   <div class="page-header">
@@ -229,6 +230,45 @@ const cardUrl = perfil?.slug ? `${Astro.url.origin}/${perfil.slug}` : null
               placeholder="Ej: Av. Larco 345, Miraflores" maxlength="200" />
           </div>
         )}
+
+        {esNegocio && (
+          <div class="form-group">
+            <label for="tagline">Tagline / Slogan</label>
+            <input type="text" id="tagline" name="tagline"
+              value={perfil?.tagline ?? ''}
+              placeholder="Ej: Tu vidriería de confianza" maxlength="100" />
+            <span class="form-hint">Frase corta bajo el nombre en la tarjeta.</span>
+          </div>
+        )}
+
+        {esNegocio && (
+          <div class="form-group">
+            <label for="sitio_web">Sitio web</label>
+            <input type="url" id="sitio_web" name="sitio_web"
+              value={perfil?.sitio_web ?? ''}
+              placeholder="https://minegocio.com" />
+          </div>
+        )}
+
+        {esNegocio && (
+          <div class="form-group">
+            <label for="email_negocio">Email del negocio</label>
+            <input type="email" id="email_negocio" name="email_negocio"
+              value={perfil?.email_negocio ?? ''}
+              placeholder="contacto@minegocio.com" maxlength="120" />
+          </div>
+        )}
+
+        {esNegocio && (
+          <div class="form-group">
+            <label for="whatsapp_pedidos">WhatsApp de pedidos</label>
+            <input type="tel" id="whatsapp_pedidos" name="whatsapp_pedidos"
+              value={perfil?.whatsapp_pedidos ?? ''}
+              placeholder="+51 987 654 321" maxlength="20" />
+            <span class="form-hint">Número dedicado a pedidos. Puede ser diferente al teléfono principal.</span>
+          </div>
+        )}
+
       </div>
     </div>
 
@@ -654,10 +694,14 @@ const cardUrl = perfil?.slug ? `${Astro.url.origin}/${perfil.slug}` : null
     } else {
       const pnPayload: Record<string,unknown> = {
         perfil_id:        perfilId,
-        nombre_negocio:   (fd.get('nombre_negocio')   as string)?.trim() || null,
+        nombre_negocio:   (fd.get('nombre_negocio')    as string)?.trim() || null,
         categoria_negocio:(fd.get('categoria_negocio') as string)?.trim() || null,
-        direccion:        (fd.get('direccion')         as string)?.trim() || null,
-        status_negocio:   (fd.get('status_negocio')   as string) || 'Abierto',
+        direccion:        (fd.get('direccion')          as string)?.trim() || null,
+        status_negocio:   (fd.get('status_negocio')    as string) || 'Abierto',
+        tagline:          (fd.get('tagline')            as string)?.trim() || null,
+        sitio_web:        (fd.get('sitio_web')          as string)?.trim() || null,
+        email_negocio:    (fd.get('email_negocio')      as string)?.trim() || null,
+        whatsapp_pedidos: (fd.get('whatsapp_pedidos')   as string)?.trim() || null,
       }
       const { error } = await sb
         .from('perfiles_negocios')

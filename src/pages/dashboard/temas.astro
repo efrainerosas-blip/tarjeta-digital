@@ -3,7 +3,7 @@
 export const prerender = false
 import DashboardLayout from '../../layouts/DashboardLayout.astro'
 import { createServerClient } from '@supabase/ssr'
-import { THEMES } from '../../themes/index'
+import { getThemesPorTipo } from '../../themes/index'
 
 const supabase = createServerClient(
   import.meta.env.PUBLIC_SUPABASE_URL,
@@ -30,14 +30,16 @@ const { data: { user }, error: authError } = await supabase.auth.getUser()
 if (authError || !user) return Astro.redirect('/auth/login')
 
 const { data: perfil } = await supabase
-  .from('perfiles')
-  .select('id, slug, template_id, plan_id')
+  .from('vista_perfiles_completos')
+  .select('id, slug, template_id, plan_id, tipo_perfil')
   .eq('user_id', user.id)
   .maybeSingle()
 
-const temaActual = perfil?.template_id ?? 'minimal'
-const plan       = perfil?.plan_id     ?? 'free'
-const slug       = perfil?.slug        ?? ''
+const temaActual   = perfil?.template_id ?? 'minimal'
+const plan         = perfil?.plan_id     ?? 'free'
+const slug         = perfil?.slug        ?? ''
+const tipoPerfil   = (perfil?.tipo_perfil ?? 'profesional') as 'profesional' | 'negocio'
+const temasVisibles = getThemesPorTipo(tipoPerfil)
 ---
 
 <DashboardLayout title="Plantillas" tabActivo="temas" user={{ email: user.email!, id: user.id }}>
@@ -53,7 +55,7 @@ const slug       = perfil?.slug        ?? ''
     <div class="temas-selector">
 
       <div id="themes-grid">
-        {THEMES.map(theme => {
+        {temasVisibles.map(theme => {
           const activo    = temaActual === theme.id
           const bloqueado = theme.premium && plan === 'free'
 
