@@ -7,6 +7,10 @@ import CardLayout   from '../../layouts/CardLayout.astro'
 import { createClient } from '@supabase/supabase-js'
 import { getThemeParaPerfil } from '../../themes/index'
 import type { CardProps } from '../../themes/types'
+import type {
+  Experiencia, Estudio, Capacitacion, Habilidad,
+  Servicio, Proyecto, Red, Logro, Referencia
+} from '../../themes/types'
 
 const supabase = createClient(
   import.meta.env.PUBLIC_SUPABASE_URL,
@@ -39,11 +43,6 @@ const esProfesional = tipoPerfil === 'profesional'
 // Profesional: 9 queries en paralelo
 // Negocio:     3 queries (servicios/catálogo, proyectos/galería, redes)
 // Las tablas que no aplican al tipo no se consultan — ahorro en BD.
-
-import type {
-  Experiencia, Estudio, Capacitacion, Habilidad,
-  Servicio, Proyecto, Red, Logro, Referencia
-} from '../../themes/types'
 
 let experiencia:    Experiencia[]    = []
 let estudios:       Estudio[]        = []
