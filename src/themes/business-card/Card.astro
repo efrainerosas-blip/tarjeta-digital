@@ -1,27 +1,34 @@
 ---
 // src/themes/business-card/Card.astro
-// THEME: Business Card — Flip 3D
-// Cara FRONTAL: fondo blanco/crema, ondas de color en esquinas,
-//               logo centrado, nombre, tagline, datos de contacto.
-// Cara TRASERA: fondo oscuro azul/navy, redes, web, QR hint.
-// Inspirado en tarjeta de presentación física clásica.
+// THEME: Business Card Premium — Pantalla completa, flip por swipe
+//
+// CARA FRONTAL: Fondo blanco + forma decorativa acento inf-der
+//               Logo grande centrado, nombre, tagline, web/email, redes
+//
+// CARA TRASERA: Header navy ~55% con corte diagonal + fondo blanco
+//               Logo pequeño + nombre en header, datos de contacto,
+//               mapa Google Maps embed
+//
+// Sin botones de flip — solo swipe horizontal o clic en la tarjeta
 
 import type { CardProps } from '../types'
 
 const { perfil, servicios, redes } = Astro.props as CardProps
 
-const accent  = perfil.color_primario   ?? '#1a56db'
-const accent2 = perfil.color_secundario ?? '#1e3a8a'
+const accent  = perfil.color_primario   ?? '#f97316'
+const accent2 = perfil.color_secundario ?? '#ea580c'
 const nombre  = perfil.nombre_negocio   ?? perfil.nombre ?? 'Mi Negocio'
 const tagline = perfil.tagline          ?? perfil.categoria_negocio ?? ''
 const logo    = perfil.foto_url         ?? null
 const tel     = perfil.telefono         ?? perfil.whatsapp_pedidos  ?? null
-const email   = perfil.email_negocio    ?? null
+const email   = perfil.email_negocio    ?? perfil.email             ?? null
 const dir     = perfil.direccion        ?? null
 const web     = perfil.sitio_web        ?? null
 const wa      = perfil.whatsapp_pedidos ?? perfil.telefono          ?? null
 const slug    = perfil.slug             ?? ''
+const resp    = [perfil.nombre, perfil.apellidos].filter(Boolean).join(' ')
 
+// Contraste texto sobre acento
 function lum(hex: string): number {
   const h = hex.replace('#','')
   const r = parseInt(h.slice(0,2),16)
@@ -29,7 +36,16 @@ function lum(hex: string): number {
   const b = parseInt(h.slice(4,6),16)
   return (0.299*r + 0.587*g + 0.114*b)/255
 }
-const accentText = lum(accent.startsWith('#') ? accent : '#1a56db') > 0.55 ? '#0a0a0a' : '#ffffff'
+const onAccent = lum(accent.startsWith('#') ? accent : '#f97316') > 0.55 ? '#0a0a0a' : '#ffffff'
+
+// Google Maps embed URL (si hay dirección)
+const mapsQuery = dir ? encodeURIComponent(dir) : null
+const mapsEmbed = mapsQuery
+  ? `https://www.google.com/maps/embed/v1/place?key=AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY&q=${mapsQuery}`
+  : null
+const mapsLink = mapsQuery
+  ? `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`
+  : null
 
 const ICONOS: Record<string,string> = {
   LinkedIn:    `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>`,
@@ -42,766 +58,741 @@ const ICONOS: Record<string,string> = {
   Telegram:    `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>`,
 }
 function icon(p: string) {
-  return ICONOS[p] ?? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>`
+  return ICONOS[p] ?? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>`
 }
 ---
 
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" slot="head" />
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;600;700;800;900&family=Open+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" slot="head"/>
 
-<style is:inline define:vars={{ accent, accent2, accentText }}>
+<style is:inline define:vars={{ accent, accent2, onAccent }}>
 
+/* ── ROOT — variables del theme ─────────────────────────────── */
 :root {
-  --bc-ff-head: 'Montserrat', sans-serif;
-  --bc-ff-body: 'Open Sans', sans-serif;
-  --bc-front-bg:   #f7f9fc;
-  --bc-front-bg2:  #ffffff;
-  --bc-front-text: #1a1f36;
-  --bc-front-muted:#6b7280;
-  --bc-front-line: #e5e9f0;
-  --bc-back-bg:    #0d1b3e;
-  --bc-back-bg2:   #112250;
-  --bc-back-text:  #e8edf8;
-  --bc-back-muted: rgba(232,237,248,.5);
-  --bc-w: 360px;
-  --bc-h: 620px;
-  --bc-r: 18px;
+  --bc-navy:      #1a2238;
+  --bc-navy2:     #111827;
+  --bc-fh:        'Raleway', sans-serif;
+  --bc-fb:        'Open Sans', sans-serif;
+  --bc-white:     #ffffff;
+  --bc-off:       #f8f9fc;
+  --bc-text:      #1a2238;
+  --bc-muted:     #6b7280;
+  --bc-line:      #e5e7eb;
 }
 
-.bc-page {
+/* ── CONTENEDOR PRINCIPAL ───────────────────────────────────── */
+.bc-root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--bc-navy2);
+  font-family: var(--bc-fb);
+  touch-action: pan-y;
+}
 
-  min-height: 100vh;
-  font-family: var(--bc-ff-body);
-  /* Fondo neutro claro — resalta la tarjeta */
-  background: linear-gradient(160deg, #e8edf8 0%, #d4daf0 100%);
+/* ── FLIPPER ────────────────────────────────────────────────── */
+.bc-flipper {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform .7s cubic-bezier(.4,.2,.2,1);
+  will-change: transform;
+}
+.bc-flipper.flipped {
+  transform: rotateY(180deg);
+}
+
+/* ── CARA GENÉRICA ──────────────────────────────────────────── */
+.bc-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CARA FRONTAL
+   Fondo blanco, forma decorativa color en esquina inf-der,
+   logo grande centrado, nombre, tagline, web/email, redes.
+   Fiel a la imagen derecha de la referencia.
+   ══════════════════════════════════════════════════════════════ */
+.bc-front {
+  background: var(--bc-white);
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+/* Forma decorativa esquina superior izquierda */
+.bc-front-deco-tl {
+  position: absolute;
+  top: 0; left: 0;
+  width: 48%;
+  height: 38%;
+  pointer-events: none;
+  overflow: hidden;
+}
+.bc-front-deco-tl svg {
+  width: 100%; height: 100%;
+}
+
+/* Forma decorativa esquina inferior derecha */
+.bc-front-deco-br {
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 42%;
+  height: 32%;
+  pointer-events: none;
+  overflow: hidden;
+}
+.bc-front-deco-br svg {
+  width: 100%; height: 100%;
+}
+
+/* Contenido centrado de la cara frontal */
+.bc-front-content {
+  position: relative;
+  z-index: 1;
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 40px 16px 110px;
-  position: relative;
+  justify-content: center;
+  padding: 60px 40px 80px;
+  gap: 0;
 }
 
-/* Textura sutil de fondo */
-.bc-page::before {
-  content: '';
-  position: fixed; inset: 0;
-  background-image: radial-gradient(circle at 20% 20%, rgba(255,255,255,.6) 0%, transparent 50%),
-                    radial-gradient(circle at 80% 80%, color-mix(in srgb, var(--accent) 12%, transparent) 0%, transparent 50%);
-  pointer-events: none; z-index: 0;
-}
-
-/* ── ESCENA 3D ─────────────────────────────────────────────── */
-.bc-scene {
-  position: relative; z-index: 1;
-  width: min(var(--bc-w), calc(100vw - 32px));
-  height: min(var(--bc-h), calc((100vw - 32px) * 1.72));
-  perspective: 1400px;
-  cursor: pointer;
-  margin-bottom: 20px;
-  animation: bc-appear .65s cubic-bezier(.34,1.4,.64,1) both;
-  /* Sombra realista de tarjeta */
-  /* filter removido — rompe preserve-3d en todos los navegadores */
-}
-
-@keyframes bc-appear {
-  from { opacity:0; transform: translateY(28px) scale(.97); }
-  to   { opacity:1; transform: translateY(0) scale(1); }
-}
-
-.bc-card {
-  width: 100%; height: 100%;
-  position: relative;
-  transform-style: preserve-3d;
-  box-shadow: 0 20px 50px rgba(13,27,62,.35), 0 4px 12px rgba(13,27,62,.2);
-  transition: transform .75s cubic-bezier(.4,.2,.2,1);
-}
-.bc-card.flipped { transform: rotateY(180deg); }
-
-.bc-face {
-  position: absolute; inset: 0;
-  border-radius: var(--bc-r);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+/* Logo */
+.bc-front-logo {
+  width: 110px;
+  height: 110px;
+  border-radius: 20px;
   overflow: hidden;
+  margin-bottom: 28px;
+  box-shadow:
+    0 8px 32px rgba(0,0,0,.12),
+    0 0 0 1px rgba(0,0,0,.06);
 }
-
-/* ════════════════════════════════════════════════════════════
-   CARA FRONTAL — BLANCA con ondas de color
-   ════════════════════════════════════════════════════════════ */
-.bc-front {
-  background: var(--bc-front-bg);
-  display: flex;
-  flex-direction: column;
-}
-
-/* Onda decorativa superior — color del acento */
-.bc-front-wave-top {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 220px;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 0;
-}
-.bc-front-wave-top svg {
-  position: absolute; top: 0; left: 0;
+.bc-front-logo img {
   width: 100%; height: 100%;
-}
-
-/* Onda decorativa inferior derecha */
-.bc-front-wave-bottom {
-  position: absolute;
-  bottom: 0; right: 0;
-  width: 180px; height: 180px;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 0;
-}
-.bc-front-wave-bottom svg {
-  position: absolute; bottom: 0; right: 0;
-  width: 100%; height: 100%;
-}
-
-/* Logo centrado encima de la ola */
-.bc-front-logo-wrap {
-  position: relative; z-index: 2;
-  display: flex; justify-content: center;
-  padding-top: 32px;
-}
-.bc-front-logo-ring {
-  width: 90px; height: 90px;
-  border-radius: 50%;
-  padding: 4px;
-  background: white;
-  box-shadow: 0 4px 24px rgba(0,0,0,.18), 0 0 0 3px var(--accent);
-}
-.bc-front-logo-ring img,
-.bc-front-logo-ring .bc-logo-ph {
-  width: 100%; height: 100%;
-  border-radius: 50%;
   object-fit: cover; object-position: center;
   display: block;
 }
-.bc-logo-ph {
+.bc-front-logo-ph {
+  width: 100%; height: 100%;
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   display: flex; align-items: center; justify-content: center;
-  font-size: 2.2rem;
+  font-size: 3rem;
 }
 
-/* Cuerpo frontal */
-.bc-front-body {
-  position: relative; z-index: 1;
-  flex: 1;
-  display: flex; flex-direction: column;
-  align-items: center;
-  padding: 20px 28px 24px;
-  text-align: center;
-}
-
-.bc-biz-name {
-  font-family: var(--bc-ff-head);
-  font-size: 1.6rem; font-weight: 800;
-  color: var(--bc-front-text);
+/* Nombre del negocio */
+.bc-front-name {
+  font-family: var(--bc-fh);
+  font-size: clamp(1.6rem, 5vw, 2.2rem);
+  font-weight: 800;
+  color: var(--bc-text);
   letter-spacing: -.03em;
   line-height: 1.1;
-  margin-bottom: 4px;
+  text-align: center;
+  margin-bottom: 8px;
 }
-.bc-biz-tagline {
-  font-family: var(--bc-ff-head);
-  font-size: 11px; font-weight: 600;
+
+/* Tagline */
+.bc-front-tag {
+  font-family: var(--bc-fh);
+  font-size: clamp(10px, 2.5vw, 12px);
+  font-weight: 600;
   color: var(--accent);
   text-transform: uppercase;
-  letter-spacing: .2em;
-  margin-bottom: 20px;
-}
-
-/* Línea divisoria ornamental */
-.bc-sep {
-  display: flex; align-items: center; gap: 8px;
-  width: 100%; margin-bottom: 20px;
-}
-.bc-sep-line { flex: 1; height: 1px; background: var(--bc-front-line); }
-.bc-sep-ico  {
-  width: 26px; height: 26px; border-radius: 50%;
-  background: var(--accent);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.bc-sep-ico svg { width: 12px; height: 12px; fill: var(--accentText); }
-
-/* Lista de contactos */
-.bc-contacts {
-  width: 100%;
-  display: flex; flex-direction: column; gap: 10px;
-}
-.bc-contact-row {
-  display: flex; align-items: center; gap: 12px;
-  text-decoration: none;
-  padding: 9px 12px;
-  border-radius: 10px;
-  background: var(--bc-front-bg2);
-  border: 1px solid var(--bc-front-line);
-  transition: all .15s;
-}
-.bc-contact-row:hover {
-  border-color: var(--accent);
-  box-shadow: 0 2px 12px color-mix(in srgb, var(--accent) 15%, transparent);
-  transform: translateX(2px);
-}
-.bc-contact-icon {
-  width: 32px; height: 32px; border-radius: 8px;
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  display: flex; align-items: center; justify-content: center;
-  color: var(--accent); flex-shrink: 0;
-}
-.bc-contact-icon svg { width: 15px; height: 15px; }
-.bc-contact-info { text-align: left; min-width: 0; }
-.bc-contact-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--bc-front-muted); line-height: 1; }
-.bc-contact-val   { font-size: 12.5px; font-weight: 500; color: var(--bc-front-text); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-/* Status */
-.bc-status-wrap {
-  margin-top: auto; padding-top: 16px;
-  display: flex; align-items: center; gap: 6px;
-  font-size: 10px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: .08em; color: var(--bc-front-muted);
-}
-.bc-status-dot {
-  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
-}
-.bc-status-dot.open   { background: #22c55e; box-shadow: 0 0 8px rgba(34,197,94,.5); }
-.bc-status-dot.closed { background: #ef4444; }
-.bc-status-dot.other  { background: #f59e0b; }
-
-/* ════════════════════════════════════════════════════════════
-   CARA TRASERA — NAVY OSCURO con info del responsable + redes
-   ════════════════════════════════════════════════════════════ */
-.bc-back {
-  background: linear-gradient(160deg, var(--bc-back-bg) 0%, var(--bc-back-bg2) 100%);
-  transform: rotateY(180deg);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: space-between;
-  padding: 44px 28px 36px;
-  position: relative; overflow: hidden;
-}
-
-/* Onda decorativa en la trasera (espejo del frente) */
-.bc-back-wave {
-  position: absolute; top: 0; left: 0; right: 0; height: 160px;
-  pointer-events: none; overflow: hidden;
-}
-.bc-back-wave svg { width: 100%; height: 100%; }
-
-/* Círculo decorativo trasero */
-.bc-back-circle {
-  position: absolute; bottom: -60px; right: -60px;
-  width: 220px; height: 220px; border-radius: 50%;
-  border: 1px solid rgba(255,255,255,.05);
-  pointer-events: none;
-}
-.bc-back-circle::after {
-  content: '';
-  position: absolute; inset: 20px;
-  border-radius: 50%;
-  border: 1px solid rgba(255,255,255,.04);
-}
-
-/* Sección superior: nombre del responsable */
-.bc-back-top {
-  position: relative; z-index: 1;
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  letter-spacing: .22em;
   text-align: center;
-}
-.bc-back-resp-label {
-  font-size: 9px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: .18em; color: var(--bc-back-muted);
-}
-.bc-back-resp-name {
-  font-family: var(--bc-ff-head);
-  font-size: 1.4rem; font-weight: 700;
-  color: var(--bc-back-text);
-  letter-spacing: -.02em; line-height: 1.15;
-}
-.bc-back-resp-title {
-  font-size: 11px; font-weight: 400;
-  color: var(--bc-back-muted);
-  letter-spacing: .06em;
+  margin-bottom: 36px;
 }
 
-/* Línea divisoria central (idéntica a la imagen 2) */
-.bc-back-divider {
-  position: relative; z-index: 1;
-  width: 100%;
-  display: flex; align-items: center; gap: 12px;
-}
-.bc-back-divider-line { flex: 1; height: 1px; background: rgba(255,255,255,.1); }
-.bc-back-divider-logo {
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-}
-.bc-back-logo-img,
-.bc-back-logo-ph {
-  width: 56px; height: 56px; border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid rgba(255,255,255,.15);
-  box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 25%, transparent);
-}
-.bc-back-logo-ph {
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.5rem;
-}
-.bc-back-biz-name {
-  font-family: var(--bc-ff-head);
-  font-size: 13px; font-weight: 700;
-  color: rgba(255,255,255,.9);
-  text-align: center; letter-spacing: -.01em;
+/* Divisor */
+.bc-front-divider {
+  width: 48px; height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 99px;
+  margin-bottom: 36px;
 }
 
-/* Lista de datos de contacto en la trasera */
-.bc-back-contacts {
-  position: relative; z-index: 1;
-  width: 100%; display: flex; flex-direction: column; gap: 10px;
-}
-.bc-back-contact-row {
-  display: flex; align-items: center; gap: 10px;
+/* Web / Email */
+.bc-front-web {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: clamp(12px, 3vw, 14px);
+  font-weight: 500;
+  color: var(--bc-muted);
   text-decoration: none;
+  margin-bottom: 36px;
+  transition: color .15s;
 }
-.bc-back-contact-ico {
-  width: 30px; height: 30px; border-radius: 8px;
-  background: rgba(255,255,255,.07);
-  border: 1px solid rgba(255,255,255,.1);
-  display: flex; align-items: center; justify-content: center;
-  color: var(--accent); flex-shrink: 0;
-}
-.bc-back-contact-ico svg { width: 14px; height: 14px; }
-.bc-back-contact-txt {
-  font-size: 12px; font-weight: 400;
-  color: rgba(255,255,255,.75);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
+.bc-front-web:hover { color: var(--accent); }
+.bc-front-web svg { width: 16px; height: 16px; flex-shrink: 0; opacity: .6; }
 
-/* Redes sociales en la trasera */
-.bc-socials {
-  position: relative; z-index: 1;
-  display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+/* Redes sociales */
+.bc-front-socials {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
-.bc-social-btn {
-  width: 42px; height: 42px; border-radius: 10px;
-  background: rgba(255,255,255,.07);
-  border: 1px solid rgba(255,255,255,.1);
+.bc-front-social {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: var(--bc-off);
+  border: 1px solid var(--bc-line);
   display: flex; align-items: center; justify-content: center;
-  color: rgba(255,255,255,.65);
+  color: var(--bc-muted);
   text-decoration: none;
   transition: all .18s;
 }
-.bc-social-btn svg { width: 18px; height: 18px; }
-.bc-social-btn:hover {
-  background: var(--accent); color: var(--accentText);
-  border-color: var(--accent); transform: translateY(-2px);
-}
-
-/* Hint flip en la trasera */
-.bc-back-hint {
-  position: relative; z-index: 1;
-  display: flex; align-items: center; gap: 6px;
-  font-size: 10px; color: rgba(255,255,255,.25);
-  animation: bc-pulse 3s ease-in-out infinite 2s;
-}
-.bc-back-hint svg { width: 12px; height: 12px; }
-@keyframes bc-pulse { 0%,100%{opacity:.4} 50%{opacity:.8} }
-
-/* ── BOTÓN FLIP ────────────────────────────────────────────── */
-.bc-flip-btn {
-  position: relative; z-index: 2;
-  display: flex; align-items: center; gap: 8px;
-  background: white;
-  border: 1.5px solid var(--bc-front-line);
-  border-radius: 99px;
-  padding: 10px 22px;
-  font-family: var(--bc-ff-body);
-  font-size: 12.5px; font-weight: 600;
-  color: var(--bc-front-text);
-  cursor: pointer;
-  transition: all .2s;
-  box-shadow: 0 2px 12px rgba(0,0,0,.1);
-}
-.bc-flip-btn:hover {
+.bc-front-social svg { width: 20px; height: 20px; }
+.bc-front-social:hover {
   background: var(--accent);
-  color: var(--accentText);
+  color: var(--onAccent);
   border-color: var(--accent);
-  box-shadow: 0 4px 20px color-mix(in srgb, var(--accent) 35%, transparent);
+  transform: translateY(-2px);
 }
-.bc-flip-btn svg { width: 14px; height: 14px; }
 
-/* ── CATÁLOGO ──────────────────────────────────────────────── */
-.bc-catalog-section {
-  width: 100%; max-width: var(--bc-w);
-  position: relative; z-index: 1;
-  margin-top: 12px;
+/* Hint swipe inferior */
+.bc-swipe-hint {
+  position: absolute;
+  bottom: 24px;
+  left: 0; right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--bc-muted);
+  opacity: .5;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  animation: bc-hint 3s ease-in-out infinite 2s;
+  pointer-events: none;
 }
-.bc-catalog-title {
-  font-family: var(--bc-ff-head);
-  font-size: 16px; font-weight: 700;
-  color: var(--bc-front-text);
-  margin-bottom: 12px;
-  display: flex; align-items: center; gap: 10px;
-  padding: 0 2px;
+.bc-swipe-hint svg { width: 14px; height: 14px; }
+@keyframes bc-hint { 0%,100%{opacity:.3} 50%{opacity:.7} }
+
+/* ══════════════════════════════════════════════════════════════
+   CARA TRASERA
+   Header navy con corte diagonal (~55% superior),
+   fondo blanco inferior con datos de contacto y mapa.
+   Fiel a la imagen izquierda de la referencia.
+   ══════════════════════════════════════════════════════════════ */
+.bc-back {
+  background: var(--bc-white);
+  transform: rotateY(180deg);
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
 }
-.bc-catalog-title::after {
-  content: ''; flex: 1; height: 2px;
-  background: linear-gradient(90deg, var(--accent), transparent);
-  border-radius: 99px;
+
+/* Header navy con SVG diagonal */
+.bc-back-header {
+  position: relative;
+  background: var(--bc-navy);
+  flex-shrink: 0;
+  /* La altura la da el contenido + el SVG */
 }
-.bc-catalog-grid { display: flex; flex-direction: column; gap: 8px; }
-.bc-catalog-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 12px 14px;
-  background: white;
-  border: 1px solid var(--bc-front-line);
-  border-radius: 12px;
-  transition: all .15s;
+
+/* SVG corte diagonal inferior del header */
+.bc-back-header-cut {
+  position: absolute;
+  bottom: -1px; left: 0; right: 0;
+  height: 60px;
+  pointer-events: none;
+}
+.bc-back-header-cut svg {
+  width: 100%; height: 100%;
+}
+
+/* Contenido del header */
+.bc-back-header-content {
+  position: relative;
+  z-index: 1;
+  padding: 48px 32px 72px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Logo pequeño en header */
+.bc-back-logo-sm {
+  width: 64px; height: 64px;
+  border-radius: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 2px solid rgba(255,255,255,.2);
+  box-shadow: 0 4px 16px rgba(0,0,0,.3);
+}
+.bc-back-logo-sm img {
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+}
+.bc-back-logo-sm-ph {
+  width: 100%; height: 100%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem;
+}
+
+/* Nombre en header */
+.bc-back-header-text {}
+.bc-back-header-name {
+  font-family: var(--bc-fh);
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -.02em;
+  line-height: 1.1;
+}
+.bc-back-header-tag {
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(255,255,255,.55);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+}
+
+/* Acento de color esquina superior derecha del header */
+.bc-back-header-accent {
+  position: absolute;
+  top: 0; right: 0;
+  width: 80px; height: 80px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.bc-back-header-accent svg {
+  width: 100%; height: 100%;
+}
+
+/* Cuerpo del dorso — datos de contacto + mapa */
+.bc-back-body {
+  flex: 1;
+  padding: 32px 28px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Fila de contacto */
+.bc-contact-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--bc-line);
   text-decoration: none;
-  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  transition: all .15s;
 }
-.bc-catalog-item:hover { border-color: var(--accent); transform: translateX(2px); }
-.bc-catalog-ico { font-size: 20px; flex-shrink: 0; }
-.bc-catalog-name { font-size: 13px; font-weight: 600; color: var(--bc-front-text); }
-.bc-catalog-desc { font-size: 11px; color: var(--bc-front-muted); margin-top: 1px; }
-.bc-catalog-price {
-  margin-left: auto; flex-shrink: 0;
-  font-size: 12px; font-weight: 700;
-  color: var(--accentText);
-  background: var(--accent);
-  padding: 3px 10px; border-radius: 99px;
+.bc-contact-row:last-of-type { border-bottom: none; }
+.bc-contact-row:hover .bc-contact-ico { background: var(--accent); color: var(--onAccent); }
+
+.bc-contact-ico {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all .15s;
+}
+.bc-contact-ico svg { width: 17px; height: 17px; }
+
+.bc-contact-info { min-width: 0; }
+.bc-contact-label {
+  font-size: 9px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .12em;
+  color: var(--bc-muted); line-height: 1;
+  margin-bottom: 3px;
+}
+.bc-contact-value {
+  font-size: 13.5px; font-weight: 500;
+  color: var(--bc-text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: calc(100vw - 120px);
 }
 
-/* ── BARRA INFERIOR ─────────────────────────────────────────── */
-.bc-bar {
-  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-  width: 100%; max-width: 420px;
-  background: rgba(255,255,255,.88);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-top: 1px solid rgba(0,0,0,.08);
+/* Mapa Google Maps */
+.bc-map-wrap {
+  margin-top: 24px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--bc-line);
+  box-shadow: 0 2px 16px rgba(0,0,0,.08);
+  position: relative;
+}
+.bc-map-wrap iframe {
+  width: 100%;
+  height: 200px;
+  border: none;
+  display: block;
+}
+/* Overlay que abre Google Maps al tocar (evita que el iframe capture el swipe) */
+.bc-map-overlay {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+  background: transparent;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Dirección sin mapa (fallback si no hay embed) */
+.bc-map-fallback {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--bc-off);
+  border-radius: 12px;
+  border: 1px solid var(--bc-line);
+  text-decoration: none;
+  color: var(--bc-text);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all .15s;
+}
+.bc-map-fallback:hover { border-color: var(--accent); }
+.bc-map-fallback svg { width: 18px; height: 18px; color: var(--accent); flex-shrink: 0; }
+
+/* Footer */
+.bc-back-footer {
+  padding: 20px 28px 28px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--bc-muted);
+  border-top: 1px solid var(--bc-line);
+  margin-top: auto;
+}
+.bc-back-footer a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+/* ── Barra de acción inferior (fija) ────────────────────────── */
+.bc-action-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  gap: 10px;
   padding: 12px 20px;
   padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
-  display: flex; gap: 10px;
-  z-index: 50;
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid rgba(0,0,0,.07);
 }
-.bc-bar-btn {
-  flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
-  padding: 13px 10px; border-radius: 12px;
-  font-family: var(--bc-ff-body); font-size: 13.5px; font-weight: 600;
+.bc-action-btn {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 13px 10px;
+  border-radius: 12px;
+  font-family: var(--bc-fb);
+  font-size: 13.5px; font-weight: 700;
   text-decoration: none; border: none; cursor: pointer;
   transition: all .2s; letter-spacing: -.01em;
   -webkit-tap-highlight-color: transparent;
 }
-.bc-bar-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
-.bc-bar-wa {
+.bc-action-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+.bc-btn-wa {
   background: #25D366; color: #fff;
   box-shadow: 0 4px 16px rgba(37,211,102,.3);
 }
-.bc-bar-wa:hover { opacity: .9; transform: translateY(-1px); }
-.bc-bar-solid {
-  background: var(--accent); color: var(--accentText);
+.bc-btn-wa:hover { opacity: .9; transform: translateY(-1px); }
+.bc-btn-acc {
+  background: var(--accent); color: var(--onAccent);
   box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 35%, transparent);
 }
-.bc-bar-solid:hover { opacity: .92; transform: translateY(-1px); }
+.bc-btn-acc:hover { opacity: .9; transform: translateY(-1px); }
 
-/* ── FOOTER ─────────────────────────────────────────────────── */
-.bc-footer {
-  position: relative; z-index: 1;
-  text-align: center; padding: 20px 0 6px;
-  font-size: 11px; color: var(--bc-front-muted);
+/* ── Indicador de cara activa (dots) ────────────────────────── */
+.bc-dots {
+  position: fixed;
+  bottom: calc(64px + max(12px, env(safe-area-inset-bottom, 12px)) + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex; gap: 6px; z-index: 101;
+  pointer-events: none;
 }
-.bc-footer a { color: var(--accent); text-decoration: none; font-weight: 600; }
-
-@media (min-width: 480px) {
-  .bc-page { padding-top: 60px; }
+.bc-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(0,0,0,.2);
+  transition: all .3s;
+}
+.bc-dot.active {
+  background: var(--accent);
+  width: 18px;
+  border-radius: 99px;
 }
 
 </style>
 
-<div class="bc-page">
+<!-- ── CONTENEDOR PRINCIPAL ───────────────────────────────── -->
+<div class="bc-root" id="bc-root">
+  <div class="bc-flipper" id="bc-flipper">
 
-  <!-- ── ESCENA 3D ──────────────────────────────────────────── -->
-  <div class="bc-scene" id="bc-scene" onclick="bcFlip()" title="Toca para voltear">
-    <div class="bc-card" id="bc-card">
+    <!-- ══════════════ CARA FRONTAL ══════════════ -->
+    <div class="bc-face bc-front" id="bc-front">
 
-      <!-- ══════════════ CARA FRONTAL (BLANCA) ══════════════ -->
-      <div class="bc-face bc-front">
-
-        <!-- Onda superior de color (como imagen 2) -->
-        <div class="bc-front-wave-top">
-          <svg viewBox="0 0 360 220" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="wg1" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color={accent} />
-                <stop offset="100%" stop-color={accent2} />
-              </linearGradient>
-            </defs>
-            <!-- Forma de ola superior izquierda -->
-            <path d="M0,0 L360,0 L360,120 Q300,180 200,140 Q100,100 0,160 Z" fill="url(#wg1)" opacity=".95"/>
-            <!-- Segunda ola más clara -->
-            <path d="M0,0 L360,0 L360,80 Q280,130 180,100 Q80,70 0,110 Z" fill="white" opacity=".08"/>
-          </svg>
-        </div>
-
-        <!-- Onda inferior derecha (decorativa) -->
-        <div class="bc-front-wave-bottom">
-          <svg viewBox="0 0 180 180" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="wg2" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color={accent2} />
-                <stop offset="100%" stop-color={accent} />
-              </linearGradient>
-            </defs>
-            <path d="M180,180 L0,180 L0,100 Q60,40 130,80 Q180,110 180,60 Z" fill="url(#wg2)" opacity=".12"/>
-          </svg>
-        </div>
-
-        <!-- Logo centrado sobre la ola -->
-        <div class="bc-front-logo-wrap">
-          <div class="bc-front-logo-ring">
-            {logo
-              ? <img src={logo} alt={nombre} />
-              : <div class="bc-logo-ph">🏪</div>
-            }
-          </div>
-        </div>
-
-        <!-- Datos del negocio -->
-        <div class="bc-front-body">
-          <h1 class="bc-biz-name">{nombre}</h1>
-          {tagline && <p class="bc-biz-tagline">{tagline}</p>}
-
-          <!-- Divisor ornamental con ícono -->
-          <div class="bc-sep">
-            <div class="bc-sep-line"></div>
-            <div class="bc-sep-ico">
-              <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
-            </div>
-            <div class="bc-sep-line"></div>
-          </div>
-
-          <!-- Contactos -->
-          <div class="bc-contacts">
-            {tel && (
-              <a href={`tel:${tel.replace(/\D/g,'')}`} class="bc-contact-row">
-                <div class="bc-contact-icon">
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.948V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-                  </svg>
-                </div>
-                <div class="bc-contact-info">
-                  <div class="bc-contact-label">Teléfono</div>
-                  <div class="bc-contact-val">{tel}</div>
-                </div>
-              </a>
-            )}
-            {email && (
-              <a href={`mailto:${email}`} class="bc-contact-row">
-                <div class="bc-contact-icon">
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                  </svg>
-                </div>
-                <div class="bc-contact-info">
-                  <div class="bc-contact-label">Email</div>
-                  <div class="bc-contact-val">{email}</div>
-                </div>
-              </a>
-            )}
-            {dir && (
-              <div class="bc-contact-row" style="cursor:default">
-                <div class="bc-contact-icon">
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                  </svg>
-                </div>
-                <div class="bc-contact-info">
-                  <div class="bc-contact-label">Dirección</div>
-                  <div class="bc-contact-val">{dir}</div>
-                </div>
-              </div>
-            )}
-            {web && (
-              <a href={web} target="_blank" rel="noopener noreferrer" class="bc-contact-row">
-                <div class="bc-contact-icon">
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/>
-                  </svg>
-                </div>
-                <div class="bc-contact-info">
-                  <div class="bc-contact-label">Sitio web</div>
-                  <div class="bc-contact-val">{web.replace(/^https?:\/\//,'')}</div>
-                </div>
-              </a>
-            )}
-          </div>
-
-          <!-- Status -->
-          <div class="bc-status-wrap">
-            <div class={`bc-status-dot ${perfil.status_negocio === 'Abierto' ? 'open' : perfil.status_negocio === 'Cerrado' ? 'closed' : 'other'}`}></div>
-            {perfil.status_negocio ?? 'Abierto'}
-          </div>
-        </div>
+      <!-- Forma decorativa esquina sup-izq -->
+      <div class="bc-front-deco-tl">
+        <svg viewBox="0 0 200 160" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="fg1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color={accent}/>
+              <stop offset="100%" stop-color={accent2}/>
+            </linearGradient>
+          </defs>
+          <path d="M0,0 L200,0 L200,60 Q120,120 60,90 Q20,70 0,100 Z" fill="url(#fg1)" opacity=".15"/>
+          <path d="M0,0 L140,0 L140,40 Q80,90 30,70 Q0,55 0,70 Z" fill="url(#fg1)" opacity=".25"/>
+          <path d="M0,0 L80,0 L80,20 Q40,60 0,40 Z" fill="url(#fg1)" opacity=".5"/>
+        </svg>
       </div>
-      <!-- /CARA FRONTAL -->
 
-      <!-- ══════════════ CARA TRASERA (NAVY) ══════════════ -->
-      <div class="bc-face bc-back">
+      <!-- Forma decorativa esquina inf-der -->
+      <div class="bc-front-deco-br">
+        <svg viewBox="0 0 180 140" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="fg2" x1="100%" y1="100%" x2="0%" y2="0%">
+              <stop offset="0%" stop-color={accent}/>
+              <stop offset="100%" stop-color={accent2}/>
+            </linearGradient>
+          </defs>
+          <path d="M180,140 L0,140 L0,80 Q60,20 120,50 Q160,70 180,40 Z" fill="url(#fg2)" opacity=".15"/>
+          <path d="M180,140 L80,140 L80,100 Q120,60 180,80 Z" fill="url(#fg2)" opacity=".3"/>
+          <path d="M180,140 L140,140 L140,110 Q160,90 180,100 Z" fill="url(#fg2)" opacity=".6"/>
+        </svg>
+      </div>
 
-        <!-- Onda superior en la trasera -->
-        <div class="bc-back-wave">
-          <svg viewBox="0 0 360 160" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="wgb" x1="100%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stop-color={accent} stop-opacity=".3"/>
-                <stop offset="100%" stop-color={accent2} stop-opacity=".15"/>
-              </linearGradient>
-            </defs>
-            <path d="M360,0 L0,0 L0,80 Q80,140 180,100 Q280,60 360,110 Z" fill="url(#wgb)"/>
-          </svg>
+      <!-- Contenido principal -->
+      <div class="bc-front-content">
+
+        <!-- Logo -->
+        <div class="bc-front-logo">
+          {logo
+            ? <img src={logo} alt={nombre} />
+            : <div class="bc-front-logo-ph">🏪</div>
+          }
         </div>
 
-        <div class="bc-back-circle"></div>
+        <!-- Nombre -->
+        <div class="bc-front-name">{nombre}</div>
 
-        <!-- Nombre del responsable -->
-        <div class="bc-back-top">
-          <div class="bc-back-resp-label">Responsable</div>
-          <div class="bc-back-resp-name">{perfil.nombre}{perfil.apellidos ? ` ${perfil.apellidos}` : ''}</div>
-          {perfil.titulo_profesional && (
-            <div class="bc-back-resp-title">{perfil.titulo_profesional}</div>
-          )}
-        </div>
+        <!-- Tagline -->
+        {tagline && <div class="bc-front-tag">{tagline}</div>}
 
-        <!-- Divisor con logo centrado -->
-        <div class="bc-back-divider">
-          <div class="bc-back-divider-line"></div>
-          <div class="bc-back-divider-logo">
-            {logo
-              ? <img src={logo} alt={nombre} class="bc-back-logo-img" />
-              : <div class="bc-back-logo-ph">🏪</div>
-            }
-            <div class="bc-back-biz-name">{nombre}</div>
-          </div>
-          <div class="bc-back-divider-line"></div>
-        </div>
+        <!-- Divisor -->
+        <div class="bc-front-divider"></div>
 
-        <!-- Contactos en la trasera (tel + dir + web) -->
-        <div class="bc-back-contacts">
-          {tel && (
-            <a href={`tel:${tel.replace(/\D/g,'')}`} class="bc-back-contact-row">
-              <div class="bc-back-contact-ico">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.948V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-                </svg>
-              </div>
-              <span class="bc-back-contact-txt">{tel}</span>
-            </a>
-          )}
-          {dir && (
-            <div class="bc-back-contact-row">
-              <div class="bc-back-contact-ico">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
-              </div>
-              <span class="bc-back-contact-txt">{dir}</span>
-            </div>
-          )}
-          {email && (
-            <a href={`mailto:${email}`} class="bc-back-contact-row">
-              <div class="bc-back-contact-ico">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                </svg>
-              </div>
-              <span class="bc-back-contact-txt">{email}</span>
-            </a>
-          )}
-          {web && (
-            <a href={web} target="_blank" rel="noopener noreferrer" class="bc-back-contact-row">
-              <div class="bc-back-contact-ico">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/>
-                </svg>
-              </div>
-              <span class="bc-back-contact-txt">{web.replace(/^https?:\/\//,'')}</span>
-            </a>
-          )}
-        </div>
+        <!-- Web o Email -->
+        {web && (
+          <a href={web} target="_blank" rel="noopener noreferrer" class="bc-front-web">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/>
+            </svg>
+            {web.replace(/^https?:\/\//,'')}
+          </a>
+        )}
+        {!web && email && (
+          <a href={`mailto:${email}`} class="bc-front-web">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            {email}
+          </a>
+        )}
 
         <!-- Redes sociales -->
         {redes.length > 0 && (
-          <div class="bc-socials">
+          <div class="bc-front-socials">
             {redes.map(r => (
               <a href={r.url} target="_blank" rel="noopener noreferrer"
-                 class="bc-social-btn" title={r.plataforma} aria-label={r.plataforma}>
+                 class="bc-front-social" title={r.plataforma} aria-label={r.plataforma}>
                 <Fragment set:html={icon(r.plataforma)} />
               </a>
             ))}
           </div>
         )}
 
-        <!-- Hint flip -->
-        <div class="bc-back-hint">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </div>
+
+      <!-- Hint swipe -->
+      <div class="bc-swipe-hint">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+        Desliza para ver contacto
+      </div>
+
+    </div>
+    <!-- /CARA FRONTAL -->
+
+    <!-- ══════════════ CARA TRASERA ══════════════ -->
+    <div class="bc-face bc-back" id="bc-back">
+
+      <!-- Header navy con corte diagonal -->
+      <div class="bc-back-header">
+
+        <!-- Acento esquina superior derecha -->
+        <div class="bc-back-header-accent">
+          <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+            <path d="M80,0 L80,80 L0,0 Z" fill={accent} opacity=".7"/>
           </svg>
-          Toca para ver el frente
+        </div>
+
+        <div class="bc-back-header-content">
+          <!-- Logo pequeño -->
+          <div class="bc-back-logo-sm">
+            {logo
+              ? <img src={logo} alt={nombre} />
+              : <div class="bc-back-logo-sm-ph">🏪</div>
+            }
+          </div>
+          <!-- Nombre + tagline -->
+          <div class="bc-back-header-text">
+            <div class="bc-back-header-name">{nombre}</div>
+            {tagline && <div class="bc-back-header-tag">{tagline}</div>}
+          </div>
+        </div>
+
+        <!-- Corte diagonal SVG -->
+        <div class="bc-back-header-cut">
+          <svg viewBox="0 0 100 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0,0 L100,0 L100,20 Q50,60 0,30 Z" fill={`var(--bc-navy)`}/>
+          </svg>
         </div>
 
       </div>
-      <!-- /CARA TRASERA -->
 
-    </div>
-  </div>
-  <!-- /escena -->
+      <!-- Cuerpo: datos de contacto -->
+      <div class="bc-back-body">
 
-  <!-- Botón flip debajo -->
-  <button class="bc-flip-btn" onclick="bcFlip()" id="bc-flip-btn">
-    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-    </svg>
-    <span id="bc-flip-label">Ver reverso</span>
-  </button>
-
-  <!-- Catálogo -->
-  {servicios.length > 0 && (
-    <div class="bc-catalog-section">
-      <div class="bc-catalog-title">Catálogo</div>
-      <div class="bc-catalog-grid">
-        {servicios.map(s => (
-          <div class="bc-catalog-item">
-            {s.icono && <div class="bc-catalog-ico">{s.icono}</div>}
-            <div>
-              <div class="bc-catalog-name">{s.nombre}</div>
-              {s.descripcion && <div class="bc-catalog-desc">{s.descripcion}</div>}
+        {tel && (
+          <a href={`tel:${tel.replace(/\D/g,'')}`} class="bc-contact-row">
+            <div class="bc-contact-ico">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.948V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+              </svg>
             </div>
-            {s.precio_referencial && (
-              <div class="bc-catalog-price">{s.precio_referencial}</div>
-            )}
+            <div class="bc-contact-info">
+              <div class="bc-contact-label">Teléfono</div>
+              <div class="bc-contact-value">{tel}</div>
+            </div>
+          </a>
+        )}
+
+        {wa && wa !== tel && (
+          <a href={`https://wa.me/${wa.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer" class="bc-contact-row">
+            <div class="bc-contact-ico">
+              <svg viewBox="0 0 24 24" fill="currentColor" style="width:17px;height:17px">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+            </div>
+            <div class="bc-contact-info">
+              <div class="bc-contact-label">WhatsApp</div>
+              <div class="bc-contact-value">{wa}</div>
+            </div>
+          </a>
+        )}
+
+        {email && (
+          <a href={`mailto:${email}`} class="bc-contact-row">
+            <div class="bc-contact-ico">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+            </div>
+            <div class="bc-contact-info">
+              <div class="bc-contact-label">Email</div>
+              <div class="bc-contact-value">{email}</div>
+            </div>
+          </a>
+        )}
+
+        {web && (
+          <a href={web} target="_blank" rel="noopener noreferrer" class="bc-contact-row">
+            <div class="bc-contact-ico">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9"/>
+              </svg>
+            </div>
+            <div class="bc-contact-info">
+              <div class="bc-contact-label">Sitio web</div>
+              <div class="bc-contact-value">{web.replace(/^https?:\/\//,'')}</div>
+            </div>
+          </a>
+        )}
+
+        <!-- Mapa Google Maps -->
+        {dir && (
+          <div class="bc-map-wrap">
+            {mapsEmbed
+              ? <>
+                  <iframe
+                    src={mapsEmbed}
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade"
+                    title={`Ubicación de ${nombre}`}
+                    aria-label={`Mapa de ${dir}`}
+                  ></iframe>
+                  {mapsLink && (
+                    <a href={mapsLink} target="_blank" rel="noopener noreferrer"
+                       class="bc-map-overlay" aria-label="Abrir en Google Maps"></a>
+                  )}
+                </>
+              : (
+                <a href={mapsLink ?? '#'} target="_blank" rel="noopener noreferrer"
+                   class="bc-map-fallback">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  </svg>
+                  {dir}
+                </a>
+              )
+            }
           </div>
-        ))}
+        )}
+
       </div>
+
+      <footer class="bc-back-footer">
+        Tarjeta digital por <a href="/">CardVirtual</a>
+      </footer>
+
     </div>
-  )}
+    <!-- /CARA TRASERA -->
 
-  <footer class="bc-footer">
-    Tarjeta digital por <a href="/">CardVirtual</a>
-  </footer>
-
+  </div>
 </div>
 
-<!-- Barra inferior -->
-<div class="bc-bar">
+<!-- Dots indicadores -->
+<div class="bc-dots" id="bc-dots">
+  <div class="bc-dot active" id="bc-dot-0"></div>
+  <div class="bc-dot" id="bc-dot-1"></div>
+</div>
+
+<!-- Barra de acción -->
+<div class="bc-action-bar">
   {wa && (
     <a href={`https://wa.me/${wa.replace(/\D/g,'')}`}
        target="_blank" rel="noopener noreferrer"
-       class="bc-bar-btn bc-bar-wa">
+       class="bc-action-btn bc-btn-wa">
       <svg viewBox="0 0 24 24" fill="currentColor">
         <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
       </svg>
@@ -809,47 +800,78 @@ function icon(p: string) {
     </a>
   )}
   {tel && !wa && (
-    <a href={`tel:${tel.replace(/\D/g,'')}`} class="bc-bar-btn bc-bar-wa">
+    <a href={`tel:${tel.replace(/\D/g,'')}`} class="bc-action-btn bc-btn-wa">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.948V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.948V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
       </svg>
       Llamar
     </a>
   )}
-  <a href={`/${slug}`} class="bc-bar-btn bc-bar-solid">
+  <a href={`/${slug}`} class="bc-action-btn bc-btn-acc">
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
     </svg>
     Contactar
   </a>
 </div>
 
-<div id="track-data" data-perfil-id={perfil.id} style="display:none"></div>
+<div id="bc-track" data-perfil-id={perfil.id} style="display:none"></div>
 
 <script>
-  const card  = document.getElementById('bc-card')!
-  const label = document.getElementById('bc-flip-label')!
-  let flipped = false
+  const flipper = document.getElementById('bc-flipper')!
+  const dot0    = document.getElementById('bc-dot-0')!
+  const dot1    = document.getElementById('bc-dot-1')!
+  let flipped   = false
+  let touchStartX = 0
+  let touchStartY = 0
 
-  ;(window as any).bcFlip = function() {
-    flipped = !flipped
-    card.classList.toggle('flipped', flipped)
-    label.textContent = flipped ? 'Ver frente' : 'Ver reverso'
+  function flip(to?: boolean) {
+    flipped = to !== undefined ? to : !flipped
+    flipper.classList.toggle('flipped', flipped)
+    dot0.classList.toggle('active', !flipped)
+    dot1.classList.toggle('active', flipped)
   }
 
-  // Swipe horizontal
-  let touchX = 0
-  const scene = document.getElementById('bc-scene')!
-  scene.addEventListener('touchstart', e => { touchX = e.touches[0].clientX }, { passive: true })
-  scene.addEventListener('touchend', e => {
-    if (Math.abs(e.changedTouches[0].clientX - touchX) > 50) (window as any).bcFlip()
+  // Swipe horizontal en el contenedor raíz
+  const root = document.getElementById('bc-root')!
+
+  root.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX
+    touchStartY = e.touches[0].clientY
   }, { passive: true })
 
+  root.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX
+    const dy = Math.abs(e.changedTouches[0].clientY - touchStartY)
+    // Solo flip si es un swipe mayormente horizontal (no scroll vertical)
+    if (Math.abs(dx) > 60 && dy < 80) {
+      if (dx < 0 && !flipped) flip(true)   // swipe izq → ver dorso
+      if (dx > 0 && flipped)  flip(false)  // swipe der → ver frente
+    }
+  }, { passive: true })
+
+  // También clic/tap en la cara (no en links ni iframe)
+  ;['bc-front', 'bc-back'].forEach(id => {
+    document.getElementById(id)?.addEventListener('click', e => {
+      const t = e.target as HTMLElement
+      if (t.closest('a') || t.closest('iframe') || t.closest('.bc-map-overlay')) return
+      flip()
+    })
+  })
+
+  // Teclado: flechas izq/der
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' && !flipped) flip(true)
+    if (e.key === 'ArrowLeft'  && flipped)  flip(false)
+  })
+
   // Tracking
-  const perfilId = document.getElementById('track-data')?.dataset.perfilId
-  if (perfilId) fetch('/api/track', {
+  const pid = document.getElementById('bc-track')?.dataset.perfilId
+  if (pid) fetch('/api/track', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ perfil_id: perfilId }),
+    body: JSON.stringify({ perfil_id: pid }),
   })
 </script>
