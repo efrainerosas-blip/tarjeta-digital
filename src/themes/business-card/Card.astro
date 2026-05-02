@@ -50,24 +50,24 @@ function icon(p: string) {
 
 <style is:inline define:vars={{ accent, accent2, accentText }}>
 
-.bc-page {
+:root {
   --bc-ff-head: 'Montserrat', sans-serif;
   --bc-ff-body: 'Open Sans', sans-serif;
-  /* Cara frontal — blanca */
   --bc-front-bg:   #f7f9fc;
   --bc-front-bg2:  #ffffff;
   --bc-front-text: #1a1f36;
   --bc-front-muted:#6b7280;
   --bc-front-line: #e5e9f0;
-  /* Cara trasera — navy oscuro */
   --bc-back-bg:    #0d1b3e;
   --bc-back-bg2:   #112250;
   --bc-back-text:  #e8edf8;
   --bc-back-muted: rgba(232,237,248,.5);
-  /* Tarjeta */
   --bc-w: 360px;
   --bc-h: 620px;
   --bc-r: 18px;
+}
+
+.bc-page {
 
   min-height: 100vh;
   font-family: var(--bc-ff-body);
@@ -92,8 +92,8 @@ function icon(p: string) {
 /* ── ESCENA 3D ─────────────────────────────────────────────── */
 .bc-scene {
   position: relative; z-index: 1;
-  width: var(--bc-w);
-  height: var(--bc-h);
+  width: min(var(--bc-w), calc(100vw - 32px));
+  height: min(var(--bc-h), calc((100vw - 32px) * 1.72));
   perspective: 1400px;
   cursor: pointer;
   margin-bottom: 20px;
