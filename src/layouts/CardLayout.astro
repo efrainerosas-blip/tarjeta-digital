@@ -61,7 +61,7 @@ const manifestUrl = slug ? `/${slug}/manifest.json` : null
   </style>
   <slot name="head" />
 </head>
-<body style={`background:${bgColor}`}>
+<body>
   <slot />
   <QRWidget url={qrUrl} fotoUrl={fotoUrl} />
   {slug && nombre && (
